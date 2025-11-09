@@ -1,0 +1,46 @@
+# Climate Ensemble Analysis - Unified Studio Requirements
+# Production environment for AWS SageMaker Unified Studio
+
+# Core scientific computing
+numpy>=1.24.0,<2.0
+pandas>=2.0.0,<3.0
+scipy>=1.11.0
+
+# Climate data analysis
+xarray>=2023.7.0
+netcdf4>=1.6.4
+cftime>=1.6.2
+dask[complete]>=2023.7.0
+zarr>=2.14.0
+
+# AWS integration
+boto3>=1.28.0
+s3fs>=2023.9.0
+
+# Visualization
+matplotlib>=3.7.0
+cartopy>=0.22.0
+seaborn>=0.12.0
+
+# Geospatial
+geopandas>=0.13.0
+shapely>=2.0.0
+pyproj>=3.6.0
+
+# Jupyter environment
+ipykernel>=6.25.0
+ipywidgets>=8.1.0
+jupyterlab>=4.0.0
+
+# Utilities
+tqdm>=4.66.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Testing (optional)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Documentation (optional)
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.3.0

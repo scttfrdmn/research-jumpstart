@@ -848,7 +848,7 @@ The CMIP6 data accessed in this project has its own citation requirements and us
 
 ## Version History
 
-- **v1.0.0** (2025-01-09): Initial release
+- **v1.0.0** (2025-11-09): Initial release
   - Studio Lab version with simulated data
   - Unified Studio version with S3 access
   - 3 models, single scenario demonstration
@@ -879,4 +879,4 @@ The CMIP6 data accessed in this project has its own citation requirements and us
 
 ---
 
-*Last updated: 2025-01-09 | Research Jumpstart v1.0.0*
+*Last updated: 2025-11-09 | Research Jumpstart v1.0.0*

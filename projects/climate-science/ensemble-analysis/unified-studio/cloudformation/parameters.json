@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "climate-ensemble-analysis"
+  },
+  {
+    "ParameterKey": "NotebookInstanceType",
+    "ParameterValue": "ml.t3.xlarge"
+  },
+  {
+    "ParameterKey": "VolumeSize",
+    "ParameterValue": "50"
+  }
+]
