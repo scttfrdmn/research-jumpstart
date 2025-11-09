@@ -1,0 +1,316 @@
+# Climate Model Ensemble Analysis - Architecture Diagrams
+# Text-based representation for reference and documentation
+
+================================================================================
+STUDIO LAB ARCHITECTURE (FREE TIER)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│                    SageMaker Studio Lab (Free Tier)                         │
+│                         No AWS Account Required                             │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │              Jupyter Notebook Environment                             │ │
+│  │                                                                       │ │
+│  │  • Python 3.10                                                       │ │
+│  │  • Conda environment (climate-analysis)                              │ │
+│  │  • Packages: xarray, matplotlib, cartopy, geopandas                  │ │
+│  │  • 15GB persistent storage                                           │ │
+│  │  • 12-hour session limit                                             │ │
+│  │  • 4GB RAM                                                           │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                     Analysis Workflow                                 │ │
+│  │                                                                       │ │
+│  │  1. Generate Sample Data                                             │ │
+│  │     └─ generate_sample_climate_data()                                │ │
+│  │        • Simulates 3 CMIP6 models (CESM2, GFDL-CM4, UKESM1-0-LL)    │ │
+│  │        • Realistic temperature patterns                               │ │
+│  │        • 1995-2050 time period                                        │ │
+│  │                                                                       │ │
+│  │  2. Calculate Regional Means                                         │ │
+│  │     └─ calculate_regional_mean()                                     │ │
+│  │        • Area-weighted averaging                                      │ │
+│  │        • US Southwest region                                          │ │
+│  │                                                                       │ │
+│  │  3. Compute Temperature Anomalies                                    │ │
+│  │     └─ calculate_anomaly()                                           │ │
+│  │        • 1995-2014 baseline                                           │ │
+│  │        • Relative to climatology                                      │ │
+│  │                                                                       │ │
+│  │  4. Ensemble Statistics                                              │ │
+│  │     └─ xarray operations                                             │ │
+│  │        • Mean, std, min, max                                          │ │
+│  │        • Model agreement                                              │ │
+│  │                                                                       │ │
+│  │  5. Visualization                                                    │ │
+│  │     └─ matplotlib + cartopy                                          │ │
+│  │        • Time series with uncertainty                                 │ │
+│  │        • Model agreement plots                                        │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                        Outputs                                        │ │
+│  │                                                                       │ │
+│  │  • Figures: ensemble-timeseries.png, model-agreement.png             │ │
+│  │  • Data: processed results saved in session                          │ │
+│  │  • Summary statistics                                                 │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Cost: $0 (Always Free)
+Best for: Learning, teaching, prototyping
+Limitations: Simulated data, 3 models, single region
+
+
+================================================================================
+UNIFIED STUDIO ARCHITECTURE (PRODUCTION)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│                     SageMaker Unified Studio                                │
+│                        AWS Account Required                                 │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │              JupyterLab Environment                                   │ │
+│  │                                                                       │ │
+│  │  • ml.t3.xlarge (4 vCPU, 16GB RAM)                                   │ │
+│  │  • Cost: ~$0.60/hour                                                 │ │
+│  │  • Custom conda environment                                          │ │
+│  │  • Git integration                                                   │ │
+│  │  • IAM role with S3 + Bedrock access                                 │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                    Data Access Layer                                  │ │
+│  │                                                                       │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐ │ │
+│  │  │  AWS S3: CMIP6 Public Dataset (s3://cmip6-pds)                  │ │ │
+│  │  │                                                                  │ │ │
+│  │  │  • 20+ climate models                                            │ │ │
+│  │  │  • Multiple scenarios (SSP1-2.6, SSP2-4.5, SSP5-8.5)            │ │ │
+│  │  │  • 100+ variables                                                │ │ │
+│  │  │  • Zarr format (cloud-optimized)                                 │ │ │
+│  │  │  • No egress charges (same region)                               │ │ │
+│  │  │  • Cost: $0 (public data)                                        │ │ │
+│  │  │                                                                  │ │ │
+│  │  └─────────────────────────────────────────────────────────────────┘ │ │
+│  │                                                                       │ │
+│  │  Access via:                                                          │ │
+│  │  • s3fs: S3FileSystem for direct access                              │ │
+│  │  • xarray: xr.open_zarr(s3_path)                                     │ │
+│  │  • No local download required                                        │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                    Processing Layer                                   │ │
+│  │                                                                       │ │
+│  │  Primary: xarray + dask (in JupyterLab)                              │ │
+│  │  • Lazy evaluation                                                   │ │
+│  │  • Parallel processing                                               │ │
+│  │  • Chunked operations                                                │ │
+│  │  • Cost: included in notebook compute                                │ │
+│  │                                                                       │ │
+│  │  Optional: Amazon EMR (for heavy compute)                            │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐ │ │
+│  │  │  • Spark cluster (3-10 nodes)                                    │ │ │
+│  │  │  • For 20+ model ensemble processing                             │ │ │
+│  │  │  • Spot instances for cost savings                               │ │ │
+│  │  │  • Cost: ~$12-18 for 4-hour run                                  │ │ │
+│  │  └─────────────────────────────────────────────────────────────────┘ │ │
+│  │                                                                       │ │
+│  │  Functions:                                                           │ │
+│  │  • Regional mean calculation (area-weighted)                         │ │
+│  │  • Anomaly computation                                               │ │
+│  │  • Ensemble statistics (mean, std, percentiles)                      │ │
+│  │  • Model agreement analysis                                          │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                  Analysis & Visualization                             │ │
+│  │                                                                       │ │
+│  │  • Ensemble statistics computation                                   │ │
+│  │  • Trend analysis                                                    │ │
+│  │  • Uncertainty quantification                                        │ │
+│  │  • Publication-quality figures                                       │ │
+│  │    └─ matplotlib, cartopy, seaborn                                   │ │
+│  │  • Interactive plots (optional)                                      │ │
+│  │    └─ plotly, bokeh                                                  │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │            AI-Assisted Interpretation (Amazon Bedrock)                │ │
+│  │                                                                       │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐ │ │
+│  │  │  Claude 3 (Sonnet or Haiku)                                     │ │ │
+│  │  │                                                                  │ │ │
+│  │  │  • Interpret results in context                                  │ │ │
+│  │  │  • Compare to literature                                         │ │ │
+│  │  │  • Generate report text                                          │ │ │
+│  │  │  • Identify outliers/anomalies                                   │ │ │
+│  │  │  • Suggest follow-up analyses                                    │ │ │
+│  │  │                                                                  │ │ │
+│  │  │  Cost: ~$3-5 per analysis                                        │ │ │
+│  │  │  (based on typical prompt + response length)                    │ │ │
+│  │  │                                                                  │ │ │
+│  │  └─────────────────────────────────────────────────────────────────┘ │ │
+│  │                                                                       │ │
+│  │  Example prompts:                                                     │ │
+│  │  • "Interpret this ensemble projection for US Southwest"             │ │
+│  │  • "Compare warming rate to IPCC AR6 findings"                       │ │
+│  │  • "Identify which models are outliers and why"                      │ │
+│  │  • "Generate methods section text for this analysis"                 │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │                    Output Storage (S3)                                │ │
+│  │                                                                       │ │
+│  │  s3://your-bucket/climate-analysis-results/                           │ │
+│  │                                                                       │ │
+│  │  ├── figures/                                                         │ │
+│  │  │   ├── ensemble-timeseries-{date}.png                              │ │
+│  │  │   ├── model-agreement-{date}.png                                  │ │
+│  │  │   └── regional-maps-{date}.png                                    │ │
+│  │  │                                                                    │ │
+│  │  ├── data/                                                            │ │
+│  │  │   ├── ensemble-mean-{date}.nc                                     │ │
+│  │  │   ├── ensemble-std-{date}.nc                                      │ │
+│  │  │   └── summary-statistics-{date}.csv                               │ │
+│  │  │                                                                    │ │
+│  │  └── reports/                                                         │ │
+│  │      ├── analysis-report-{date}.md                                    │ │
+│  │      └── bedrock-interpretation-{date}.txt                            │ │
+│  │                                                                       │ │
+│  │  Cost: ~$0.23/10GB/month                                             │ │
+│  │  (Standard S3 storage)                                               │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Total Cost per Analysis: $20-30
+- Compute (4 hours): $2.40
+- EMR (optional): $12-18
+- Bedrock: $3-5
+- Storage: $0.23/month
+- S3 data access: $0 (public dataset, same region)
+
+Best for: Production research, publications, regular analysis
+Scales to: 20+ models, multiple scenarios, any region
+
+
+================================================================================
+DATA FLOW DIAGRAM
+================================================================================
+
+Studio Lab:
+───────────
+  Notebook → Generate Sample Data → Process → Visualize → Display in Notebook
+
+
+Unified Studio:
+───────────────
+  S3 (CMIP6) → Notebook/EMR → Process → Visualize → S3 (results)
+                    ↓
+                 Bedrock
+                    ↓
+              AI Interpretation → Reports
+
+
+================================================================================
+KEY DIFFERENCES
+================================================================================
+
+┌──────────────────┬────────────────────────┬────────────────────────────────┐
+│    Feature       │     Studio Lab         │      Unified Studio            │
+├──────────────────┼────────────────────────┼────────────────────────────────┤
+│ Data Source      │ Simulated (local)      │ Real CMIP6 (S3)               │
+│ Models           │ 3 models               │ 20+ models                     │
+│ Scenarios        │ SSP2-4.5 only          │ All SSPs                       │
+│ Regions          │ Pre-defined            │ Any region                     │
+│ Compute          │ 4GB RAM, local         │ 16GB+ RAM, distributed        │
+│ Storage          │ 15GB session           │ Unlimited S3                   │
+│ AI Features      │ None                   │ Bedrock integration           │
+│ Collaboration    │ Limited                │ Full team access              │
+│ Cost             │ $0                     │ $20-30 per analysis           │
+│ Best for         │ Learning, teaching     │ Research, publications        │
+└──────────────────┴────────────────────────┴────────────────────────────────┘
+
+
+================================================================================
+TRANSITION PATHWAY
+================================================================================
+
+Step 1: Studio Lab (Learn)
+   • Complete full workflow
+   • Understand code structure
+   • Verify analysis approach
+
+   ↓  (2-3 hours: AWS setup)
+
+Step 2: Unified Studio (Scale)
+   • Replace data source (simulated → S3)
+   • Same analysis code
+   • Add production features (EMR, Bedrock)
+   • Scale to full model ensemble
+
+
+================================================================================
+COMPONENTS LEGEND
+================================================================================
+
+[Free]       No cost
+[$]          Usage-based cost
+[Optional]   Not required but recommended
+[Required]   Necessary for workflow
+
+Services:
+- S3: Object storage
+- EMR: Elastic MapReduce (distributed compute)
+- Bedrock: AI/ML inference
+- SageMaker: ML platform (Studio Lab, Unified Studio)
+
+
+================================================================================
+For visual diagram, convert this to:
+- draw.io / Lucidchart / diagrams.net
+- Use colors: Orange (AWS), Blue (compute), Green (storage), Purple (AI)
+- Export as SVG + PNG (300 DPI)
+================================================================================
+
+Last updated: 2025-01-09
