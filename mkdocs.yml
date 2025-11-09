@@ -1,0 +1,195 @@
+site_name: Research Jumpstart
+site_description: Real academic research projects for cloud computing
+site_author: Research Jumpstart Community
+site_url: https://research-jumpstart.github.io/
+
+repo_name: research-jumpstart
+repo_url: https://github.com/research-jumpstart/research-jumpstart
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - scheme: default
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+
+  icon:
+    repo: fontawesome/brands/github
+
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-\.]+'
+  - tags
+
+markdown_extensions:
+  # Code highlighting
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+  # Content tabs
+  - pymdownx.tabbed:
+      alternate_style: true
+
+  # Admonitions (callouts)
+  - admonition
+  - pymdownx.details
+
+  # Emoji support
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+  # Better lists
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+  # Formatting
+  - attr_list
+  - md_in_html
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+
+  # Tables
+  - tables
+
+  # Footnotes
+  - footnotes
+
+  # Abbreviations
+  - abbr
+
+  # Table of contents
+  - toc:
+      permalink: true
+      title: On this page
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - Overview: getting-started/index.md
+    - Platform Comparison: getting-started/platform-comparison.md
+    - Studio Lab Quickstart: getting-started/studio-lab-quickstart.md
+    - AWS Account Setup: getting-started/aws-account-setup.md
+    - First Project: getting-started/first-project.md
+
+  - Projects:
+    - Browse All: projects/index.md
+    - Climate Science: projects/climate-science.md
+    - Genomics: projects/genomics.md
+    - Medical Research: projects/medical.md
+    - Social Sciences: projects/social-science.md
+    - Physics & Astronomy: projects/physics.md
+    - Digital Humanities: projects/digital-humanities.md
+    - More Domains: projects/all-domains.md
+
+  - Transition Guides:
+    - Overview: transition-guides/index.md
+    - Studio Lab → Unified Studio: transition-guides/studio-lab-to-unified.md
+    - Workshop → Production: transition-guides/workshop-to-production.md
+    - HPC Hybrid Setup: transition-guides/hpc-hybrid.md
+    - Cost Optimization: transition-guides/cost-optimization.md
+
+  - Resources:
+    - FAQ: resources/faq.md
+    - Cost Calculator: resources/cost-calculator.md
+    - Troubleshooting: resources/troubleshooting.md
+    - Video Tutorials: resources/videos.md
+    - Glossary: resources/glossary.md
+
+  - Community:
+    - Contributing: contributing.md
+    - Success Stories: community/success-stories.md
+    - Office Hours: community/office-hours.md
+    - Code of Conduct: code-of-conduct.md
+
+  - About:
+    - Mission: about/mission.md
+    - Team: about/team.md
+    - Partners: about/partners.md
+    - Contact: about/contact.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/research-jumpstart
+      name: Research Jumpstart on GitHub
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/ResearchJump
+      name: Research Jumpstart on Twitter
+    - icon: fontawesome/solid/envelope
+      link: mailto:hello@researchjumpstart.org
+      name: Email Research Jumpstart
+
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve by
+            <a href="https://github.com/research-jumpstart/research-jumpstart/issues/new" target="_blank" rel="noopener">opening an issue</a>.
+
+  version:
+    provider: mike
+
+copyright: Copyright &copy; 2025 Research Jumpstart Community
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

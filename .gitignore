@@ -1,0 +1,244 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# PyCharm
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# MkDocs
+site/
+.cache/
+
+# AWS
+*.pem
+*.key
+credentials
+.aws/
+
+# Secrets and credentials (never commit these!)
+*secret*
+*password*
+*credential*
+*.env
+.env.local
+.env.*.local
+
+# Large data files (use Git LFS or don't commit)
+*.h5
+*.hdf5
+*.nc
+*.zarr
+*.parquet
+# Uncomment if you want to ignore all data files:
+# data/
+# datasets/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.log
+*.bak
+*.orig
+
+# OS generated files
+.Trash-*
+.nfs*
+
+# IDE
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# CloudFormation
+# Uncomment if you want to ignore CloudFormation output files
+# *.stack
+
+# Jupyter outputs (optional - comment out if you want to keep outputs)
+# Uncomment the following to ignore all notebook outputs:
+# *.ipynb filter=nbstripout
+# *.ipynb diff=ipynb
+
+# Local configuration
+config.local.yml
+config.local.json
+local_settings.py
+
+# Backup files
+*.backup
+*~
+
+# Package managers
+Pipfile.lock
+poetry.lock
+
+# SageMaker specific
+.sagemaker/
+
+# Large model files
+*.pkl
+*.pickle
+*.joblib
+*.model
+# Uncomment if models are very large:
+# models/
+# checkpoints/
+
+# Datasets - be selective about what to ignore
+# Uncomment these if datasets are large:
+# *.csv
+# *.tsv
+# *.json (be careful with this one!)
+# *.parquet
+
+# Archives
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.tar.gz
+*.zip
+
+# Local development
+scratch/
+temp/
+tmp/
+
+# User-specific files
+.user
+*.user
+*.userosscache
+*.suo
+*.user.json
+
+# Keep empty directories by adding .gitkeep
+!.gitkeep
+
+# But ignore .gitkeep in root
+/.gitkeep
