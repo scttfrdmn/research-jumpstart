@@ -1,0 +1,17 @@
+name: gravitational-waves
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - jupyter
+  - numpy>=2.1
+  - pandas>=2.2
+  - matplotlib>=3.9
+  - scipy>=1.14
+  - seaborn>=0.13
+  - h5py>=3.11
+  - gwpy>=3.0  # Gravitational wave data analysis
+  - pycbc>=2.3  # Gravitational wave analysis toolkit
+  - astropy>=6.1
+  - plotly>=5.23

@@ -1,0 +1,15 @@
+name: ecology-modeling
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - jupyter
+  - numpy>=2.1
+  - pandas>=2.2
+  - matplotlib>=3.9
+  - seaborn>=0.13
+  - scipy>=1.14
+  - scikit-learn>=1.5
+  - networkx>=3.3
+  - plotly>=5.23
