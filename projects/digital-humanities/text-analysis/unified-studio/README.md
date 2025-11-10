@@ -464,7 +464,7 @@ data_access.save_metadata(
     table_name='metadata-table',
     document_id='manuscript_001',
     metadata={
-        'upload_date': '2025-01-09',
+        'upload_date': '2025-11-09',
         'entities': entities,
         'entity_count': sum(len(v) for v in entities.values())
     }

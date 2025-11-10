@@ -313,4 +313,4 @@ For visual diagram, convert this to:
 - Export as SVG + PNG (300 DPI)
 ================================================================================
 
-Last updated: 2025-01-09
+Last updated: 2025-11-09

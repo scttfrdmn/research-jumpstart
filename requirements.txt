@@ -1,39 +1,39 @@
 # Documentation
-mkdocs>=1.5.0
-mkdocs-material>=9.4.0
+mkdocs>=1.6.0
+mkdocs-material>=9.5.0
 mkdocs-git-revision-date-localized-plugin>=1.2.0
-pymdown-extensions>=10.3
+pymdown-extensions>=10.8
 
 # Jupyter and notebooks
-jupyter>=1.0.0
-jupyterlab>=4.0.0
-notebook>=7.0.0
-nbconvert>=7.0.0
-nbformat>=5.9.0
+jupyter>=1.1.0
+jupyterlab>=4.2.0
+notebook>=7.2.0
+nbconvert>=7.16.0
+nbformat>=5.10.0
 
 # Data science basics (for project development/testing)
-numpy>=1.24.0
-pandas>=2.0.0
-matplotlib>=3.7.0
-scipy>=1.11.0
+numpy>=2.1.0
+pandas>=2.2.0
+matplotlib>=3.9.0
+scipy>=1.14.0
 
 # Cloud/AWS
-boto3>=1.28.0
-s3fs>=2023.9.0
+boto3>=1.35.0
+s3fs>=2024.9.0
 
 # Development tools
-black>=23.9.0
-flake8>=6.1.0
-isort>=5.12.0
-pytest>=7.4.0
-pytest-cov>=4.1.0
-mypy>=1.5.0
+black>=24.8.0
+flake8>=7.1.0
+isort>=5.13.0
+pytest>=8.3.0
+pytest-cov>=5.0.0
+mypy>=1.11.0
 
 # Utilities
 pyyaml>=6.0.0
-requests>=2.31.0
+requests>=2.32.0
 python-dotenv>=1.0.0
 click>=8.1.0
 
 # For validation scripts
-jsonschema>=4.19.0
+jsonschema>=4.23.0
