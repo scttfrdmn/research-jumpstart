@@ -1,0 +1,25 @@
+name: genomics-analysis
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - jupyter
+  - numpy>=1.24
+  - pandas>=2.0
+  - matplotlib>=3.7
+  - seaborn>=0.12
+  - scipy>=1.10
+
+  # Genomics-specific packages
+  - pysam>=0.21  # For BAM/VCF file handling
+  - cyvcf2>=0.30  # Fast VCF parsing
+  - scikit-allel>=1.3  # Allele frequency and population genetics
+
+  # Optional but useful
+  - biopython>=1.81
+  - tqdm>=4.65
+
+  # Visualization
+  - plotly>=5.14
