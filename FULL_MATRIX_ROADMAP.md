@@ -1,6 +1,6 @@
 # Research Jumpstart: Full Matrix Roadmap
 
-**Vision:** 60 projects (20 domains × 3 tiers) ensuring every researcher can learn, build, and scale within their domain expertise.
+**Vision:** 63 projects (21 domains × 3 tiers) ensuring every researcher can learn, build, and scale within their domain expertise.
 
 **Updated:** 2025-11-10
 
@@ -8,19 +8,19 @@
 
 ## Progress Overview
 
-**Total Projects:** 60
-**Completed:** 21 (35%)
-**Remaining:** 39 (65%)
+**Total Projects:** 63
+**Completed:** 35 (56%)
+**Remaining:** 28 (44%)
 
 ### By Tier
-- **Tier 1 (Flagship):** 3/20 complete (15%)
-- **Tier 2 (Complete):** 11/20 complete (55%)
-- **Tier 3 (Starter):** 7/20 complete (35%)
+- **Tier 1 (Flagship):** 3/21 complete (14%)
+- **Tier 2 (Complete):** 11/21 complete (52%)
+- **Tier 3 (Starter):** 21/21 complete (100%) ✅
 
 ### Build Order Strategy
-1. **Phase 1:** Complete all Tier 3 (13 remaining) - Foundation for demos
-2. **Phase 2:** Complete all Tier 2 (9 remaining) - Core research value
-3. **Phase 3:** Complete all Tier 1 (17 remaining) - Flagship showcases
+1. **Phase 1:** ✅ Complete all Tier 3 (21/21 done) - Foundation for demos
+2. **Phase 2:** Complete all Tier 2 (10 remaining) - Core research value
+3. **Phase 3:** Complete all Tier 1 (18 remaining) - Flagship showcases
 
 ---
 
@@ -33,11 +33,11 @@ Legend:
 
 | # | Domain | Tier 3 (2-4h) | Tier 2 (2-3d) | Tier 1 (4-5d) | Complete |
 |---|--------|---------------|---------------|---------------|----------|
-| 1 | Climate Science | 🔲 | 🔲 | ✅ | 1/3 |
-| 2 | Social Science | 🔲 | 🔲 | ✅ | 1/3 |
-| 3 | Medical | 🔲 | 🔲 | ✅ | 1/3 |
-| 4 | Genomics | 🔲 | ✅ | 🔲 | 1/3 |
-| 5 | Digital Humanities | 🔲 | ✅ | 🔲 | 1/3 |
+| 1 | Climate Science | ✅ | 🔲 | ✅ | 2/3 |
+| 2 | Social Science | ✅ | 🔲 | ✅ | 2/3 |
+| 3 | Medical | ✅ | 🔲 | ✅ | 2/3 |
+| 4 | Genomics | ✅ | ✅ | 🔲 | 2/3 |
+| 5 | Digital Humanities | ✅ | ✅ | 🔲 | 2/3 |
 | 6 | Physics | ✅ | 🔲 | 🔲 | 1/3 |
 | 7 | Economics | ✅ | 🔲 | 🔲 | 1/3 |
 | 8 | Psychology | ✅ | 🔲 | 🔲 | 1/3 |
@@ -45,15 +45,15 @@ Legend:
 | 10 | Environmental | ✅ | 🔲 | 🔲 | 1/3 |
 | 11 | Materials | ✅ | 🔲 | 🔲 | 1/3 |
 | 12 | Neuroscience | ✅ | 🔲 | 🔲 | 1/3 |
-| 13 | Chemistry | 🔲 | ✅ | 🔲 | 1/3 |
-| 14 | Astronomy | 🔲 | ✅ | 🔲 | 1/3 |
-| 15 | Agriculture | 🔲 | ✅ | 🔲 | 1/3 |
-| 16 | Public Health | 🔲 | ✅ | 🔲 | 1/3 |
-| 17 | Urban Planning | 🔲 | ✅ | 🔲 | 1/3 |
-| 18 | Linguistics | 🔲 | ✅ | 🔲 | 1/3 |
-| 19 | Archaeology | 🔲 | ✅ | 🔲 | 1/3 |
-| 20 | Marine Science | 🔲 | ✅ | 🔲 | 1/3 |
-| 21 | Energy Systems | 🔲 | ✅ | 🔲 | 1/3 |
+| 13 | Chemistry | ✅ | ✅ | 🔲 | 2/3 |
+| 14 | Astronomy | ✅ | ✅ | 🔲 | 2/3 |
+| 15 | Agriculture | ✅ | ✅ | 🔲 | 2/3 |
+| 16 | Public Health | ✅ | ✅ | 🔲 | 2/3 |
+| 17 | Urban Planning | ✅ | ✅ | 🔲 | 2/3 |
+| 18 | Linguistics | ✅ | ✅ | 🔲 | 2/3 |
+| 19 | Archaeology | ✅ | ✅ | 🔲 | 2/3 |
+| 20 | Marine Science | ✅ | ✅ | 🔲 | 2/3 |
+| 21 | Energy Systems | ✅ | ✅ | 🔲 | 2/3 |
 
 ---
 
