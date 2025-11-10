@@ -119,13 +119,34 @@ nav:
 
   - Projects:
     - Browse All: projects/index.md
-    - Climate Science: projects/climate-science.md
-    - Genomics: projects/genomics.md
-    - Medical Research: projects/medical.md
-    - Social Sciences: projects/social-science.md
-    - Physics & Astronomy: projects/physics.md
-    - Digital Humanities: projects/digital-humanities.md
-    - More Domains: projects/all-domains.md
+    - Understanding Tiers: projects/tiers.md
+    - Tier 1 - Flagship (4-5 days):
+      - Overview: projects/tier1/index.md
+      - Climate Science Ensemble: projects/tier1/climate-science.md
+      - Social Media Analysis: projects/tier1/social-media.md
+      - Medical Image Classification: projects/tier1/medical-imaging.md
+    - Tier 2 - Complete (2-3 days):
+      - Overview: projects/tier2/index.md
+      - Genomics Variant Analysis: projects/tier2/genomics.md
+      - Digital Humanities Text Analysis: projects/tier2/digital-humanities.md
+      - Chemistry Molecular Dynamics: projects/tier2/chemistry.md
+      - Astronomy Exoplanet Detection: projects/tier2/astronomy.md
+      - Agriculture Crop Yield: projects/tier2/agriculture.md
+      - Public Health Epidemiology: projects/tier2/public-health.md
+      - Urban Planning Transportation: projects/tier2/urban-planning.md
+      - Linguistics Corpus Analysis: projects/tier2/linguistics.md
+      - Archaeology Artifact Classification: projects/tier2/archaeology.md
+      - Marine Science Ocean Modeling: projects/tier2/marine-science.md
+      - Energy Systems Optimization: projects/tier2/energy-systems.md
+    - Tier 3 - Starter (2-4 hours):
+      - Overview: projects/tier3/index.md
+      - Physics Gravitational Waves: projects/tier3/physics.md
+      - Economics Time Series: projects/tier3/economics.md
+      - Psychology Survey Analysis: projects/tier3/psychology.md
+      - Education Learning Analytics: projects/tier3/education.md
+      - Environmental Ecology Modeling: projects/tier3/environmental.md
+      - Materials Crystal Structure: projects/tier3/materials.md
+      - Neuroscience Brain Imaging: projects/tier3/neuroscience.md
 
   - Transition Guides:
     - Overview: transition-guides/index.md
