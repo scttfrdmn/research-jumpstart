@@ -1,0 +1,26 @@
+name: survey-analysis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - jupyter
+  - numpy>=1.24
+  - pandas>=2.0
+  - matplotlib>=3.7
+  - seaborn>=0.12
+  - scipy>=1.10
+
+  # Statistical analysis
+  - scikit-learn>=1.3
+  - statsmodels>=0.14
+  - pingouin>=0.5  # Statistical testing
+
+  # Psychometrics
+  - factor-analyzer>=0.4  # Factor analysis
+
+  # Visualization
+  - plotly>=5.14
+
+  # Utilities
+  - openpyxl>=3.1  # Excel file support
