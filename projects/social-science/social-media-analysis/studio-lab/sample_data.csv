@@ -1,0 +1,11 @@
+post_id,timestamp,platform,user_id,text,retweets,likes,replies
+1,2024-01-15 08:23:00,twitter,user_1234,"Just read an amazing article about climate change solutions! We can make a difference. #ClimateAction",45,203,12
+2,2024-01-15 09:15:00,twitter,user_5678,"BREAKING: New study shows vaccines are completely safe and effective. Science wins again!",892,3421,156
+3,2024-01-15 09:47:00,twitter,user_9012,"Can't believe what I'm seeing in the news today. Something doesn't add up here...",23,87,34
+4,2024-01-15 10:12:00,reddit,user_3456,"Has anyone else noticed how the media always spins stories one way? Wake up people!",0,156,89
+5,2024-01-15 10:45:00,twitter,user_7890,"Beautiful sunset today! Grateful for these moments. #blessed",12,445,8
+6,2024-01-15 11:23:00,twitter,user_2345,"THEY don't want you to know the TRUTH about what's really happening. Do your own research!!!",234,1203,445
+7,2024-01-15 12:01:00,reddit,user_6789,"Just finished reading the new research paper on renewable energy. The methodology is sound and results are promising.",0,89,23
+8,2024-01-15 13:15:00,twitter,user_4567,"This conspiracy theory is getting out of hand. Here are the actual facts with sources...",67,312,78
+9,2024-01-15 14:32:00,twitter,user_8901,"Why isn't the mainstream media covering this?! They're hiding something BIG. Share before they delete this!",1456,5234,892
+10,2024-01-15 15:20:00,reddit,user_1111,"Looking at the data from multiple peer-reviewed sources, the consensus is clear. Here's what we know...",0,234,67
