@@ -1,0 +1,11 @@
+material,crystal_system,a,b,c,alpha,beta,gamma,density,band_gap
+Silicon,Cubic,5.43,5.43,5.43,90,90,90,2.33,1.12
+Diamond,Cubic,3.57,3.57,3.57,90,90,90,3.52,5.47
+GaAs,Cubic,5.65,5.65,5.65,90,90,90,5.32,1.42
+NaCl,Cubic,5.64,5.64,5.64,90,90,90,2.16,8.97
+Iron_BCC,Cubic,2.87,2.87,2.87,90,90,90,7.87,0.00
+Graphite,Hexagonal,2.46,2.46,6.71,90,90,120,2.26,0.00
+Quartz,Trigonal,4.91,4.91,5.41,90,90,120,2.65,9.00
+TiO2_rutile,Tetragonal,4.59,4.59,2.96,90,90,90,4.23,3.05
+CaCO3,Trigonal,4.99,4.99,17.06,90,90,120,2.71,6.00
+AlN,Hexagonal,3.11,3.11,4.98,90,90,120,3.26,6.20
