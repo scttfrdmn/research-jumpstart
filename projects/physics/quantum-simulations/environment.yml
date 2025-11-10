@@ -1,0 +1,13 @@
+name: quantum-sims
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=2.1.0
+  - matplotlib>=3.9.0
+  - scipy>=1.14.0
+  - jupyterlab>=4.2.0
+  - pip:
+    - qiskit>=0.45.0
+    - qiskit-aer>=0.13.0
+    - pennylane>=0.33.0
