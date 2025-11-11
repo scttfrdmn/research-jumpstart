@@ -20,13 +20,52 @@ Production-ready medical imaging AI using convolutional neural networks (CNNs) f
 
 ## Dataset
 
-**Sample: Chest X-Ray Pneumonia Detection**
+### AWS Open Data Registry (Recommended)
+
+Access large-scale medical imaging datasets from AWS for free:
+
+**NIH Chest X-ray14** (s3://nih-chest-xrays)
+- 112,120 frontal-view chest X-rays
+- 14 disease categories
+- Public access, no credentials required
+- 45 GB total size
+
+**The Cancer Imaging Archive (TCIA)** (s3://imaging.nci.nih.gov)
+- Cancer imaging from clinical trials
+- Multiple cancer types and organs
+- CT, MRI, PET modalities
+- Registration required for some collections
+
+**Medical Segmentation Decathlon** (s3://medicalsegmentation)
+- 10 organ segmentation tasks
+- Brain, heart, liver, lung, prostate, etc.
+- CT and MRI modalities
+- Ground truth segmentations included
+
+```python
+# Access AWS Open Data
+from scripts.aws_data_access import download_sample_images, download_nih_metadata
+
+# Download NIH chest X-rays with pneumonia
+download_sample_images(
+    output_dir='data/chest_xrays',
+    n_samples=100,
+    disease_filter='Pneumonia'
+)
+
+# Get metadata with disease labels
+metadata = download_nih_metadata('data/nih_metadata.csv')
+```
+
+See `scripts/aws_data_access.py` for complete examples.
+
+### Sample Dataset
+
+**Chest X-Ray Pneumonia Detection**
 - 5,000 chest X-ray images
 - Classes: Normal, Pneumonia
 - DICOM and PNG formats
 - Split: 70% train, 15% val, 15% test
-
-Real alternatives: ChestX-ray14, MIMIC-CXR, CheXpert
 
 ## Methods Covered
 
