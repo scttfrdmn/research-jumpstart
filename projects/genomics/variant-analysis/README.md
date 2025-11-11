@@ -52,7 +52,42 @@ jupyter notebook quickstart.ipynb
 
 ## Sample Data
 
-Synthetic VCF file with:
+### AWS Open Data Registry (For Real Analysis)
+
+Access large-scale genomics datasets from AWS for free:
+
+**1000 Genomes Project** (s3://1000genomes)
+- 2,504 individuals from 26 populations
+- Complete VCF, BAM, CRAM files
+- ~200 TB of data
+- Public access, no credentials required
+
+**gnomAD** (s3://gnomad-public-us-east-1)
+- 125,748 exomes + 71,702 genomes
+- Population allele frequencies
+- ~20 TB of variant data
+
+**TCGA** (s3://tcga-2-open)
+- Cancer genomics data
+- 33 cancer types, 11,000+ patients
+- WGS, WXS, RNA-Seq
+
+```python
+# Access AWS Open Data (see studio-lab/aws_data_access.py)
+from aws_data_access import list_1000genomes, download_sample_vcf
+
+# List chromosome 22 variants
+files = list_1000genomes(chromosome='chr22', phase='phase3')
+
+# Download for analysis
+download_sample_vcf(chromosome='chr22', output_dir='data/')
+```
+
+See `studio-lab/aws_data_access.py` for complete examples.
+
+### Synthetic Sample
+
+Included synthetic VCF file with:
 - 100 variants across chr22
 - SNPs and small indels
 - Quality scores and genotypes
