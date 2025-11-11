@@ -126,9 +126,41 @@ This project is pre-configured for AWS Unified Studio with:
 
 ## Data Access
 
-### Downloading CORDEX Data
+### AWS Open Data Registry (Recommended)
 
-CORDEX data is available from:
+Access petabyte-scale climate datasets from AWS for free:
+
+**CMIP6 Climate Models** (s3://cmip6-pds)
+- 400+ TB of climate projections
+- Public access, no credentials required
+- Variables: temperature, precipitation, humidity, etc.
+
+**ERA5 Reanalysis** (s3://era5-pds)
+- 500+ TB of global reanalysis data
+- Hourly resolution from 1940-present
+- All atmospheric and surface variables
+
+**NOAA GFS** (s3://noaa-gfs-bdp-pds)
+- Operational weather forecasts
+- Updated 4x daily
+- Global coverage at 0.25° resolution
+
+```python
+# Access AWS Open Data
+from scripts.aws_data_access import list_cmip6_data, download_era5_sample
+
+# List CMIP6 files
+files = list_cmip6_data(variable='tas', experiment='historical', model='CESM2')
+
+# Download ERA5 reanalysis
+download_era5_sample(variable='2m_temperature', year=2020, month=1)
+```
+
+See `scripts/aws_data_access.py` for complete examples.
+
+### Alternative: Downloading CORDEX Data
+
+CORDEX data is also available from:
 - **ESGF Nodes:** https://esgf-node.llnl.gov/
 - **Copernicus Climate Data Store:** https://cds.climate.copernicus.eu/
 - **Direct download scripts provided**
