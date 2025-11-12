@@ -9,18 +9,18 @@
 ## Progress Overview
 
 **Total Projects:** 63
-**Completed:** 46 (73%)
-**Remaining:** 17 (27%)
+**Completed:** 48 (76%)
+**Remaining:** 15 (24%)
 
 ### By Tier
-- **Tier 1 (Flagship):** 4/21 complete (19%)
+- **Tier 1 (Flagship):** 6/21 complete (29%)
 - **Tier 2 (Complete):** 21/21 complete (100%) ✅
 - **Tier 3 (Starter):** 21/21 complete (100%) ✅
 
 ### Build Order Strategy
 1. **Phase 1:** ✅ Complete all Tier 3 (21/21 done) - Foundation for demos
 2. **Phase 2:** ✅ Complete all Tier 2 (21/21 done) - Core research value
-3. **Phase 3:** 🚧 Complete all Tier 1 (4/21 done, 17 remaining) - Flagship showcases
+3. **Phase 3:** 🚧 Complete all Tier 1 (6/21 done, 15 remaining) - Flagship showcases
 
 ---
 
@@ -38,8 +38,8 @@ Legend:
 | 3 | Medical | ✅ | ✅ | ✅ | 3/3 ✅ |
 | 4 | Genomics | ✅ | ✅ | ✅ | 3/3 ✅ |
 | 5 | Digital Humanities | ✅ | ✅ | 🔲 | 2/3 |
-| 6 | Physics | ✅ | ✅ | 🔲 | 2/3 |
-| 7 | Economics | ✅ | ✅ | 🔲 | 2/3 |
+| 6 | Physics | ✅ | ✅ | ✅ | 3/3 ✅ |
+| 7 | Economics | ✅ | ✅ | ✅ | 3/3 ✅ |
 | 8 | Psychology | ✅ | ✅ | 🔲 | 2/3 |
 | 9 | Education | ✅ | ✅ | 🔲 | 2/3 |
 | 10 | Environmental | ✅ | ✅ | 🔲 | 2/3 |
