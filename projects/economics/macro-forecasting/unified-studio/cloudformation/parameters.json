@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "macro-forecasting"
+  },
+  {
+    "ParameterKey": "NotebookInstanceType",
+    "ParameterValue": "ml.t3.xlarge"
+  }
+]
