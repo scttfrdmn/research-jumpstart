@@ -1,60 +1,45 @@
-# Molecular Dynamics & Drug Discovery
+# Molecular Dynamics at Scale
 
-**Difficulty**: 🟡 Intermediate | **Time**: ⏱️ 3-4 hours (Studio Lab)
+**Tier 1 Flagship Project**
 
-Simulate molecular systems, analyze protein-ligand interactions, predict drug binding affinities, and visualize molecular structures.
+Large-scale MD simulations using GROMACS, AMBER, and OpenMM on AWS with GPU acceleration.
 
-## Status
+## Quick Start
 
-**Studio Lab**: 🚧 Lightweight quickstart (in development)
-**Unified Studio**: ⏳ Planned
+The main implementation is in the [`unified-studio/`](unified-studio/) directory.
 
-## What You'll Learn
+**[→ View Full Documentation](unified-studio/README.md)**
 
-- Molecular structure visualization (proteins, ligands)
-- MD simulation setup and analysis
-- Protein-ligand docking
-- Binding affinity prediction
-- RMSD/RMSF analysis
-- Free energy calculations
-- Trajectory analysis and clustering
+## Features
 
-## Key Analyses
+- **MD Engines:** GROMACS, AMBER, OpenMM, NAMD, LAMMPS
+- **GPU Acceleration:** 10-75x speedup with NVIDIA V100/A100
+- **Applications:** Protein folding, drug binding, membrane dynamics
+- **Advanced:** Free energy calculations (FEP), metadynamics, ML potentials
+- **Scale:** From 100s atoms to millions of atoms
 
-1. **Structure Preparation**: PDB files, protonation states, force fields
-2. **Energy Minimization**: Optimize molecular geometry
-3. **MD Simulation**: Equilibration, production runs
-4. **Trajectory Analysis**: RMSD, RMSF, radius of gyration
-5. **Binding Studies**: Docking, binding free energy (MM-PBSA)
+## Cost Estimate
 
-## Sample Data
+**$15-150 per simulation** (50-100 ns) depending on system size
 
-- PDB structures (proteins, enzymes)
-- Drug molecules (SDF, MOL2 formats)
-- MD trajectories (GROMACS, AMBER)
+## Technologies
 
-## Tools & Databases
+- **Software:** GROMACS 2023, AMBER 22, OpenMM 8.0
+- **Hardware:** p3.2xlarge (1x V100), p3.8xlarge (4x V100), p4d.24xlarge (8x A100)
+- **AWS:** Batch, ParallelCluster, FSx Lustre, SageMaker
+- **ML:** Neural network potentials (SchNet, PaiNN), AlphaFold2
+- **Analysis:** MDAnalysis, PyMOL, VMD
 
-- **Software**: GROMACS, AMBER, OpenMM, AutoDock
-- **Databases**: PDB, PubChem, ChEMBL, ZINC
-- **Visualization**: PyMOL, VMD, NGLview
+## Performance
 
-## Use Cases
+**GROMACS STMV (1.4M atoms):**
+- CPU (72 cores): 10 ns/day → 10 days for 100 ns
+- p3.2xlarge (1x V100): 100 ns/day → 1 day for 100 ns
+- p3.8xlarge (4x V100): 350 ns/day → 7 hours for 100 ns
 
-- Drug discovery and optimization
-- Protein folding studies
-- Enzyme mechanism analysis
-- Materials design (polymers, nanoparticles)
+## Quick Links
 
-## Cost
-
-**Studio Lab**: Free (public data, open-source tools)
-**Unified Studio**: ~$50-100/month (GPU compute for MD simulations)
-
-## Resources
-
-- [RCSB PDB](https://www.rcsb.org/)
-- [GROMACS Tutorials](http://www.gromacs.org/Documentation/Tutorials)
-- [MDAnalysis](https://www.mdanalysis.org/)
-
-*Last updated: 2025-11-09*
+- [Getting Started Guide](unified-studio/README.md#getting-started)
+- [Protein in Water Tutorial](unified-studio/README.md#1-protein-in-water)
+- [Free Energy Calculations](unified-studio/README.md#4-free-energy-calculations)
+- [CloudFormation Template](unified-studio/cloudformation/md-stack.yml)
