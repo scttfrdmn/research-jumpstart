@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "sky-survey"
+  },
+  {
+    "ParameterKey": "NotebookInstanceType",
+    "ParameterValue": "ml.t3.xlarge"
+  },
+  {
+    "ParameterKey": "BatchComputeType",
+    "ParameterValue": "SPOT"
+  },
+  {
+    "ParameterKey": "MaxvCpus",
+    "ParameterValue": "256"
+  }
+]
