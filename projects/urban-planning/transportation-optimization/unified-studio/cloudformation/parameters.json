@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "transportation-optimization"
+  },
+  {
+    "ParameterKey": "PostGISInstanceClass",
+    "ParameterValue": "db.r5.xlarge"
+  },
+  {
+    "ParameterKey": "NeptuneInstanceClass",
+    "ParameterValue": "db.r5.large"
+  },
+  {
+    "ParameterKey": "BatchMaxvCpus",
+    "ParameterValue": "256"
+  }
+]
