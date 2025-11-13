@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "corpus-linguistics"
+  },
+  {
+    "ParameterKey": "ElasticsearchInstanceType",
+    "ParameterValue": "t3.medium.search"
+  },
+  {
+    "ParameterKey": "ElasticsearchInstanceCount",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  }
+]
