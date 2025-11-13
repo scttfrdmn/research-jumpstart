@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "precision-agriculture"
+  },
+  {
+    "ParameterKey": "FarmName",
+    "ParameterValue": "demo-farm"
+  },
+  {
+    "ParameterKey": "SatelliteDataBucket",
+    "ParameterValue": "sentinel-cogs"
+  }
+]
