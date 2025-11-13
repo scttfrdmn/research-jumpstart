@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "learning-analytics"
+  },
+  {
+    "ParameterKey": "RedshiftNodeType",
+    "ParameterValue": "dc2.large"
+  },
+  {
+    "ParameterKey": "RedshiftNumberOfNodes",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "RDSInstanceClass",
+    "ParameterValue": "db.t3.medium"
+  }
+]
