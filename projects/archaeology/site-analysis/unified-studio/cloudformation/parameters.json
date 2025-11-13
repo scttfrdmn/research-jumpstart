@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "archaeology-site-analysis"
+  },
+  {
+    "ParameterKey": "PostGISInstanceClass",
+    "ParameterValue": "db.t3.large"
+  },
+  {
+    "ParameterKey": "GPUInstanceType",
+    "ParameterValue": "g4dn.xlarge"
+  },
+  {
+    "ParameterKey": "EnvironmentTag",
+    "ParameterValue": "development"
+  }
+]
