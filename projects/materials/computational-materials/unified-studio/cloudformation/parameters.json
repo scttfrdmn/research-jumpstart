@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "computational-materials"
+  },
+  {
+    "ParameterKey": "DBUsername",
+    "ParameterValue": "aiida"
+  },
+  {
+    "ParameterKey": "DBPassword",
+    "ParameterValue": "CHANGE_ME_USE_SECRETS_MANAGER"
+  }
+]
