@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "epidemiology-surveillance"
+  },
+  {
+    "ParameterKey": "NeptuneDBInstanceClass",
+    "ParameterValue": "db.r5.large"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  }
+]

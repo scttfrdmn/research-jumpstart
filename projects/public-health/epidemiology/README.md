@@ -1,60 +1,50 @@
-# Epidemiology & Disease Surveillance
+# Epidemiology and Disease Surveillance at Scale
 
-**Difficulty**: 🟢 Beginner | **Time**: ⏱️ 2-3 hours (Studio Lab)
+**Tier 1 Flagship Project**
 
-Model disease outbreaks, analyze epidemic curves, forecast infection trends, and evaluate public health interventions.
+Real-time disease surveillance, outbreak prediction, and epidemic modeling with AWS analytics and machine learning.
 
-## Status
+## Quick Start
 
-**Studio Lab**: 🚧 Lightweight quickstart (in development)
-**Unified Studio**: ⏳ Planned
+The main implementation is in the [`unified-studio/`](unified-studio/) directory.
 
-## What You'll Learn
+**[→ View Full Documentation](unified-studio/README.md)**
 
-- Compartmental models (SIR, SEIR, SIRD)
-- Epidemic curve analysis
-- Basic reproduction number (R₀) estimation
-- Time series forecasting of cases
-- Geographic spread visualization
-- Intervention effectiveness evaluation
+## Features
 
-## Key Analyses
+- **Syndromic surveillance:** Real-time monitoring of ER visits, pharmacy sales
+- **Outbreak prediction:** ML models (XGBoost, LSTM) for early warning
+- **Epidemic modeling:** SIR/SEIR differential equations, agent-based simulations
+- **Contact tracing:** Graph analysis with Neptune, privacy-preserving protocols
+- **Data sources:** CDC WONDER, WHO, HealthMap, ProMED, Google Trends
+- **Real-time dashboards:** QuickSight for public health decision-making
 
-1. **SIR Model**: Susceptible-Infected-Recovered dynamics
-2. **Parameter Estimation**: Fit models to outbreak data
-3. **R₀ Calculation**: Transmission potential assessment
-4. **Forecasting**: Predict future case counts
-5. **Spatial Analysis**: Geographic disease mapping
+## Cost Estimate
 
-## Sample Data
+**County level:** $500-2,000/month
+**State level:** $5,000-20,000/month
+**National:** $50,000-200,000/month
+**Outbreak surge:** $10,000-50,000 for 2-4 weeks
 
-- COVID-19 case data (JHU, WHO)
-- Historical outbreak data (flu, measles, Ebola)
-- Vaccination coverage statistics
-- Hospital capacity and mortality data
+## Technologies
 
-## Tools & Resources
+- **Surveillance:** EARS algorithms (C1, C2, C3), statistical process control
+- **ML:** XGBoost, LSTM, Prophet, ARIMA for forecasting
+- **Modeling:** SciPy (ODE solvers), NetworkX (graph analysis), agent-based
+- **AWS:** Kinesis, Timestream, Neptune, Lambda, SageMaker, Batch, QuickSight
+- **Data:** CDC, WHO, HealthMap, ProMED, Google Trends, mobility data
 
-- **Python**: scipy, numpy, pandas, matplotlib
-- **R**: EpiModel, surveillance packages
-- **Data**: WHO, CDC, ECDC, Our World in Data
+## Applications
 
-## Use Cases
+1. **Syndromic surveillance:** Monitor flu-like illness in real-time
+2. **Outbreak prediction:** Forecast dengue outbreaks 2-4 weeks ahead
+3. **Epidemic modeling:** Simulate intervention scenarios (lockdown, vaccination)
+4. **Contact tracing:** Identify exposure networks, notify contacts
+5. **Disease forecasting:** CDC FluSight competition-level predictions
 
-- Outbreak prediction and response
-- Vaccination campaign planning
-- Healthcare resource allocation
-- Policy impact assessment
+## Quick Links
 
-## Cost
-
-**Studio Lab**: Free (public health data)
-**Unified Studio**: ~$10-20/month (real-time dashboards, large datasets)
-
-## Resources
-
-- [CDC Data](https://data.cdc.gov/)
-- [WHO Disease Outbreak News](https://www.who.int/emergencies/disease-outbreak-news)
-- [Our World in Data](https://ourworldindata.org/)
-
-*Last updated: 2025-11-09*
+- [Getting Started Guide](unified-studio/README.md#getting-started)
+- [Syndromic Surveillance](unified-studio/README.md#1-real-time-syndromic-surveillance)
+- [Outbreak Prediction](unified-studio/README.md#2-outbreak-prediction-with-machine-learning)
+- [Epidemic Modeling](unified-studio/README.md#3-epidemic-modeling-sirseir)
