@@ -1,0 +1,31 @@
+# AWS CloudFormation Linter Configuration
+---
+ignore_checks:
+  - E3002  # Invalid property for resource (sometimes too strict)
+  - W3002  # Availability Zone not specified (intentional for flexibility)
+  - W2001  # Parameter not used (sometimes intentional)
+
+regions:
+  - us-east-1
+  - us-west-2
+  - eu-west-1
+
+templates:
+  - projects/**/cloudformation/*.yml
+  - projects/**/cloudformation/*.yaml
+
+# Include custom resource types
+custom_rules: []
+
+# Ignore certain resource types that are preview/experimental
+ignore_bad_template: false
+
+override_spec: null
+
+include_checks: []
+
+configure_rules:
+  E2520:  # Check if properties are valid
+    strict: false
+  E3012:  # Check property values
+    strict: false

@@ -1,0 +1,49 @@
+# Ruff configuration for Research Jumpstart
+# Fast Python linter and formatter (replaces flake8, isort, pylint)
+
+target-version = "py39"
+line-length = 100
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+]
+
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function calls in argument defaults
+    "B905",   # zip without explicit strict parameter
+    "N802",   # function name should be lowercase (allows scientific naming)
+    "N803",   # argument name should be lowercase (allows scientific naming)
+    "N806",   # variable name should be lowercase (allows scientific naming)
+]
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+    ".aws-sam",
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
