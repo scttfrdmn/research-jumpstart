@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "ocean-marine-analysis"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "TimestreamRetentionDays",
+    "ParameterValue": "365"
+  }
+]
