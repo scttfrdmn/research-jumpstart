@@ -1,0 +1,29 @@
+name: agriculture-studio-lab
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+  - scipy>=1.10.0
+  - scikit-learn>=1.3.0
+  - tensorflow>=2.13.0
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0
+  - plotly>=5.14.0
+  - xarray>=2023.6.0
+  - netcdf4>=1.6.0
+  - rasterio>=1.3.0
+  - geopandas>=0.13.0
+  - shapely>=2.0.0
+  - folium>=0.14.0
+  - h5py>=3.9.0
+  - requests>=2.31.0
+  - ipywidgets>=8.0.0
+  - tqdm>=4.65.0
+  - pip
+  - pip:
+    - sentinelhub>=3.9.0
+    - planetary-computer>=1.0.0
+    - pystac-client>=0.7.0

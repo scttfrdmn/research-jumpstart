@@ -1,14 +1,55 @@
-# Ocean and Marine Ecosystem Analysis at Scale
+# Multi-Sensor Ocean Monitoring
 
-**Tier 1 Flagship Project**
+**Flagship Project** ⭐ | **Difficulty**: 🟢 Beginner | **Time**: ⏱️ 60-90 min (Tier 0) | ⏱️⏱️ 4-8 hours (Tier 1)
 
-Large-scale ocean data analysis with satellite observations, Argo floats, species tracking, and marine habitat monitoring on AWS.
+Perform comprehensive ocean monitoring using multi-sensor data fusion without managing terabytes of oceanographic data. Perfect introduction to cloud-based marine science research.
 
-## Quick Start
+---
 
-The main implementation is in the [`unified-studio/`](unified-studio/) directory.
+## Quick Start Options
+
+### Tier 0: Ocean Species Classification (60-90 min, Free)
+**Perfect for:** First-time users, quick demos, species identification learning
+
+Train a CNN to classify marine species from underwater imagery:
+- 1.5GB plankton and fish imagery
+- 60-75 min training on GPU
+- Runs on Google Colab (free)
+- **[→ Start Tier 0](tier-0/README.md)**
+
+### Tier 1: Multi-Sensor Ocean Monitoring (4-8 hours, Free)
+**Perfect for:** Learning sensor fusion, ensemble methods, persistent workflows
+
+Integrate satellite, Argo float, and acoustic data for comprehensive ocean monitoring:
+- 10GB multi-sensor data (satellite ocean color, Argo floats, acoustic)
+- 5-6 hours ensemble training
+- Requires SageMaker Studio Lab (free, persistent storage)
+- **[→ Start Tier 1](tier-1/README.md)**
+
+### Production: Full-Scale Ocean Analysis
+**Perfect for:** Research publications, operational monitoring, multi-region analysis
+
+The main production implementation is in the [`unified-studio/`](unified-studio/) directory.
 
 **[→ View Full Documentation](unified-studio/README.md)**
+
+---
+
+## Tier Comparison
+
+| Feature | Tier 0 | Tier 1 | Production |
+|---------|--------|--------|------------|
+| **Platform** | Colab/Studio Lab | Studio Lab | Unified Studio |
+| **Time** | 60-90 min | 4-8 hours | Varies |
+| **Cost** | $0 | $0 | $20-40/analysis |
+| **Data** | 1.5GB imagery | 10GB multi-sensor | Unlimited S3 |
+| **Storage** | None (re-download) | 15GB persistent | Unlimited S3 |
+| **Focus** | Species classification | Sensor fusion ensemble | Full ocean monitoring |
+| **Sensors** | Image only | 3 types | 10+ types |
+| **ML Models** | Single CNN | Ensemble (CNN+LSTM) | Production ensemble |
+| **Use Case** | Learning, demos | Research prototyping | Publications, ops |
+
+---
 
 ## Features
 

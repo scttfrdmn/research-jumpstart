@@ -1,12 +1,55 @@
 # Historical Text Corpus Analysis at Scale
 
-**Tier 1 Flagship Project**
+**Flagship Project** ⭐ | **Difficulty**: 🟢 Beginner to 🔴 Advanced | **Time**: ⏱️ 60 min - 8 hours
 
-Large-scale analysis of historical texts using NLP, topic modeling, and machine learning on AWS.
+Analyze historical texts using modern NLP techniques. Start with authorship attribution on Google Colab, progress to multilingual analysis on Studio Lab, or scale to millions of documents on AWS.
 
-## Quick Start
+---
 
-The main implementation is in the [`unified-studio/`](unified-studio/) directory.
+## Learning Path
+
+### Tier 0: Historical Text Analysis with NLP (60-90 min, Free)
+**Platform:** Google Colab or SageMaker Studio Lab
+**Cost:** $0 (no AWS account needed)
+**Data:** ~1.5GB historical text corpus (Project Gutenberg subset)
+
+Train BERT for authorship attribution on historical texts. Perfect introduction to digital humanities and NLP.
+
+**[→ Start Tier 0 Project](tier-0/README.md)**
+
+**What you'll experience:**
+- ✅ Download 1.5GB corpus in 15-20 minutes
+- ✅ Fine-tune BERT for authorship (60-75 minutes)
+- ✅ Analyze writing style patterns
+- ⚠️ Re-download required each session (no persistence)
+- ⚠️ Single language (English only)
+
+---
+
+### Tier 1: Multi-Language Multilingual Corpus Analysis (4-8 hours, Free)
+**Platform:** SageMaker Studio Lab ONLY
+**Cost:** $0 (free Studio Lab account)
+**Data:** ~10GB multi-language historical texts
+
+Cross-lingual analysis with ensemble multilingual transformers. Requires persistent storage and long training sessions.
+
+**[→ Start Tier 1 Project](tier-1/README.md)**
+
+**What you'll build:**
+- ✅ 10GB multilingual corpus (6 languages)
+- ✅ Ensemble transformers (5-6 hours training)
+- ✅ Cross-lingual style analysis
+- ✅ Persistent storage and checkpoints
+- ✅ No session timeouts
+
+---
+
+### Production: Historical Text Analysis at Scale
+**Platform:** AWS Unified Studio
+**Cost:** $500-1,000 for 100K documents + $50/month infrastructure
+**Data:** Millions of documents from HathiTrust, Project Gutenberg, Internet Archive
+
+Full-scale digital humanities research with distributed computing, advanced NLP, and AI-powered insights.
 
 **[→ View Full Documentation](unified-studio/README.md)**
 

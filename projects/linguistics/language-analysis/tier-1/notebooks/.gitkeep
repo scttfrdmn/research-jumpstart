@@ -1,0 +1,10 @@
+# Notebooks Directory
+
+This directory will contain Jupyter notebooks for the analysis workflow:
+
+1. `01_data_preparation.ipynb` - Download and cache dialect corpora
+2. `02_feature_extraction.ipynb` - Extract linguistic features
+3. `03_ensemble_training.ipynb` - Train classification models
+4. `04_cross_linguistic_analysis.ipynb` - Comparative dialectology
+
+Run notebooks in order for complete analysis pipeline.

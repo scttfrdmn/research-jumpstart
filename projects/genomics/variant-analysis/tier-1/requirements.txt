@@ -1,0 +1,38 @@
+# SageMaker Studio Lab - Genomics Tier 1
+# Install with: pip install -r requirements.txt
+
+# Core scientific computing
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.3.0
+
+# Genomics packages
+pysam>=0.21.0
+biopython>=1.81
+cyvcf2>=0.30.0
+scikit-allel>=1.3.0
+
+# Deep learning
+tensorflow>=2.13.0
+keras>=2.13.0
+
+# Machine learning ensemble
+xgboost>=2.0.0
+lightgbm>=4.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+
+# Data handling
+h5py>=3.9.0
+tables>=3.8.0
+
+# Notebook utilities
+ipywidgets>=8.0.0
+tqdm>=4.65.0
+
+# Statistics
+statsmodels>=0.14.0

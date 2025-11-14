@@ -1,0 +1,36 @@
+name: genomics-studio-lab
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+  - scipy>=1.10.0
+  - scikit-learn>=1.3.0
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0
+  - plotly>=5.14.0
+  - ipywidgets>=8.0.0
+  - tqdm>=4.65.0
+  - h5py>=3.9.0
+  - tables>=3.8.0
+  - statsmodels>=0.14.0
+
+  # Bioinformatics tools (from bioconda)
+  - samtools>=1.17
+  - bcftools>=1.17
+  - htslib>=1.17
+  - pysam>=0.21.0
+  - biopython>=1.81
+
+  # Python packages via pip
+  - pip
+  - pip:
+    - tensorflow>=2.13.0
+    - keras>=2.13.0
+    - xgboost>=2.0.0
+    - lightgbm>=4.0.0
+    - cyvcf2>=0.30.0
+    - scikit-allel>=1.3.0

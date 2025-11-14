@@ -1,0 +1,22 @@
+# Materials Science Tier 0 - Crystal Property Prediction
+# Install with: pip install -r requirements.txt
+
+# Core deep learning
+torch>=2.0.0
+torch-geometric>=2.3.0
+
+# Materials science
+pymatgen>=2023.9.0
+matminer>=0.9.0
+
+# Scientific computing
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilities
+tqdm>=4.65.0
