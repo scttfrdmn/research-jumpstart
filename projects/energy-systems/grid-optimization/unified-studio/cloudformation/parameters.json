@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "smart-grid-optimization"
+  },
+  {
+    "ParameterKey": "TimestreamRetentionDays",
+    "ParameterValue": "730"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "production"
+  },
+  {
+    "ParameterKey": "NotificationEmail",
+    "ParameterValue": "grid-alerts@example.com"
+  }
+]
