@@ -1,63 +1,66 @@
 # Research Jumpstart: Full Matrix Roadmap
 
-**Vision:** 63 projects (21 domains × 3 tiers) ensuring every researcher can learn, build, and scale within their domain expertise.
+**Vision:** 84 projects (21 domains × 4 tiers) ensuring every researcher can learn, build, and scale within their domain expertise - from free Colab demos to production AWS infrastructure.
 
-**Updated:** 2025-11-13
+**Updated:** 2025-11-14
 
 ---
 
 ## Progress Overview
 
-**Total Projects:** 63
-**Completed:** 63 (100%) 🎉
-**Remaining:** 0 (0%)
+**Total Projects:** 84 (NEW: 4-tier structure)
+**Completed:** 63 (75%)
+**In Progress:** 21 Tier 2 projects (25%)
 
-### By Tier
-- **Tier 1 (Flagship):** 21/21 complete (100%) ✅
-- **Tier 2 (Complete):** 21/21 complete (100%) ✅
-- **Tier 3 (Starter):** 21/21 complete (100%) ✅
+### By Tier (NEW 4-Tier Structure)
+- **Tier 0 (Colab Ceiling):** 21/21 complete (100%) ✅ - 60-90 min, 1-2GB, Free
+- **Tier 1 (Studio Lab):** 21/21 complete (100%) ✅ - 4-8 hours, 8-12GB, Free
+- **Tier 2 (AWS Starter):** 0/21 planned (0%) 🔲 - 2-4 hours, $5-15
+- **Tier 3 (Production):** 21/21 complete (100%) ✅ - 4-5 days, $50-500/month
 
 ### Build Order Strategy
-1. **Phase 1:** ✅ Complete all Tier 3 (21/21 done) - Foundation for demos
-2. **Phase 2:** ✅ Complete all Tier 2 (21/21 done) - Core research value
-3. **Phase 3:** ✅ Complete all Tier 1 (21/21 done) - Flagship showcases
+1. **Phase 1:** ✅ Complete all Tier 0 (21/21 done) - Colab ceiling demos
+2. **Phase 2:** ✅ Complete all Tier 1 (21/21 done) - Studio Lab requirements
+3. **Phase 3:** 🔲 Complete all Tier 2 (0/21 planned) - AWS starter projects
+4. **Phase 4:** ✅ Complete all Tier 3 (21/21 done) - Production flagship
 
-## 🎉 PROJECT COMPLETE! 🎉
+## 🎉 75% COMPLETE! 🎉
 
-**All 63 projects across 21 research domains have been completed!**
+**63 of 84 projects complete across new 4-tier structure!**
+**42 new projects added (Tier 0 and Tier 1) demonstrating real research capabilities!**
 
 ---
 
-## Domain Matrix
+## Domain Matrix (NEW 4-Tier Structure)
 
 Legend:
 - ✅ Complete
 - 🔲 Planned
 - 🚧 In Progress
 
-| # | Domain | Tier 3 (2-4h) | Tier 2 (2-3d) | Tier 1 (4-5d) | Complete |
-|---|--------|---------------|---------------|---------------|----------|
-| 1 | Climate Science | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 2 | Social Science | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 3 | Medical | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 4 | Genomics | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 5 | Digital Humanities | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 6 | Physics | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 7 | Economics | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 8 | Psychology | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 9 | Education | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 10 | Environmental | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 11 | Materials | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 12 | Neuroscience | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 13 | Chemistry | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 14 | Astronomy | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 15 | Agriculture | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 16 | Public Health | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 17 | Urban Planning | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 18 | Linguistics | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 19 | Archaeology | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 20 | Marine Science | ✅ | ✅ | ✅ | 3/3 ✅ |
-| 21 | Energy Systems | ✅ | ✅ | ✅ | 3/3 ✅ |
+| # | Domain | Tier 0 (Free, 60-90min) | Tier 1 (Free, 4-8h) | Tier 2 ($5-15, 2-4h) | Tier 3 ($50-500, 4-5d) | Complete |
+|---|--------|-------------------------|---------------------|----------------------|------------------------|----------|
+| 1 | Climate Science | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 2 | Social Science | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 3 | Medical | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 4 | Genomics | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 5 | Digital Humanities | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 6 | Physics | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 7 | Economics | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 8 | Psychology | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 9 | Education | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 10 | Environmental | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 11 | Materials | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 12 | Neuroscience | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 13 | Chemistry | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 14 | Astronomy | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 15 | Agriculture | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 16 | Public Health | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 17 | Urban Planning | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 18 | Linguistics | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 19 | Archaeology | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 20 | Marine Science | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
+| 21 | Energy Systems | ✅ | ✅ | 🔲 | ✅ | 3/4 (75%) |
 
 ---
 
@@ -65,14 +68,21 @@ Legend:
 
 ### 1. Climate Science
 
-#### ✅ Tier 1: Multi-Model Ensemble Analysis (COMPLETE)
-**Status:** Production-ready with CloudFormation
-**Path:** `projects/climate-science/ensemble-analysis/`
-**Features:** 20+ CMIP6 models, Bedrock AI, Zarr on S3, distributed Dask
+#### ✅ Tier 0: Regional Climate Downscaling (COMPLETE)
+**Status:** Colab/Studio Lab compatible
+**Duration:** 60-90 minutes | **Cost:** Free
+**Path:** `projects/climate-science/ensemble-analysis/tier-0/`
+**Features:** CMIP6 downscaling, 1.5GB data, CNN training, hits Colab limits
 
-#### 🔲 Tier 2: Regional Climate Modeling
-**Duration:** 2-3 days | **Cost:** $5-10
-**Dataset:** CORDEX regional climate projections (Europe or North America)
+#### ✅ Tier 1: Multi-Model CMIP6 Ensemble (COMPLETE)
+**Status:** Studio Lab required
+**Duration:** 4-8 hours | **Cost:** Free
+**Path:** `projects/climate-science/ensemble-analysis/tier-1/`
+**Features:** 10GB multi-model data, ensemble training, persistent storage required
+
+#### 🔲 Tier 2: AWS-Integrated Regional Climate
+**Duration:** 2-4 hours | **Cost:** $5-15
+**Dataset:** CORDEX regional climate projections on S3
 **Methods:**
 - Downscaling analysis
 - Bias correction techniques
@@ -89,14 +99,16 @@ Legend:
 - Sector-specific impacts
 - Comparison with global models
 
-#### 🔲 Tier 3: Weather Pattern Analysis
-**Duration:** 3 hours | **Cost:** Free (Studio Lab)
-**Dataset:** Historical weather data for single station (10 years)
+#### ✅ Tier 3: Multi-Model Ensemble Analysis (COMPLETE)
+**Status:** Production-ready with CloudFormation
+**Duration:** 4-5 days | **Cost:** $50-500/month
+**Path:** `projects/climate-science/ensemble-analysis/tier-3/`
+**Features:** 20+ CMIP6 models, Bedrock AI, Zarr on S3, distributed Dask
 **Methods:**
-- Time series decomposition
-- Seasonal analysis
-- Anomaly detection
-- Simple trend analysis
+- Multi-model ensemble analysis
+- Distributed computing with Dask on AWS Batch
+- AI-powered climate insights with Amazon Bedrock
+- Production-scale data processing
 **Key Analyses:**
 - Monthly temperature patterns
 - Precipitation seasonality
