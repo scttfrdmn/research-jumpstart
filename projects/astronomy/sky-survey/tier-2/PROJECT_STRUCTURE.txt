@@ -1,0 +1,263 @@
+TIER 2: ASTRONOMICAL IMAGE PROCESSING WITH AWS
+Location: /projects/astronomy/sky-survey/tier-2/
+
+Project Overview:
+- Build a complete astronomical image processing pipeline on AWS
+- Process FITS images with Lambda serverless functions
+- Query results with SQL using Athena
+- Cost: $7-10 | Duration: 2-4 hours
+
+File Structure:
+============================================
+
+tier-2/
+├── README.md                              (Main documentation - START HERE)
+│   ├── Project overview
+│   ├── Architecture diagram
+│   ├── Prerequisites
+│   ├── Step-by-step setup guide
+│   ├── Cost breakdown
+│   ├── Troubleshooting
+│   └── Next steps
+│
+├── QUICKSTART.md                          (Fast reference - 60 minutes)
+│   ├── Quick setup steps
+│   ├── Verification checklist
+│   ├── Common issues
+│   └── Expected timeline
+│
+├── setup_guide.md                         (Detailed AWS setup - 45 minutes)
+│   ├── Prerequisites
+│   ├── Part 1: IAM Role creation
+│   ├── Part 2: S3 Buckets
+│   ├── Part 3: Lambda function
+│   ├── Part 4: Athena setup
+│   ├── Part 5: Sample data download
+│   ├── Part 6: S3 upload
+│   ├── Part 7: Run source detection
+│   ├── Part 8: Analysis
+│   └── Troubleshooting guide
+│
+├── cleanup_guide.md                       (Delete all resources)
+│   ├── Delete Lambda function
+│   ├── Delete IAM role
+│   ├── Delete S3 buckets
+│   ├── Delete Athena workgroup
+│   ├── Verification checklist
+│   ├── Automated cleanup script
+│   └── Cost monitoring
+│
+├── requirements.txt                       (Python dependencies)
+│   ├── AWS SDK (boto3)
+│   ├── Astronomy tools (astropy, sep)
+│   ├── Data handling (numpy, pandas)
+│   ├── Visualization (matplotlib, seaborn)
+│   └── Jupyter
+│
+├── notebooks/
+│   └── sky_analysis.ipynb                (Interactive analysis)
+│       ├── Setup and configuration
+│       ├── Check uploaded images
+│       ├── View source detection results
+│       ├── Athena queries
+│       ├── Visualizations (flux dist, sky map)
+│       ├── Statistics and analysis
+│       └── Export results
+│
+├── scripts/
+│   ├── download_sample_fits.py           (Download test data)
+│   │   ├── Create synthetic FITS images
+│   │   └── Metadata generation
+│   │
+│   ├── upload_to_s3.py                   (Upload images to S3)
+│   │   ├── Find FITS files
+│   │   ├── Upload with progress
+│   │   ├── Verify upload
+│   │   └── Error handling
+│   │
+│   ├── lambda_function.py                (Source detection)
+│   │   ├── FITS image parsing
+│   │   ├── Source detection (SEP)
+│   │   ├── Properties calculation
+│   │   ├── Catalog generation
+│   │   └── S3 storage
+│   │
+│   ├── invoke_lambda.py                  (Trigger Lambda)
+│   │   ├── List FITS files in S3
+│   │   ├── Invoke Lambda for each image
+│   │   ├── Thread pooling (4 workers)
+│   │   ├── Progress tracking
+│   │   └── Result summary
+│   │
+│   └── query_with_athena.py              (SQL queries)
+│       ├── Execute Athena queries
+│       ├── Query 1: Total sources
+│       ├── Query 2: Source statistics
+│       ├── Query 3: Bright sources
+│       ├── Query 4: SNR distribution
+│       └── Custom query support
+│
+└── data/
+    └── README.md                         (Data documentation)
+        ├── Directory structure
+        ├── Data sources
+        ├── FITS format explanation
+        ├── Storage limits
+        └── Cleanup instructions
+
+AWS Services Used:
+==================
+
+1. S3 (Simple Storage Service)
+   - Store FITS images: astronomy-tier2-XXXXX-raw
+   - Store catalogs: astronomy-tier2-XXXXX-catalog
+   - Function: Object storage, persistence
+
+2. Lambda (Serverless Compute)
+   - Function name: astronomy-source-detection
+   - Runtime: Python 3.11
+   - Memory: 1024 MB
+   - Timeout: 300 seconds
+   - Function: Process FITS, detect sources
+
+3. Athena (SQL Query Service)
+   - Workgroup: astronomy-workgroup
+   - Database: astronomy
+   - Tables: sources (Parquet format)
+   - Function: Query catalog with SQL
+
+4. IAM (Identity & Access Management)
+   - Role name: lambda-astronomy-role
+   - Policies: S3FullAccess, CloudWatchLogsFullAccess
+   - Function: Grant Lambda permissions
+
+5. CloudWatch (Monitoring & Logging)
+   - Log group: /aws/lambda/astronomy-source-detection
+   - Function: Store execution logs
+
+Workflow:
+=========
+
+1. Download FITS Images (5 min)
+   └─> python scripts/download_sample_fits.py
+
+2. Upload to S3 (2 min)
+   └─> python scripts/upload_to_s3.py
+   └─> Raw bucket: s3://astronomy-tier2-XXXXX-raw/images/
+
+3. Invoke Lambda (5 min)
+   └─> python scripts/invoke_lambda.py
+   └─> Lambda processes each image
+   └─> Detects sources, saves to catalog bucket
+
+4. Query with Athena (5 min)
+   └─> python scripts/query_with_athena.py
+   └─> Or jupyter notebook notebooks/sky_analysis.ipynb
+
+5. Visualize & Analyze (10 min)
+   └─> Flux distributions
+   └─> Sky maps
+   └─> Statistical analysis
+   └─> Export results
+
+Key Concepts Learned:
+====================
+
+AWS Concepts:
+- Object storage (S3) and pricing model
+- Serverless computing (Lambda)
+- Identity & Access Management (IAM)
+- SQL querying on cloud data (Athena)
+- CloudWatch logging and monitoring
+
+Astronomy Concepts:
+- FITS image format
+- Source detection algorithms
+- Photometry (flux, SNR measurements)
+- Astrometry (RA/Dec coordinates)
+- Catalog creation & querying
+
+Cost Breakdown:
+==============
+
+Component              | Usage         | Cost
+S3 Storage            | 1GB images    | $0.50
+S3 Requests           | 5000 ops      | $0.25
+Lambda Invocations    | 50 runs       | $1.00
+Lambda Compute        | 1500 GB-sec   | $3.00
+Athena Queries        | 10 queries    | $0.50
+CloudWatch Logs       | 100MB         | $0.50
+Data Transfer         | 1GB out       | $1.00
+Miscellaneous         | Buffer        | $0.25
+─────────────────────────────────────────
+TOTAL                                 $7-10
+
+Files & Line Counts:
+===================
+
+README.md                          634 lines (comprehensive guide)
+setup_guide.md                     544 lines (detailed AWS setup)
+cleanup_guide.md                   363 lines (resource deletion)
+notebooks/sky_analysis.ipynb       477 lines (Jupyter analysis)
+scripts/lambda_function.py         352 lines (source detection)
+scripts/invoke_lambda.py           267 lines (trigger Lambda)
+scripts/query_with_athena.py       252 lines (SQL queries)
+QUICKSTART.md                      205 lines (60-min guide)
+scripts/upload_to_s3.py            193 lines (S3 upload)
+scripts/download_sample_fits.py    191 lines (download data)
+requirements.txt                    29 lines (dependencies)
+data/README.md                      88 lines (data guide)
+PROJECT_STRUCTURE.txt             (this file)
+
+─────────────────────────────────────────
+TOTAL                            3595 lines
+Disk size                         128 KB
+
+Getting Started:
+===============
+
+1. Read: README.md (10 minutes)
+2. Quick: QUICKSTART.md (60 minutes total)
+   - Or Detailed: setup_guide.md (45 minutes setup)
+3. Run: notebooks/sky_analysis.ipynb (10 minutes)
+4. Cleanup: cleanup_guide.md (5 minutes)
+
+Total time commitment: 2-4 hours
+Cost: $7-10
+
+All files include:
+- Clear documentation
+- Example commands
+- Error handling
+- Progress tracking
+- Cost awareness
+- Cleanup procedures
+
+Next Steps After Tier 2:
+======================
+
+1. Beginner Extensions (1-2 hours)
+   - Process more images
+   - Different sky regions
+   - Cost monitoring
+
+2. Intermediate Extensions (2-4 hours)
+   - Automated pipeline (S3 event triggers)
+   - Cross-matching with catalogs
+   - Advanced SQL queries
+
+3. Advanced Extensions (4+ hours)
+   - Scale to thousands of images (Batch)
+   - Machine learning classification
+   - Real-time processing
+   - Dashboard with QuickSight
+
+4. Move to Tier 3 (Production)
+   - AWS CloudFormation templates
+   - Distributed processing
+   - Persistent infrastructure
+   - Full-sky surveys ($50-500/month)
+
+Version: 1.0.0
+Last Updated: 2025-11-14
+Ready to deploy!

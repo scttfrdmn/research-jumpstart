@@ -1,0 +1,70 @@
+# AWS credentials and configuration
+.env
+.env.local
+aws_credentials.json
+aws_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Data files (large)
+sample_data/*.nc
+sample_data/*.nc4
+sample_data/*.h5
+sample_data/*.hdf5
+sample_data/*.zarr
+results/
+*.nc
+*.nc4
+*.h5
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project artifacts
+*.log
+*.csv
+*.json (except those tracked)
+response.json
+lambda_function.zip
+
+# AWS Lambda deployment packages
+*.zip
+
+# Local testing
+test_*.nc
+test_output/
+debug/
+
+# Backup files
+*.bak
+*.backup
+*~

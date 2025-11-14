@@ -1,0 +1,72 @@
+{
+  "aws": {
+    "region": "us-east-1",
+    "timeout": 300,
+    "memory_size": 1024
+  },
+  "s3": {
+    "input_bucket_prefix": "genomics-input-",
+    "results_bucket_prefix": "genomics-results-",
+    "lifecycle_expiration_days": 7
+  },
+  "dynamodb": {
+    "table_name": "variant-metadata",
+    "billing_mode": "PAY_PER_REQUEST",
+    "attributes": [
+      {
+        "name": "chrom_pos",
+        "type": "S"
+      },
+      {
+        "name": "timestamp",
+        "type": "N"
+      }
+    ]
+  },
+  "lambda": {
+    "function_name": "variant-calling",
+    "runtime": "python3.11",
+    "handler": "lambda_function.lambda_handler",
+    "environment_variables": {
+      "TABLE_NAME": "variant-metadata"
+    }
+  },
+  "variant_calling": {
+    "min_depth": 5,
+    "min_allele_count": 2,
+    "max_alt_alleles": 2
+  },
+  "samples": [
+    {
+      "sample_id": "NA12878",
+      "population": "CEU",
+      "sex": "Female",
+      "description": "European ancestry"
+    },
+    {
+      "sample_id": "NA19238",
+      "population": "YRI",
+      "sex": "Male",
+      "description": "African ancestry"
+    }
+  ],
+  "regions": [
+    {
+      "name": "chr20_test",
+      "region": "chr20:1000000-1010000",
+      "description": "Small test region on chr20"
+    },
+    {
+      "name": "chr20_large",
+      "region": "chr20:1000000-2000000",
+      "description": "1Mb region on chr20"
+    }
+  ],
+  "cost_estimates": {
+    "s3_storage_gb_month": 0.023,
+    "lambda_invocation": 0.0000002,
+    "lambda_duration_gb_second": 0.0000166667,
+    "dynamodb_storage_gb_month": 1.25,
+    "cloudwatch_logs_gb_ingested": 0.50
+  }
+}
