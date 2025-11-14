@@ -16,87 +16,112 @@ Colab/Studio Lab → Studio Lab → Simple AWS → Full CloudFormation
 
 ## Tier Definitions
 
-### Tier 0: Quick Start Demo
-**Duration:** 10-30 minutes
+### Tier 0: Colab's Ceiling
+**Duration:** 60-90 minutes
 **Environment:** Google Colab OR SageMaker Studio Lab
 **Cost:** $0 (no AWS account needed)
-**Goal:** Immediate value demonstration
+**Data:** ~1-2GB
+**Goal:** Real research that bumps against Colab's limits
 
 **Characteristics:**
 - Single Jupyter notebook (`.ipynb`)
-- Runs in free cloud notebooks (Colab, Studio Lab)
-- Uses public datasets only
-- No AWS infrastructure required
-- Focuses on core research concepts
-- "Click and run" experience
-- Demonstrates value in under 30 minutes
+- Real research project, not a toy demo
+- Downloads 1-2GB of research data (~15-20 min)
+- Trains models for 60-75 minutes (near Colab timeout)
+- Uses ~10-12GB RAM (close to Colab's limit)
+- **Works on Colab but is painful:**
+  - Re-downloads data every session (no persistence)
+  - Training might timeout if disconnected
+  - Near memory limits
+  - "This works but is frustrating"
 
 **Example Content:**
-- Load public dataset
-- Run basic analysis
-- Create visualizations
-- Show research insights
-- Educational explanations
+- CMIP6 regional climate downscaling
+- Train deep learning model on genomic sequences
+- Process satellite imagery time series
+- Neural network training on medical images
+- NLP model fine-tuning on domain corpus
 
 **Technologies:**
-- Python, pandas, numpy, matplotlib, seaborn
-- scikit-learn, scipy, statsmodels
-- Public APIs (no authentication needed)
-- Pre-trained models from HuggingFace, torchvision
-- No cloud storage (ephemeral data only)
+- TensorFlow, PyTorch, scikit-learn
+- xarray, netCDF4 for gridded data
+- Spatial libraries (rasterio, geopandas)
+- Domain-specific ML frameworks
+- Single-model, single-dataset focus
+
+**Pain Points Users Experience:**
+- "Why am I downloading this data again?"
+- "I was at 80% training when it disconnected"
+- "Out of memory" warnings
+- "This would be easier with persistent storage"
 
 **Deliverables:**
 - Single `.ipynb` notebook
-- Minimal README with "Open in Colab" badge
-- Inline documentation and explanations
+- README explaining limitations
+- "Open in Colab" and "Open in Studio Lab" badges
+- Clear note about download time and session duration
 
 ---
 
-### Tier 1: SageMaker Studio Lab Advantages
-**Duration:** 1-2 hours
+### Tier 1: Studio Lab's Necessity
+**Duration:** 4-8 hours
 **Environment:** SageMaker Studio Lab ONLY
 **Cost:** $0 (free Studio Lab account, no AWS charges)
-**Goal:** Showcase Studio Lab advantages over Colab
+**Data:** ~8-12GB
+**Goal:** Real research that requires Studio Lab capabilities
 
 **Characteristics:**
-- Multiple notebooks or small project structure
-- Demonstrates Studio Lab advantages:
-  - **Better compute:** Longer sessions, better specs
-  - **Persistence:** Projects saved between sessions
-  - **Collaboration:** Better sharing and team features
-- Still no AWS infrastructure (S3, Lambda, etc.)
-- Slightly larger datasets (can be stored in Studio Lab)
-- More complex analysis workflows
-- Can use Studio Lab's persistent storage (15GB)
+- Multi-notebook research workflow
+- **Does NOT work on Colab Free:**
+  - 8-12GB dataset requires persistent storage
+  - 4-8 hour continuous compute exceeds Colab timeouts
+  - Model checkpointing essential for multi-hour training
+  - Complex environment needs to persist
+- Demonstrates what Studio Lab enables:
+  - **Download data once,** use forever (persistent storage)
+  - **Long training runs** complete successfully (12-hour sessions)
+  - **Resume from checkpoints** if needed
+  - **Environment persists** between sessions
+- Still no AWS infrastructure (no S3, Lambda, boto3)
+- Project structure with utilities and notebooks
 
 **Example Content:**
-- Multi-notebook workflows
-- Larger dataset analysis (stored in Studio Lab)
-- Longer-running computations
-- Save/load model checkpoints
-- Team collaboration examples
-- Persistent environment setup
+- Multi-model ensemble analysis (10+ models)
+- Large-scale dataset preprocessing (8-12GB)
+- Multi-hour deep learning training
+- Iterative model refinement with checkpointing
+- Ensemble uncertainty quantification
+- Reproducible research workflows
 
 **Technologies:**
-- Same as Tier 0, plus:
-- Persistent storage for datasets/models
-- Multi-file project structure
-- Virtual environment management
-- Git integration
-- Slightly heavier libraries (can persist installs)
+- TensorFlow, PyTorch with distributed training
+- Multi-GB dataset handling (xarray, Dask)
+- Advanced ML frameworks (transformers, detectron2)
+- Model checkpointing and versioning
+- Conda environment management
+- Git-based collaboration
+
+**Why Colab Fails:**
+- **Storage:** 10GB data lost every session
+- **Sessions:** 90-minute timeout kills long training
+- **Environment:** Must reinstall dependencies each time
+- **Checkpointing:** No persistence across disconnections
+- **Bottom line:** Research workflow is not viable
 
 **Deliverables:**
-- Multiple `.ipynb` notebooks (2-4)
-- Simple Python modules for shared code
-- README with Studio Lab setup instructions
-- Data download/preparation scripts
-- Saved model checkpoints
+- Multiple `.ipynb` notebooks (3-6)
+- Python package structure (`src/` directory)
+- Conda environment file
+- Data caching utilities
+- Model checkpoint management
+- Comprehensive README
+- "Studio Lab Only" badge
 
 **Restrictions:**
 - NO AWS SDK (boto3) calls
 - NO S3, Lambda, or other AWS services
-- Must work entirely within Studio Lab environment
-- No AWS account or credentials needed
+- Must work entirely within Studio Lab
+- No AWS account needed
 
 ---
 

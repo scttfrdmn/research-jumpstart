@@ -1,65 +1,86 @@
-# Climate Science on SageMaker Studio Lab
+# Multi-Model CMIP6 Ensemble Analysis
 
-**Duration:** 1-2 hours
+**Duration:** 4-6 hours
 **Platform:** SageMaker Studio Lab ONLY
 **Cost:** $0 (free Studio Lab account, no AWS charges)
+**Data:** ~10GB CMIP6 multi-model ensemble
 
-## Why SageMaker Studio Lab?
+## Research Goal
 
-This project showcases advantages of SageMaker Studio Lab over Google Colab:
+Perform uncertainty quantification on future climate projections using a 10-model CMIP6 ensemble. Train deep learning emulators for each model, generate probabilistic forecasts, and quantify inter-model variability for regional climate impacts.
 
-### ✨ Better Compute
-- **12 hours** continuous GPU sessions (vs 90 min on Colab free)
-- **4 hours** CPU sessions
-- No random disconnections
-- Better resource allocation
+**This project requires Studio Lab** - it won't work on Colab Free due to:
+- **10GB dataset** (Colab has no persistent storage)
+- **5-6 hour continuous training** (Colab disconnects after 90 min idle)
+- **Model checkpointing essential** (must resume from checkpoints)
+- **Environment persistence** (complex dependency stack)
 
-### 💾 Persistence
-- **15GB** persistent storage
-- Save datasets between sessions
-- Keep model checkpoints
-- Maintain virtual environments
+## What This Enables
 
-### 👥 Collaboration
-- Share projects with team members
-- Better notebook organization
-- Git integration
-- Project-level management
+Real research that isn't possible on Colab:
+
+### 🔬 Dataset Persistence
+- Download 10GB of CMIP6 data **once**
+- Access instantly in all future sessions
+- No 20-minute re-downloads every session
+- Cache intermediate processing results
+
+### ⚡ Long-Running Training
+- Train 10 model emulators (30-40 min each)
+- Total compute: 5-6 hours continuous
+- Automatic checkpointing every epoch
+- Resume from checkpoint if needed
+
+### 🧪 Reproducible Environments
+- Conda environment with 20+ packages
+- Persists between sessions
+- No reinstalling dependencies
+- Team members use identical setup
+
+### 📊 Iterative Analysis
+- Save ensemble analysis results
+- Build on previous runs
+- Refine models incrementally
+- Collaborative notebook development
 
 ## What You'll Build
 
-A comprehensive climate analysis workflow across multiple notebooks:
+Multi-notebook research workflow:
 
-1. **Data Preparation** (20 min)
-   - Download and cache multiple climate datasets
-   - Process and clean data
-   - Save to persistent storage
+1. **Data Acquisition** (45 min)
+   - Download 10 CMIP6 models (~10GB total)
+   - Cache in persistent storage
+   - Preprocess and align grids
+   - Generate training/validation splits
 
-2. **Multi-Variable Analysis** (30 min)
-   - Temperature, precipitation, sea level, CO2
-   - Correlation analysis
-   - Time series decomposition
+2. **Ensemble Emulator Training** (5-6 hours)
+   - Train CNN emulator for each of 10 models
+   - Transfer learning from base architecture
+   - Checkpoint every epoch
+   - Parallel training workflows
 
-3. **Advanced Modeling** (30 min)
-   - ARIMA forecasting
-   - Prophet time series models
-   - Model checkpointing and persistence
+3. **Uncertainty Quantification** (45 min)
+   - Generate ensemble probabilistic forecasts
+   - Calculate inter-model variance
+   - Regional impact analysis
+   - Confidence intervals for 2050-2100
 
-4. **Interactive Dashboard** (20 min)
-   - Plotly interactive visualizations
-   - Multi-dataset exploration
-   - Export publication-ready figures
+4. **Results Analysis** (30 min)
+   - Compare model performance
+   - Identify consensus projections
+   - Quantify disagreement regions
+   - Publication-ready figures
 
 ## Datasets
 
-All datasets stored in Studio Lab's persistent storage:
-
-- **NOAA Temperature:** 1880-2024 global land-ocean anomalies
-- **NOAA CO2:** Mauna Loa atmospheric CO2 (1958-2024)
-- **NOAA Sea Level:** Global mean sea level (1993-2024)
-- **GPCP Precipitation:** Global Precipitation Climatology Project
-
-**Total size:** ~50MB (easily fits in 15GB persistent storage)
+**CMIP6 Multi-Model Ensemble**
+- **Models:** 10 (CESM2, UKESM, IPSL, MPI, CNRM, ACCESS, GFDL, MIROC, NorESM, CanESM)
+- **Scenario:** SSP2-4.5 (moderate emissions)
+- **Variables:** Temperature, precipitation, humidity
+- **Period:** 1950-2100
+- **Resolution:** 1° × 1° (100km grid)
+- **Total size:** ~10GB netCDF files
+- **Storage:** Cached in Studio Lab's 15GB persistent storage
 
 ## Setup
 
@@ -145,27 +166,36 @@ tier-1/
     └── README.md                      # Model documentation
 ```
 
-## Advantages Over Colab
+## Why This Needs Studio Lab
 
-| Feature | Colab Free | Studio Lab |
-|---------|------------|------------|
-| GPU Time | 90 min | 12 hours |
-| CPU Time | 12 hours | 4 hours |
-| Storage | None (ephemeral) | 15GB persistent |
-| Disconnections | Frequent | Rare |
-| Environment | Lost on restart | Persists |
-| Organization | Single folder | Full project structure |
-| Git Integration | Basic | Full featured |
-| Collaboration | Limited | Better sharing |
+| Requirement | Colab Free | Studio Lab |
+|-------------|------------|------------|
+| **10GB dataset** | ❌ No storage | ✅ 15GB persistent |
+| **5-6 hour training** | ❌ 90 min limit | ✅ 12 hour sessions |
+| **Checkpointing** | ❌ Lost on disconnect | ✅ Persists forever |
+| **Environment setup** | ❌ Reinstall each time | ✅ Conda persists |
+| **Resume analysis** | ❌ Start from scratch | ✅ Pick up where you left off |
+| **Team sharing** | ❌ Copy/paste notebooks | ✅ Git integration |
+
+**Bottom line:** This research workflow is not viable on Colab Free.
 
 ## Time Estimate
 
-- **Setup:** 10-15 minutes (one-time)
-- **Data Preparation:** 20 minutes
-- **Analysis Workflow:** 60-90 minutes
-- **Total:** 1-2 hours
+**First Run:**
+- Setup: 15 minutes (one-time)
+- Data download: 45 minutes (one-time, ~10GB)
+- Environment setup: 10 minutes (one-time)
+- Model training: 5-6 hours
+- Analysis: 1-2 hours
+- **Total: 7-9 hours**
 
-Data persists between sessions, so you can pause and resume!
+**Subsequent Runs:**
+- Data: Instant (cached)
+- Environment: Instant (persisted)
+- Training: 5-6 hours (or resume from checkpoint)
+- **Total: 5-6 hours**
+
+You can pause and resume at any time!
 
 ## Next Steps
 
