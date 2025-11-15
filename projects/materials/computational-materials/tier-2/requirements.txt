@@ -1,0 +1,36 @@
+# AWS SDK and cloud utilities
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Materials science libraries
+pymatgen>=2023.10.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Data manipulation and analysis
+pandas>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Jupyter and interactive environment
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+ipywidgets>=8.1.0
+
+# Development and utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+tqdm>=4.66.0
+
+# Optional: For advanced crystallography
+# spglib>=2.1.0
+# ase>=3.22.0
+
+# Optional: For machine learning extensions
+# scikit-learn>=1.3.0
+# tensorflow>=2.14.0
+
+# Optional: For 3D visualization
+# py3Dmol>=2.0.0
