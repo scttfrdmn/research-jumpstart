@@ -6,15 +6,16 @@ This script downloads a small subset of SDSS images for testing.
 Total size: ~200-500MB (configurable)
 """
 
+import json
 import os
 import sys
 from pathlib import Path
-from urllib.request import urlretrieve
 from urllib.error import URLError
-import json
+from urllib.request import urlretrieve
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
 
 def download_file(url, destination, description):
     """Download a file with progress reporting."""
@@ -23,16 +24,17 @@ def download_file(url, destination, description):
     print(f"  Destination: {destination}")
 
     try:
+
         def progress_hook(block_num, block_size, total_size):
             """Show download progress."""
             downloaded = min(block_num * block_size, total_size)
             total_mb = total_size / (1024 * 1024)
             downloaded_mb = downloaded / (1024 * 1024)
             percent = (downloaded / total_size * 100) if total_size > 0 else 0
-            print(f"  Progress: {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent:.1f}%)", end='\r')
+            print(f"  Progress: {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent:.1f}%)", end="\r")
 
         urlretrieve(url, destination, reporthook=progress_hook)
-        print(f"  ✓ Downloaded successfully\n")
+        print("  ✓ Downloaded successfully\n")
         return True
     except URLError as e:
         print(f"  ✗ Failed to download: {e}\n")
@@ -53,43 +55,29 @@ def download_sdss_images():
     print("SDSS FITS Image Downloader")
     print("=" * 70)
     print(f"\nData directory: {data_dir}")
-    print(f"Total download size: ~300-500 MB")
-    print(f"Number of files: 10 images (one per SDSS band/field combo)")
+    print("Total download size: ~300-500 MB")
+    print("Number of files: 10 images (one per SDSS band/field combo)")
 
     # SDSS sample images from various surveys
     # These are real SDSS images from the DR18 archive
-    images_to_download = [
-        # Format: (url, filename, description)
-        ("https://svn.sdss.org/public/eboss/eboss_target_selection/images/frame-g-003899-5-0067.fits.bz2",
-         "sdss_frame_g_field1.fits.bz2",
-         "SDSS g-band image (field 1)"),
-
-        ("https://svn.sdss.org/public/eboss/eboss_target_selection/images/frame-r-003899-5-0067.fits.bz2",
-         "sdss_frame_r_field1.fits.bz2",
-         "SDSS r-band image (field 1)"),
-
-        ("https://svn.sdss.org/public/eboss/eboss_target_selection/images/frame-i-003899-5-0067.fits.bz2",
-         "sdss_frame_i_field1.fits.bz2",
-         "SDSS i-band image (field 1)"),
-    ]
 
     print("\nNote: If SDSS SVN is unavailable, using synthetic test data instead.")
     print("Creating synthetic FITS test images...\n")
 
     # Create synthetic FITS files if downloads fail
     try:
-        from astropy.io import fits
         import numpy as np
+        from astropy.io import fits
     except ImportError:
         print("Installing required packages...")
         os.system("pip install astropy numpy astropy -q")
-        from astropy.io import fits
         import numpy as np
+        from astropy.io import fits
 
     # Create synthetic test images
     created_files = []
     for i in range(3):
-        band = ['g', 'r', 'i'][i]
+        band = ["g", "r", "i"][i]
         filename = f"sdss_test_frame_{band}.fits"
         filepath = data_dir / filename
 
@@ -103,24 +91,24 @@ def download_sdss_images():
             x, y = np.random.randint(50, 462, 2)
             r = np.random.randint(5, 20)
             flux = np.random.randint(500, 5000)
-            y_arr, x_arr = np.ogrid[-r:r+1, -r:r+1]
-            mask = x_arr*x_arr + y_arr*y_arr <= r*r
-            image_data[y-r:y+r+1, x-r:x+r+1][mask] += flux / (np.pi * r*r)
+            y_arr, x_arr = np.ogrid[-r : r + 1, -r : r + 1]
+            mask = x_arr * x_arr + y_arr * y_arr <= r * r
+            image_data[y - r : y + r + 1, x - r : x + r + 1][mask] += flux / (np.pi * r * r)
 
         # Create FITS HDU
         hdu = fits.PrimaryHDU(data=image_data)
 
         # Add header information
-        hdu.header['FILTER'] = (band, 'SDSS filter')
-        hdu.header['TELESCOP'] = 'SDSS'
-        hdu.header['INSTRUME'] = 'SDSS Imager'
-        hdu.header['NAXIS1'] = 512
-        hdu.header['NAXIS2'] = 512
-        hdu.header['PIXSCAL'] = (0.396, 'arcsec/pixel')
-        hdu.header['RA'] = (185.0 + i*0.5, 'degrees')
-        hdu.header['DEC'] = (15.5 + i*0.5, 'degrees')
-        hdu.header['EXPTIME'] = (53.9, 'seconds')
-        hdu.header['AIRMASS'] = (1.1 + i*0.05, 'airmass')
+        hdu.header["FILTER"] = (band, "SDSS filter")
+        hdu.header["TELESCOP"] = "SDSS"
+        hdu.header["INSTRUME"] = "SDSS Imager"
+        hdu.header["NAXIS1"] = 512
+        hdu.header["NAXIS2"] = 512
+        hdu.header["PIXSCAL"] = (0.396, "arcsec/pixel")
+        hdu.header["RA"] = (185.0 + i * 0.5, "degrees")
+        hdu.header["DEC"] = (15.5 + i * 0.5, "degrees")
+        hdu.header["EXPTIME"] = (53.9, "seconds")
+        hdu.header["AIRMASS"] = (1.1 + i * 0.05, "airmass")
 
         # Write FITS file
         hdu.writeto(filepath, overwrite=True)
@@ -142,30 +130,18 @@ def download_sdss_images():
     # Create a metadata file
     metadata = {
         "images": [
-            {
-                "filename": "sdss_test_frame_g.fits",
-                "band": "g",
-                "description": "g-band test image"
-            },
-            {
-                "filename": "sdss_test_frame_r.fits",
-                "band": "r",
-                "description": "r-band test image"
-            },
-            {
-                "filename": "sdss_test_frame_i.fits",
-                "band": "i",
-                "description": "i-band test image"
-            }
+            {"filename": "sdss_test_frame_g.fits", "band": "g", "description": "g-band test image"},
+            {"filename": "sdss_test_frame_r.fits", "band": "r", "description": "r-band test image"},
+            {"filename": "sdss_test_frame_i.fits", "band": "i", "description": "i-band test image"},
         ],
         "total_files": 3,
         "total_size_mb": total_size,
         "source": "Synthetic test data for Tier 2 project",
-        "note": "Use real SDSS data from https://www.sdss.org/ for production"
+        "note": "Use real SDSS data from https://www.sdss.org/ for production",
     }
 
     metadata_path = data_dir / "metadata.json"
-    with open(metadata_path, 'w') as f:
+    with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2)
     print(f"Metadata saved: {metadata_path}\n")
 
@@ -175,9 +151,9 @@ def download_sdss_images():
 def main():
     """Main function."""
     try:
-        num_files = download_sdss_images()
+        download_sdss_images()
         print("✓ Ready to upload to S3!")
-        print(f"  Run: python scripts/upload_to_s3.py")
+        print("  Run: python scripts/upload_to_s3.py")
         return 0
     except KeyboardInterrupt:
         print("\n\nDownload cancelled by user.")

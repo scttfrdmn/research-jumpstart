@@ -13,11 +13,11 @@ Usage:
 """
 
 import json
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import timedelta
+
 import networkx as nx
-from collections import defaultdict
+import numpy as np
+import pandas as pd
 
 
 def load_twitter_json(filepath, extract_fields=None):
@@ -37,7 +37,7 @@ def load_twitter_json(filepath, extract_fields=None):
         Parsed Twitter data
     """
     # Try to detect format
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, encoding="utf-8") as f:
         first_line = f.readline()
 
     # Check if JSONL (one JSON object per line)
@@ -50,19 +50,19 @@ def load_twitter_json(filepath, extract_fields=None):
     # Load data
     if is_jsonl:
         tweets = []
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             for line in f:
                 try:
                     tweets.append(json.loads(line))
                 except:
                     continue
     else:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 tweets = data
-            elif isinstance(data, dict) and 'data' in data:
-                tweets = data['data']
+            elif isinstance(data, dict) and "data" in data:
+                tweets = data["data"]
             else:
                 tweets = [data]
 
@@ -75,14 +75,19 @@ def load_twitter_json(filepath, extract_fields=None):
         df = df[available_fields]
 
     # Parse timestamp if present
-    if 'created_at' in df.columns:
-        df['created_at'] = pd.to_datetime(df['created_at'])
+    if "created_at" in df.columns:
+        df["created_at"] = pd.to_datetime(df["created_at"])
 
     return df
 
 
-def load_csv_posts(filepath, text_column='text', timestamp_column='timestamp',
-                  user_column='user_id', parse_dates=True):
+def load_csv_posts(
+    filepath,
+    text_column="text",
+    timestamp_column="timestamp",
+    user_column="user_id",
+    parse_dates=True,
+):
     """
     Load social media posts from CSV.
 
@@ -108,26 +113,32 @@ def load_csv_posts(filepath, text_column='text', timestamp_column='timestamp',
 
     # Rename columns if needed
     column_mapping = {}
-    if text_column != 'text' and text_column in df.columns:
-        column_mapping[text_column] = 'text'
-    if timestamp_column != 'timestamp' and timestamp_column in df.columns:
-        column_mapping[timestamp_column] = 'timestamp'
-    if user_column != 'user_id' and user_column in df.columns:
-        column_mapping[user_column] = 'user_id'
+    if text_column != "text" and text_column in df.columns:
+        column_mapping[text_column] = "text"
+    if timestamp_column != "timestamp" and timestamp_column in df.columns:
+        column_mapping[timestamp_column] = "timestamp"
+    if user_column != "user_id" and user_column in df.columns:
+        column_mapping[user_column] = "user_id"
 
     if column_mapping:
         df = df.rename(columns=column_mapping)
 
     # Parse dates
-    if parse_dates and 'timestamp' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+    if parse_dates and "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     return df
 
 
-def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
-                            end_date='2024-12-31', sentiment_distribution=None,
-                            include_network=True, seed=42):
+def generate_synthetic_posts(
+    n_users=100,
+    n_posts=1000,
+    start_date="2024-01-01",
+    end_date="2024-12-31",
+    sentiment_distribution=None,
+    include_network=True,
+    seed=42,
+):
     """
     Generate synthetic social media posts and network.
 
@@ -157,19 +168,24 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
 
     # Default sentiment distribution
     if sentiment_distribution is None:
-        sentiment_distribution = {'positive': 0.4, 'negative': 0.3, 'neutral': 0.3}
+        sentiment_distribution = {"positive": 0.4, "negative": 0.3, "neutral": 0.3}
 
     # Generate users
-    user_ids = [f'user_{i:04d}' for i in range(n_users)]
+    user_ids = [f"user_{i:04d}" for i in range(n_users)]
 
     # Generate timestamps
     start = pd.to_datetime(start_date)
     end = pd.to_datetime(end_date)
     date_range = (end - start).days
-    timestamps = [start + timedelta(days=np.random.randint(0, date_range),
-                                   hours=np.random.randint(0, 24),
-                                   minutes=np.random.randint(0, 60))
-                 for _ in range(n_posts)]
+    timestamps = [
+        start
+        + timedelta(
+            days=np.random.randint(0, date_range),
+            hours=np.random.randint(0, 24),
+            minutes=np.random.randint(0, 60),
+        )
+        for _ in range(n_posts)
+    ]
 
     # Sample templates for different sentiments
     positive_templates = [
@@ -177,7 +193,7 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
         "Love {topic} so much! Best thing ever! 😊",
         "{topic} is absolutely fantastic! Thank you!",
         "Can't get enough of {topic}! Simply wonderful!",
-        "Thrilled with {topic}! Exceeded all expectations!"
+        "Thrilled with {topic}! Exceeded all expectations!",
     ]
 
     negative_templates = [
@@ -185,7 +201,7 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
         "Terrible experience with {topic}. Would not recommend.",
         "{topic} is a complete waste. Very unhappy. 😞",
         "Frustrated with {topic}. Expected much better.",
-        "Avoid {topic} at all costs. Worst decision ever."
+        "Avoid {topic} at all costs. Worst decision ever.",
     ]
 
     neutral_templates = [
@@ -193,25 +209,34 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
         "{topic} is okay, I guess. Could be better.",
         "Meh. {topic} didn't really impress me one way or another.",
         "{topic} - it's fine. Not great, not terrible.",
-        "Mixed feelings about {topic}. Has pros and cons."
+        "Mixed feelings about {topic}. Has pros and cons.",
     ]
 
-    topics = ['product', 'service', 'app', 'restaurant', 'movie', 'book',
-             'event', 'technology', 'update', 'feature']
+    topics = [
+        "product",
+        "service",
+        "app",
+        "restaurant",
+        "movie",
+        "book",
+        "event",
+        "technology",
+        "update",
+        "feature",
+    ]
 
     # Generate posts
     posts = []
     for i in range(n_posts):
         # Select sentiment based on distribution
         sentiment = np.random.choice(
-            list(sentiment_distribution.keys()),
-            p=list(sentiment_distribution.values())
+            list(sentiment_distribution.keys()), p=list(sentiment_distribution.values())
         )
 
         # Select template
-        if sentiment == 'positive':
+        if sentiment == "positive":
             template = np.random.choice(positive_templates)
-        elif sentiment == 'negative':
+        elif sentiment == "negative":
             template = np.random.choice(negative_templates)
         else:
             template = np.random.choice(neutral_templates)
@@ -222,22 +247,22 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
 
         # Create post
         post = {
-            'post_id': f'post_{i:05d}',
-            'user_id': np.random.choice(user_ids),
-            'text': text,
-            'timestamp': timestamps[i],
-            'likes': np.random.poisson(10),
-            'retweets': np.random.poisson(3),
-            'sentiment': sentiment,
-            'topic': topic
+            "post_id": f"post_{i:05d}",
+            "user_id": np.random.choice(user_ids),
+            "text": text,
+            "timestamp": timestamps[i],
+            "likes": np.random.poisson(10),
+            "retweets": np.random.poisson(3),
+            "sentiment": sentiment,
+            "topic": topic,
         }
 
         posts.append(post)
 
     df = pd.DataFrame(posts)
-    df = df.sort_values('timestamp').reset_index(drop=True)
+    df = df.sort_values("timestamp").reset_index(drop=True)
 
-    result = {'posts': df}
+    result = {"posts": df}
 
     # Generate social network
     if include_network:
@@ -246,13 +271,14 @@ def generate_synthetic_posts(n_users=100, n_posts=1000, start_date='2024-01-01',
         mapping = {i: user_ids[i] for i in range(n_users)}
         G = nx.relabel_nodes(G, mapping)
 
-        result['network'] = G
+        result["network"] = G
 
     return result
 
 
-def build_interaction_network(posts_df, interaction_type='mention',
-                              user_column='user_id', text_column='text'):
+def build_interaction_network(
+    posts_df, interaction_type="mention", user_column="user_id", text_column="text"
+):
     """
     Build social network from posts based on interactions.
 
@@ -285,31 +311,31 @@ def build_interaction_network(posts_df, interaction_type='mention',
         user = row[user_column]
         text = row[text_column]
 
-        if interaction_type == 'mention':
+        if interaction_type == "mention":
             # Extract @mentions
-            mentions = re.findall(r'@(\w+)', text)
+            mentions = re.findall(r"@(\w+)", text)
             for mentioned in mentions:
                 # Add edge from user to mentioned
                 if G.has_edge(user, mentioned):
-                    G[user][mentioned]['weight'] += 1
+                    G[user][mentioned]["weight"] += 1
                 else:
                     G.add_edge(user, mentioned, weight=1)
 
-        elif interaction_type == 'reply':
+        elif interaction_type == "reply":
             # Requires 'reply_to_user' column
-            if 'reply_to_user' in row and pd.notna(row['reply_to_user']):
-                reply_to = row['reply_to_user']
+            if "reply_to_user" in row and pd.notna(row["reply_to_user"]):
+                reply_to = row["reply_to_user"]
                 if G.has_edge(user, reply_to):
-                    G[user][reply_to]['weight'] += 1
+                    G[user][reply_to]["weight"] += 1
                 else:
                     G.add_edge(user, reply_to, weight=1)
 
-        elif interaction_type == 'retweet':
+        elif interaction_type == "retweet":
             # Requires 'retweeted_user' column
-            if 'retweeted_user' in row and pd.notna(row['retweeted_user']):
-                retweeted = row['retweeted_user']
+            if "retweeted_user" in row and pd.notna(row["retweeted_user"]):
+                retweeted = row["retweeted_user"]
                 if G.has_edge(user, retweeted):
-                    G[user][retweeted]['weight'] += 1
+                    G[user][retweeted]["weight"] += 1
                 else:
                     G.add_edge(user, retweeted, weight=1)
 
@@ -319,8 +345,7 @@ def build_interaction_network(posts_df, interaction_type='mention',
     return G
 
 
-def aggregate_by_time(posts_df, time_column='timestamp', freq='1D',
-                     agg_columns=None):
+def aggregate_by_time(posts_df, time_column="timestamp", freq="1D", agg_columns=None):
     """
     Aggregate posts by time period.
 
@@ -353,7 +378,7 @@ def aggregate_by_time(posts_df, time_column='timestamp', freq='1D',
 
     # Default aggregation
     if agg_columns is None:
-        agg_columns = {'post_id': 'count'}  # Count posts
+        agg_columns = {"post_id": "count"}  # Count posts
 
     # Aggregate
     aggregated = posts_df.resample(freq).agg(agg_columns).reset_index()
@@ -361,8 +386,9 @@ def aggregate_by_time(posts_df, time_column='timestamp', freq='1D',
     return aggregated
 
 
-def filter_by_keywords(posts_df, keywords, text_column='text',
-                      case_sensitive=False, match_all=False):
+def filter_by_keywords(
+    posts_df, keywords, text_column="text", case_sensitive=False, match_all=False
+):
     """
     Filter posts by keywords.
 
@@ -405,8 +431,9 @@ def filter_by_keywords(posts_df, keywords, text_column='text',
     return posts_df[mask]
 
 
-def split_train_test(posts_df, test_size=0.2, time_based=True,
-                    time_column='timestamp', random_state=42):
+def split_train_test(
+    posts_df, test_size=0.2, time_based=True, time_column="timestamp", random_state=42
+):
     """
     Split data into train and test sets.
 
@@ -438,54 +465,44 @@ def split_train_test(posts_df, test_size=0.2, time_based=True,
     else:
         # Random split
         from sklearn.model_selection import train_test_split
-        train, test = train_test_split(
-            posts_df,
-            test_size=test_size,
-            random_state=random_state
-        )
+
+        train, test = train_test_split(posts_df, test_size=test_size, random_state=random_state)
 
     return train, test
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Social Media Data Loaders")
     print("=" * 60)
 
     # Generate synthetic data
     print("\n1. Generating synthetic social media data...")
-    data = generate_synthetic_posts(
-        n_users=50,
-        n_posts=200,
-        include_network=True,
-        seed=42
-    )
+    data = generate_synthetic_posts(n_users=50, n_posts=200, include_network=True, seed=42)
 
-    posts_df = data['posts']
-    network = data['network']
+    posts_df = data["posts"]
+    network = data["network"]
 
     print(f"   Posts generated: {len(posts_df)}")
     print(f"   Users: {posts_df['user_id'].nunique()}")
     print(f"   Date range: {posts_df['timestamp'].min()} to {posts_df['timestamp'].max()}")
 
     # Network statistics
-    print(f"\n2. Social network statistics...")
+    print("\n2. Social network statistics...")
     print(f"   Nodes: {network.number_of_nodes()}")
     print(f"   Edges: {network.number_of_edges()}")
     print(f"   Avg degree: {sum(dict(network.degree()).values()) / network.number_of_nodes():.2f}")
 
     # Filter by keywords
     print("\n3. Filtering by keywords...")
-    filtered = filter_by_keywords(posts_df, ['amazing', 'fantastic'], match_all=False)
+    filtered = filter_by_keywords(posts_df, ["amazing", "fantastic"], match_all=False)
     print(f"   Original posts: {len(posts_df)}")
     print(f"   Filtered posts: {len(filtered)}")
 
     # Time aggregation
     print("\n4. Aggregating by time...")
     daily_stats = aggregate_by_time(
-        posts_df,
-        freq='1D',
-        agg_columns={'post_id': 'count', 'likes': 'sum'}
+        posts_df, freq="1D", agg_columns={"post_id": "count", "likes": "sum"}
     )
     print(f"   Days with posts: {len(daily_stats)}")
     print(f"   Avg posts per day: {daily_stats['post_id'].mean():.1f}")

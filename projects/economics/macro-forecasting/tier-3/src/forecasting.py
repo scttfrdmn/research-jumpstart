@@ -4,28 +4,24 @@ Forecasting module for macroeconomic time series.
 Implements ARIMA, VAR, LSTM, Prophet, and ensemble methods.
 """
 
-from typing import List, Optional, Dict, Tuple, Union
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import logging
+from typing import Optional
+
+# AWS
+import numpy as np
+import pandas as pd
+from pmdarima import auto_arima
+from prophet import Prophet
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+# Machine learning
+from sklearn.preprocessing import StandardScaler
 
 # Statistical models
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.vector_ar.var_model import VAR
-from pmdarima import auto_arima
-from prophet import Prophet
-
-# Machine learning
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-import tensorflow as tf
 from tensorflow import keras
-
-# AWS
-import boto3
-import awswrangler as wr
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,10 +43,7 @@ class GDPForecaster:
         self.scaler = StandardScaler()
 
     def fit_arima(
-        self,
-        series: pd.Series,
-        order: Optional[Tuple[int, int, int]] = None,
-        auto: bool = True
+        self, series: pd.Series, order: Optional[tuple[int, int, int]] = None, auto: bool = True
     ) -> ARIMA:
         """
         Fit ARIMA model.
@@ -69,13 +62,15 @@ class GDPForecaster:
             # Use auto_arima to find best parameters
             model = auto_arima(
                 series,
-                start_p=0, start_q=0,
-                max_p=5, max_q=5,
+                start_p=0,
+                start_q=0,
+                max_p=5,
+                max_q=5,
                 seasonal=False,
                 trace=True,
-                error_action='ignore',
+                error_action="ignore",
                 suppress_warnings=True,
-                stepwise=True
+                stepwise=True,
             )
             logger.info(f"Best ARIMA order: {model.order}")
         else:
@@ -83,15 +78,15 @@ class GDPForecaster:
             model = ARIMA(series, order=order)
             model = model.fit()
 
-        self.models['arima'] = model
+        self.models["arima"] = model
         return model
 
     def fit_sarimax(
         self,
         series: pd.Series,
         exog: Optional[pd.DataFrame] = None,
-        order: Tuple[int, int, int] = (1, 1, 1),
-        seasonal_order: Tuple[int, int, int, int] = (1, 1, 1, 4)
+        order: tuple[int, int, int] = (1, 1, 1),
+        seasonal_order: tuple[int, int, int, int] = (1, 1, 1, 4),
     ) -> SARIMAX:
         """
         Fit SARIMAX model with exogenous variables.
@@ -113,18 +108,14 @@ class GDPForecaster:
             order=order,
             seasonal_order=seasonal_order,
             enforce_stationarity=False,
-            enforce_invertibility=False
+            enforce_invertibility=False,
         )
         fitted_model = model.fit(disp=False)
 
-        self.models['sarimax'] = fitted_model
+        self.models["sarimax"] = fitted_model
         return fitted_model
 
-    def fit_var(
-        self,
-        data: pd.DataFrame,
-        maxlags: int = 15
-    ) -> VAR:
+    def fit_var(self, data: pd.DataFrame, maxlags: int = 15) -> VAR:
         """
         Fit Vector Autoregression model.
 
@@ -138,18 +129,14 @@ class GDPForecaster:
         logger.info("Fitting VAR model")
 
         model = VAR(data)
-        fitted_model = model.fit(maxlags=maxlags, ic='aic')
+        fitted_model = model.fit(maxlags=maxlags, ic="aic")
 
         logger.info(f"VAR lag order: {fitted_model.k_ar}")
-        self.models['var'] = fitted_model
+        self.models["var"] = fitted_model
         return fitted_model
 
     def fit_lstm(
-        self,
-        series: pd.Series,
-        lookback: int = 12,
-        epochs: int = 50,
-        batch_size: int = 32
+        self, series: pd.Series, lookback: int = 12, epochs: int = 50, batch_size: int = 32
     ) -> keras.Model:
         """
         Fit LSTM neural network.
@@ -169,36 +156,31 @@ class GDPForecaster:
         X, y = self._prepare_lstm_data(series, lookback)
 
         # Build model
-        model = keras.Sequential([
-            keras.layers.LSTM(50, activation='relu', return_sequences=True,
-                            input_shape=(lookback, 1)),
-            keras.layers.Dropout(0.2),
-            keras.layers.LSTM(50, activation='relu'),
-            keras.layers.Dropout(0.2),
-            keras.layers.Dense(25, activation='relu'),
-            keras.layers.Dense(1)
-        ])
+        model = keras.Sequential(
+            [
+                keras.layers.LSTM(
+                    50, activation="relu", return_sequences=True, input_shape=(lookback, 1)
+                ),
+                keras.layers.Dropout(0.2),
+                keras.layers.LSTM(50, activation="relu"),
+                keras.layers.Dropout(0.2),
+                keras.layers.Dense(25, activation="relu"),
+                keras.layers.Dense(1),
+            ]
+        )
 
-        model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+        model.compile(optimizer="adam", loss="mse", metrics=["mae"])
 
         # Train
         history = model.fit(
-            X, y,
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_split=0.2,
-            verbose=0
+            X, y, epochs=epochs, batch_size=batch_size, validation_split=0.2, verbose=0
         )
 
         logger.info(f"LSTM training loss: {history.history['loss'][-1]:.4f}")
-        self.models['lstm'] = model
+        self.models["lstm"] = model
         return model
 
-    def _prepare_lstm_data(
-        self,
-        series: pd.Series,
-        lookback: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _prepare_lstm_data(self, series: pd.Series, lookback: int) -> tuple[np.ndarray, np.ndarray]:
         """Prepare data for LSTM."""
         # Scale data
         values = series.values.reshape(-1, 1)
@@ -207,7 +189,7 @@ class GDPForecaster:
         # Create sequences
         X, y = [], []
         for i in range(lookback, len(scaled)):
-            X.append(scaled[i-lookback:i, 0])
+            X.append(scaled[i - lookback : i, 0])
             y.append(scaled[i, 0])
 
         X = np.array(X)
@@ -219,10 +201,7 @@ class GDPForecaster:
         return X, y
 
     def fit_prophet(
-        self,
-        series: pd.Series,
-        yearly_seasonality: bool = True,
-        weekly_seasonality: bool = False
+        self, series: pd.Series, yearly_seasonality: bool = True, weekly_seasonality: bool = False
     ) -> Prophet:
         """
         Fit Facebook Prophet model.
@@ -238,27 +217,21 @@ class GDPForecaster:
         logger.info("Fitting Prophet model")
 
         # Prepare data for Prophet
-        df = pd.DataFrame({
-            'ds': series.index,
-            'y': series.values
-        })
+        df = pd.DataFrame({"ds": series.index, "y": series.values})
 
         # Create and fit model
         model = Prophet(
             yearly_seasonality=yearly_seasonality,
             weekly_seasonality=weekly_seasonality,
-            changepoint_prior_scale=0.05
+            changepoint_prior_scale=0.05,
         )
         model.fit(df)
 
-        self.models['prophet'] = model
+        self.models["prophet"] = model
         return model
 
     def forecast(
-        self,
-        model_name: str,
-        steps: int,
-        exog: Optional[pd.DataFrame] = None
+        self, model_name: str, steps: int, exog: Optional[pd.DataFrame] = None
     ) -> pd.Series:
         """
         Generate forecast from a fitted model.
@@ -276,19 +249,18 @@ class GDPForecaster:
 
         model = self.models[model_name]
 
-        if model_name in ['arima', 'sarimax']:
+        if model_name in ["arima", "sarimax"]:
             forecast = model.forecast(steps=steps, exog=exog)
-        elif model_name == 'var':
-            forecast = model.forecast(model.endog[-model.k_ar:], steps=steps)
+        elif model_name == "var":
+            forecast = model.forecast(model.endog[-model.k_ar :], steps=steps)
             forecast = pd.DataFrame(forecast, columns=model.names)
-        elif model_name == 'lstm':
+        elif model_name == "lstm":
             forecast = self._forecast_lstm(model, steps)
-        elif model_name == 'prophet':
-            future = model.make_future_dataframe(periods=steps, freq='Q')
+        elif model_name == "prophet":
+            future = model.make_future_dataframe(periods=steps, freq="Q")
             forecast = model.predict(future)
             forecast = pd.Series(
-                forecast['yhat'].values[-steps:],
-                index=future['ds'].values[-steps:]
+                forecast["yhat"].values[-steps:], index=future["ds"].values[-steps:]
             )
 
         self.forecasts[model_name] = forecast
@@ -299,9 +271,7 @@ class GDPForecaster:
     def _forecast_lstm(self, model: keras.Model, steps: int) -> pd.Series:
         """Generate forecast from LSTM model."""
         # Use last available data as starting point
-        last_sequence = self.scaler.transform(
-            self.data.iloc[-12:].values.reshape(-1, 1)
-        )
+        last_sequence = self.scaler.transform(self.data.iloc[-12:].values.reshape(-1, 1))
 
         predictions = []
         current_sequence = last_sequence.copy()
@@ -319,16 +289,12 @@ class GDPForecaster:
             current_sequence[-1] = pred
 
         # Inverse transform
-        predictions = self.scaler.inverse_transform(
-            np.array(predictions).reshape(-1, 1)
-        )
+        predictions = self.scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
 
         return pd.Series(predictions.flatten())
 
     def ensemble_forecast(
-        self,
-        steps: int,
-        weights: Optional[Dict[str, float]] = None
+        self, steps: int, weights: Optional[dict[str, float]] = None
     ) -> pd.Series:
         """
         Create ensemble forecast from multiple models.
@@ -360,11 +326,7 @@ class GDPForecaster:
 
         return ensemble
 
-    def evaluate(
-        self,
-        actual: pd.Series,
-        forecast: pd.Series
-    ) -> Dict[str, float]:
+    def evaluate(self, actual: pd.Series, forecast: pd.Series) -> dict[str, float]:
         """
         Evaluate forecast accuracy.
 
@@ -381,13 +343,15 @@ class GDPForecaster:
         forecast_aligned = forecast.loc[common_idx]
 
         metrics = {
-            'rmse': np.sqrt(mean_squared_error(actual_aligned, forecast_aligned)),
-            'mae': mean_absolute_error(actual_aligned, forecast_aligned),
-            'mape': np.mean(np.abs((actual_aligned - forecast_aligned) / actual_aligned)) * 100
+            "rmse": np.sqrt(mean_squared_error(actual_aligned, forecast_aligned)),
+            "mae": mean_absolute_error(actual_aligned, forecast_aligned),
+            "mape": np.mean(np.abs((actual_aligned - forecast_aligned) / actual_aligned)) * 100,
         }
 
-        logger.info(f"Forecast metrics: RMSE={metrics['rmse']:.2f}, "
-                   f"MAE={metrics['mae']:.2f}, MAPE={metrics['mape']:.2f}%")
+        logger.info(
+            f"Forecast metrics: RMSE={metrics['rmse']:.2f}, "
+            f"MAE={metrics['mae']:.2f}, MAPE={metrics['mape']:.2f}%"
+        )
 
         return metrics
 
@@ -404,7 +368,7 @@ class RecessionPredictor:
         yield_curve: pd.Series,
         unemployment: pd.Series,
         stock_returns: pd.Series,
-        credit_spread: pd.Series
+        credit_spread: pd.Series,
     ) -> pd.DataFrame:
         """
         Prepare features for recession prediction.
@@ -418,12 +382,14 @@ class RecessionPredictor:
         Returns:
             Feature DataFrame
         """
-        features = pd.DataFrame({
-            'yield_curve': yield_curve,
-            'unemployment_change': unemployment.diff(),
-            'stock_returns': stock_returns,
-            'credit_spread': credit_spread
-        })
+        features = pd.DataFrame(
+            {
+                "yield_curve": yield_curve,
+                "unemployment_change": unemployment.diff(),
+                "stock_returns": stock_returns,
+                "credit_spread": credit_spread,
+            }
+        )
 
         return features.dropna()
 
@@ -463,30 +429,28 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Forecast GDP')
-    parser.add_argument('--series-id', type=str, default='GDP',
-                       help='FRED series ID')
-    parser.add_argument('--steps', type=int, default=8,
-                       help='Forecast horizon (quarters)')
-    parser.add_argument('--models', type=str, nargs='+',
-                       default=['arima', 'prophet'],
-                       help='Models to use')
+    parser = argparse.ArgumentParser(description="Forecast GDP")
+    parser.add_argument("--series-id", type=str, default="GDP", help="FRED series ID")
+    parser.add_argument("--steps", type=int, default=8, help="Forecast horizon (quarters)")
+    parser.add_argument(
+        "--models", type=str, nargs="+", default=["arima", "prophet"], help="Models to use"
+    )
     args = parser.parse_args()
 
     # Load data (would need FRED API key)
     from .data_ingestion import FREDDataLoader
 
     loader = FREDDataLoader()
-    series = loader.get_series(args.series_id, start_date='2000-01-01')
+    series = loader.get_series(args.series_id, start_date="2000-01-01")
 
     # Initialize forecaster
     forecaster = GDPForecaster(series)
 
     # Fit models
     for model_name in args.models:
-        if model_name == 'arima':
+        if model_name == "arima":
             forecaster.fit_arima(series)
-        elif model_name == 'prophet':
+        elif model_name == "prophet":
             forecaster.fit_prophet(series)
         # Add other models as needed
 
@@ -503,5 +467,5 @@ def main():
         print(ensemble)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

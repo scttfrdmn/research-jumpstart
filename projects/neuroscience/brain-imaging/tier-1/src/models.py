@@ -2,13 +2,13 @@
 Deep learning models for brain state classification.
 """
 
-import numpy as np
 from pathlib import Path
 
+import numpy as np
 
 # Define base directory
 BASE_DIR = Path(__file__).parent.parent
-MODELS_DIR = BASE_DIR / 'saved_models'
+MODELS_DIR = BASE_DIR / "saved_models"
 MODELS_DIR.mkdir(exist_ok=True)
 
 
@@ -34,28 +34,26 @@ def build_connectivity_classifier(n_rois, n_classes):
     except ImportError:
         raise ImportError("TensorFlow not installed. Run: pip install tensorflow")
 
-    print(f"Building connectivity classifier...")
+    print("Building connectivity classifier...")
     print(f"  Input: {n_rois}x{n_rois} connectivity matrix")
     print(f"  Output: {n_classes} classes")
 
     # Input is flattened upper triangle of connectivity matrix
     n_features = n_rois * (n_rois - 1) // 2
 
-    model = keras.Sequential([
-        layers.Input(shape=(n_features,)),
-        layers.Dense(256, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(128, activation='relu'),
-        layers.Dropout(0.3),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(n_classes, activation='softmax')
-    ])
-
-    model.compile(
-        optimizer='adam',
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
+    model = keras.Sequential(
+        [
+            layers.Input(shape=(n_features,)),
+            layers.Dense(256, activation="relu"),
+            layers.Dropout(0.5),
+            layers.Dense(128, activation="relu"),
+            layers.Dropout(0.3),
+            layers.Dense(64, activation="relu"),
+            layers.Dense(n_classes, activation="softmax"),
+        ]
     )
+
+    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
     print(f"✓ Model built with {model.count_params():,} parameters")
     return model
@@ -83,40 +81,34 @@ def build_3d_cnn(input_shape, n_classes):
     except ImportError:
         raise ImportError("TensorFlow not installed. Run: pip install tensorflow")
 
-    print(f"Building 3D CNN...")
+    print("Building 3D CNN...")
     print(f"  Input shape: {input_shape}")
     print(f"  Output classes: {n_classes}")
 
-    model = keras.Sequential([
-        layers.Input(shape=input_shape),
-
-        # First conv block
-        layers.Conv3D(32, kernel_size=3, activation='relu', padding='same'),
-        layers.MaxPooling3D(pool_size=2),
-        layers.BatchNormalization(),
-
-        # Second conv block
-        layers.Conv3D(64, kernel_size=3, activation='relu', padding='same'),
-        layers.MaxPooling3D(pool_size=2),
-        layers.BatchNormalization(),
-
-        # Third conv block
-        layers.Conv3D(128, kernel_size=3, activation='relu', padding='same'),
-        layers.MaxPooling3D(pool_size=2),
-        layers.BatchNormalization(),
-
-        # Dense layers
-        layers.Flatten(),
-        layers.Dense(256, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(n_classes, activation='softmax')
-    ])
-
-    model.compile(
-        optimizer='adam',
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
+    model = keras.Sequential(
+        [
+            layers.Input(shape=input_shape),
+            # First conv block
+            layers.Conv3D(32, kernel_size=3, activation="relu", padding="same"),
+            layers.MaxPooling3D(pool_size=2),
+            layers.BatchNormalization(),
+            # Second conv block
+            layers.Conv3D(64, kernel_size=3, activation="relu", padding="same"),
+            layers.MaxPooling3D(pool_size=2),
+            layers.BatchNormalization(),
+            # Third conv block
+            layers.Conv3D(128, kernel_size=3, activation="relu", padding="same"),
+            layers.MaxPooling3D(pool_size=2),
+            layers.BatchNormalization(),
+            # Dense layers
+            layers.Flatten(),
+            layers.Dense(256, activation="relu"),
+            layers.Dropout(0.5),
+            layers.Dense(n_classes, activation="softmax"),
+        ]
     )
+
+    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
     print(f"✓ 3D CNN built with {model.count_params():,} parameters")
     return model
@@ -204,35 +196,34 @@ def train_ensemble(models, X_train, y_train, X_val=None, y_val=None, epochs=50):
     # Callbacks
     callbacks = [
         keras.callbacks.EarlyStopping(
-            monitor='val_loss' if X_val is not None else 'loss',
+            monitor="val_loss" if X_val is not None else "loss",
             patience=10,
-            restore_best_weights=True
+            restore_best_weights=True,
         ),
         keras.callbacks.ReduceLROnPlateau(
-            monitor='val_loss' if X_val is not None else 'loss',
-            factor=0.5,
-            patience=5
-        )
+            monitor="val_loss" if X_val is not None else "loss", factor=0.5, patience=5
+        ),
     ]
 
     histories = []
     for i, model in enumerate(models):
-        print(f"\nTraining model {i+1}/{len(models)}...")
+        print(f"\nTraining model {i + 1}/{len(models)}...")
 
         validation_data = (X_val, y_val) if X_val is not None else None
 
         history = model.fit(
-            X_train, y_train,
+            X_train,
+            y_train,
             validation_data=validation_data,
             epochs=epochs,
             batch_size=32,
             callbacks=callbacks,
-            verbose=1
+            verbose=1,
         )
 
         histories.append(history)
 
-    print(f"\n✓ Ensemble training complete!")
+    print("\n✓ Ensemble training complete!")
     return histories
 
 
@@ -281,7 +272,7 @@ def save_model(model, name):
     name : str
         Model name
     """
-    output_path = MODELS_DIR / f'{name}.h5'
+    output_path = MODELS_DIR / f"{name}.h5"
     model.save(output_path)
     print(f"✓ Model saved to {output_path}")
 
@@ -305,7 +296,7 @@ def load_model(name):
     except ImportError:
         raise ImportError("TensorFlow not installed")
 
-    input_path = MODELS_DIR / f'{name}.h5'
+    input_path = MODELS_DIR / f"{name}.h5"
 
     if not input_path.exists():
         raise FileNotFoundError(f"Model not found: {input_path}")
@@ -315,7 +306,7 @@ def load_model(name):
     return model
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test model building
     print("Testing model utilities...")
 

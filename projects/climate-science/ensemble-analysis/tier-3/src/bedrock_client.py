@@ -6,10 +6,10 @@ interpreting climate model results, generating reports, and providing
 scientific context.
 """
 
-import boto3
 import json
-from typing import Dict, List, Optional
 import logging
+
+import boto3
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,9 +24,7 @@ class BedrockClimateAssistant:
     """
 
     def __init__(
-        self,
-        model_id: str = 'anthropic.claude-3-sonnet-20240229-v1:0',
-        region: str = 'us-east-1'
+        self, model_id: str = "anthropic.claude-3-sonnet-20240229-v1:0", region: str = "us-east-1"
     ):
         """
         Initialize Bedrock client.
@@ -39,15 +37,10 @@ class BedrockClimateAssistant:
             AWS region (default: us-east-1)
         """
         self.model_id = model_id
-        self.client = boto3.client('bedrock-runtime', region_name=region)
+        self.client = boto3.client("bedrock-runtime", region_name=region)
         logger.info(f"Initialized Bedrock client with model {model_id}")
 
-    def _invoke_model(
-        self,
-        prompt: str,
-        max_tokens: int = 4096,
-        temperature: float = 0.7
-    ) -> str:
+    def _invoke_model(self, prompt: str, max_tokens: int = 4096, temperature: float = 0.7) -> str:
         """
         Internal method to invoke Bedrock model.
 
@@ -69,22 +62,16 @@ class BedrockClimateAssistant:
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": max_tokens,
             "temperature": temperature,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+            "messages": [{"role": "user", "content": prompt}],
         }
 
         try:
             response = self.client.invoke_model(
-                modelId=self.model_id,
-                body=json.dumps(request_body)
+                modelId=self.model_id, body=json.dumps(request_body)
             )
 
-            response_body = json.loads(response['body'].read())
-            text = response_body['content'][0]['text']
+            response_body = json.loads(response["body"].read())
+            text = response_body["content"][0]["text"]
 
             logger.info(f"Generated response ({len(text)} characters)")
             return text
@@ -94,11 +81,7 @@ class BedrockClimateAssistant:
             raise
 
     def interpret_projection(
-        self,
-        stats: Dict,
-        region_name: str,
-        scenario: str,
-        variable: str = 'temperature'
+        self, stats: dict, region_name: str, scenario: str, variable: str = "temperature"
     ) -> str:
         """
         Interpret climate projection results.
@@ -149,10 +132,7 @@ Keep the response factual and scientific, around 200-300 words."""
         return response
 
     def compare_to_literature(
-        self,
-        results_summary: str,
-        region: str,
-        variable: str = 'temperature'
+        self, results_summary: str, region: str, variable: str = "temperature"
     ) -> str:
         """
         Compare results to published literature.
@@ -201,10 +181,7 @@ Keep response around 250 words, cite general sources (e.g., "IPCC AR6",
         response = self._invoke_model(prompt, max_tokens=1200, temperature=0.6)
         return response
 
-    def generate_methods_section(
-        self,
-        analysis_config: Dict
-    ) -> str:
+    def generate_methods_section(self, analysis_config: dict) -> str:
         """
         Generate methods section text for a paper.
 
@@ -257,11 +234,7 @@ paper conventions."""
         response = self._invoke_model(prompt, max_tokens=1500, temperature=0.4)
         return response
 
-    def identify_outliers_explanation(
-        self,
-        outlier_models: List[str],
-        ensemble_stats: Dict
-    ) -> str:
+    def identify_outliers_explanation(self, outlier_models: list[str], ensemble_stats: dict) -> str:
         """
         Explain why certain models might be outliers.
 
@@ -289,7 +262,7 @@ paper conventions."""
         prompt = f"""You are a climate modeling expert. Explain why these CMIP6 models
 might be outliers in an ensemble analysis:
 
-Outlier models: {', '.join(outlier_models)}
+Outlier models: {", ".join(outlier_models)}
 Ensemble statistics: {json.dumps(ensemble_stats, indent=2)}
 
 Provide:
@@ -304,11 +277,7 @@ Keep response around 200 words, factual and objective."""
         response = self._invoke_model(prompt, max_tokens=1000, temperature=0.6)
         return response
 
-    def generate_figure_caption(
-        self,
-        figure_description: str,
-        analysis_details: Dict
-    ) -> str:
+    def generate_figure_caption(self, figure_description: str, analysis_details: dict) -> str:
         """
         Generate publication-quality figure caption.
 
@@ -350,9 +319,7 @@ Use standard climate science caption style."""
         return response
 
     def suggest_next_analyses(
-        self,
-        current_results: str,
-        analysis_type: str = 'regional projection'
+        self, current_results: str, analysis_type: str = "regional projection"
     ) -> str:
         """
         Suggest follow-up analyses based on current results.
@@ -407,7 +374,7 @@ Keep total response around 200-250 words."""
         try:
             # Try simple invocation
             test_prompt = "Respond with only: 'Bedrock access verified'"
-            response = self._invoke_model(test_prompt, max_tokens=50, temperature=0)
+            self._invoke_model(test_prompt, max_tokens=50, temperature=0)
             logger.info("✓ Bedrock access verified")
             return True
         except Exception as e:

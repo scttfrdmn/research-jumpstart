@@ -16,7 +16,6 @@ Deploy to AWS Lambda:
 """
 
 import json
-import boto3
 import logging
 import os
 import re
@@ -24,9 +23,11 @@ import traceback
 from datetime import datetime
 from decimal import Decimal
 
+import boto3
+
 # Initialize clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -34,6 +35,7 @@ logger.setLevel(logging.INFO)
 try:
     from rdkit import Chem
     from rdkit.Chem import Descriptors, Lipinski
+
     RDKIT_AVAILABLE = True
     logger.info("RDKit is available")
 except ImportError:
@@ -57,29 +59,29 @@ def lambda_handler(event, context):
         logger.info(f"Event: {json.dumps(event)}")
 
         # Get configuration from environment
-        bucket_name = os.environ.get('BUCKET_NAME', 'molecular-data')
-        table_name = os.environ.get('DYNAMODB_TABLE', 'MolecularProperties')
-        region = os.environ.get('AWS_REGION', 'us-east-1')
+        bucket_name = os.environ.get("BUCKET_NAME", "molecular-data")
+        table_name = os.environ.get("DYNAMODB_TABLE", "MolecularProperties")
+        os.environ.get("AWS_REGION", "us-east-1")
 
         # Parse S3 event
-        if 'Records' in event:
-            record = event['Records'][0]
-            s3_bucket = record['s3']['bucket']['name']
-            s3_key = record['s3']['object']['key']
+        if "Records" in event:
+            record = event["Records"][0]
+            s3_bucket = record["s3"]["bucket"]["name"]
+            s3_key = record["s3"]["object"]["key"]
         else:
             # Direct invocation
-            s3_bucket = event.get('bucket', bucket_name)
-            s3_key = event.get('key', 'molecules/test.smi')
+            s3_bucket = event.get("bucket", bucket_name)
+            s3_key = event.get("key", "molecules/test.smi")
 
         logger.info(f"Processing file: s3://{s3_bucket}/{s3_key}")
 
         # Download file from S3
         try:
             obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_key)
-            file_data = obj['Body'].read().decode('utf-8')
+            file_data = obj["Body"].read().decode("utf-8")
             logger.info(f"Downloaded {len(file_data)} bytes from S3")
         except Exception as e:
-            error_msg = f"Failed to download from S3: {str(e)}"
+            error_msg = f"Failed to download from S3: {e!s}"
             logger.error(error_msg)
             return error_response(error_msg, s3_key)
 
@@ -105,28 +107,30 @@ def lambda_handler(event, context):
             logger.info(f"Processed {processed_count} molecules, {error_count} errors")
 
         except Exception as e:
-            error_msg = f"Processing error: {str(e)}"
+            error_msg = f"Processing error: {e!s}"
             logger.error(error_msg)
             logger.error(traceback.format_exc())
             return error_response(error_msg, s3_key)
 
         # Return success
         response = {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Processing completed successfully',
-                'input_file': s3_key,
-                'molecules_processed': processed_count,
-                'molecules_failed': error_count,
-                'timestamp': datetime.utcnow().isoformat()
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Processing completed successfully",
+                    "input_file": s3_key,
+                    "molecules_processed": processed_count,
+                    "molecules_failed": error_count,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            ),
         }
 
         logger.info(f"Success: {response['body']}")
         return response
 
     except Exception as e:
-        error_msg = f"Unhandled error: {str(e)}"
+        error_msg = f"Unhandled error: {e!s}"
         logger.error(error_msg)
         logger.error(traceback.format_exc())
         return error_response(error_msg)
@@ -146,9 +150,9 @@ def parse_molecules(file_data, filename):
     molecules = []
 
     # Determine file type from extension
-    if filename.endswith(('.smi', '.smiles')):
+    if filename.endswith((".smi", ".smiles")):
         molecules = parse_smiles_file(file_data, filename)
-    elif filename.endswith('.sdf'):
+    elif filename.endswith(".sdf"):
         molecules = parse_sdf_file(file_data, filename)
     else:
         logger.warning(f"Unsupported file type: {filename}")
@@ -176,11 +180,11 @@ def parse_smiles_file(file_data, filename):
     # Extract compound class from filename/path
     compound_class = extract_compound_class(filename)
 
-    for line_num, line in enumerate(file_data.split('\n'), 1):
+    for line_num, line in enumerate(file_data.split("\n"), 1):
         line = line.strip()
 
         # Skip empty lines and comments
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
 
         # Parse SMILES line
@@ -192,12 +196,14 @@ def parse_smiles_file(file_data, filename):
         smiles = parts[0]
         name = parts[1] if len(parts) > 1 else f"MOL{line_num:05d}"
 
-        molecules.append({
-            'smiles': smiles,
-            'name': name,
-            'compound_class': compound_class,
-            'source_file': filename
-        })
+        molecules.append(
+            {
+                "smiles": smiles,
+                "name": name,
+                "compound_class": compound_class,
+                "source_file": filename,
+            }
+        )
 
     return molecules
 
@@ -222,18 +228,20 @@ def parse_sdf_file(file_data, filename):
     compound_class = extract_compound_class(filename)
 
     # Basic SDF parsing - look for molecule names
-    mol_count = file_data.count('$$$$')
+    mol_count = file_data.count("$$$$")
     logger.info(f"SDF file contains approximately {mol_count} molecules")
 
     # Create placeholder entries
     for i in range(mol_count):
-        molecules.append({
-            'smiles': 'C',  # Placeholder
-            'name': f"SDF_MOL{i+1:05d}",
-            'compound_class': compound_class,
-            'source_file': filename,
-            'note': 'SDF parsing requires RDKit'
-        })
+        molecules.append(
+            {
+                "smiles": "C",  # Placeholder
+                "name": f"SDF_MOL{i + 1:05d}",
+                "compound_class": compound_class,
+                "source_file": filename,
+                "note": "SDF parsing requires RDKit",
+            }
+        )
 
     return molecules
 
@@ -249,20 +257,20 @@ def extract_compound_class(filename):
         str: Compound class
     """
     # Extract from path: molecules/drugs/file.smi -> drugs
-    parts = filename.split('/')
-    if len(parts) >= 3 and parts[0] == 'molecules':
+    parts = filename.split("/")
+    if len(parts) >= 3 and parts[0] == "molecules":
         return parts[1]
 
     # Check filename for keywords
     filename_lower = filename.lower()
-    if 'drug' in filename_lower:
-        return 'drug'
-    elif 'natural' in filename_lower:
-        return 'natural_product'
-    elif 'screen' in filename_lower or 'library' in filename_lower:
-        return 'screening_library'
+    if "drug" in filename_lower:
+        return "drug"
+    elif "natural" in filename_lower:
+        return "natural_product"
+    elif "screen" in filename_lower or "library" in filename_lower:
+        return "screening_library"
     else:
-        return 'unknown'
+        return "unknown"
 
 
 def calculate_properties(mol_data):
@@ -275,7 +283,7 @@ def calculate_properties(mol_data):
     Returns:
         dict: Molecular properties
     """
-    smiles = mol_data['smiles']
+    smiles = mol_data["smiles"]
 
     if RDKIT_AVAILABLE:
         # Use RDKit for accurate calculations
@@ -313,29 +321,24 @@ def calculate_properties_rdkit(smiles, mol_data):
         aromatic_rings = Descriptors.NumAromaticRings(mol)
 
         # Lipinski's Rule of Five
-        lipinski_compliant = (
-            mw <= 500 and
-            logp <= 5 and
-            hbd <= 5 and
-            hba <= 10
-        )
+        lipinski_compliant = mw <= 500 and logp <= 5 and hbd <= 5 and hba <= 10
 
         properties = {
-            'molecule_id': mol_data['name'],
-            'compound_class': mol_data['compound_class'],
-            'smiles': smiles,
-            'name': mol_data['name'],
-            'molecular_weight': Decimal(str(round(mw, 2))),
-            'logp': Decimal(str(round(logp, 2))),
-            'tpsa': Decimal(str(round(tpsa, 2))),
-            'hbd': int(hbd),
-            'hba': int(hba),
-            'rotatable_bonds': int(rotatable_bonds),
-            'aromatic_rings': int(aromatic_rings),
-            'lipinski_compliant': lipinski_compliant,
-            'source_file': mol_data['source_file'],
-            'calculation_method': 'rdkit',
-            'timestamp': datetime.utcnow().isoformat()
+            "molecule_id": mol_data["name"],
+            "compound_class": mol_data["compound_class"],
+            "smiles": smiles,
+            "name": mol_data["name"],
+            "molecular_weight": Decimal(str(round(mw, 2))),
+            "logp": Decimal(str(round(logp, 2))),
+            "tpsa": Decimal(str(round(tpsa, 2))),
+            "hbd": int(hbd),
+            "hba": int(hba),
+            "rotatable_bonds": int(rotatable_bonds),
+            "aromatic_rings": int(aromatic_rings),
+            "lipinski_compliant": lipinski_compliant,
+            "source_file": mol_data["source_file"],
+            "calculation_method": "rdkit",
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         return properties
@@ -368,50 +371,58 @@ def calculate_properties_python(smiles, mol_data):
     atom_counts = count_atoms(smiles)
 
     # Rough molecular weight estimate
-    atomic_weights = {'C': 12, 'N': 14, 'O': 16, 'S': 32, 'P': 31, 'F': 19, 'Cl': 35.5, 'Br': 80, 'I': 127}
+    atomic_weights = {
+        "C": 12,
+        "N": 14,
+        "O": 16,
+        "S": 32,
+        "P": 31,
+        "F": 19,
+        "Cl": 35.5,
+        "Br": 80,
+        "I": 127,
+    }
     mw = sum(atomic_weights.get(atom, 12) * count for atom, count in atom_counts.items())
 
     # Rough LogP estimate (carbon count - heteroatom count)
-    logp = atom_counts.get('C', 0) * 0.5 - sum(count for atom, count in atom_counts.items() if atom in ['N', 'O']) * 0.5
-
-    # Rough TPSA estimate (polar atoms * 20)
-    tpsa = sum(count for atom, count in atom_counts.items() if atom in ['N', 'O']) * 20
-
-    # Hydrogen bond donors/acceptors
-    hbd = smiles.count('O') + smiles.count('N')  # Simplified
-    hba = smiles.count('O') + smiles.count('N')
-
-    # Rotatable bonds (approximate from single bonds)
-    rotatable_bonds = smiles.count('-') + max(0, smiles.count('C') - 5)
-
-    # Aromatic rings (count lowercase 'c' in SMILES)
-    aromatic_rings = smiles.count('c') // 6  # Rough estimate
-
-    # Lipinski's Rule of Five
-    lipinski_compliant = (
-        mw <= 500 and
-        logp <= 5 and
-        hbd <= 5 and
-        hba <= 10
+    logp = (
+        atom_counts.get("C", 0) * 0.5
+        - sum(count for atom, count in atom_counts.items() if atom in ["N", "O"]) * 0.5
     )
 
+    # Rough TPSA estimate (polar atoms * 20)
+    tpsa = sum(count for atom, count in atom_counts.items() if atom in ["N", "O"]) * 20
+
+    # Hydrogen bond donors/acceptors
+    hbd = smiles.count("O") + smiles.count("N")  # Simplified
+    hba = smiles.count("O") + smiles.count("N")
+
+    # Rotatable bonds (approximate from single bonds)
+    rotatable_bonds = smiles.count("-") + max(0, smiles.count("C") - 5)
+
+    # Aromatic rings (count lowercase 'c' in SMILES)
+    aromatic_rings = smiles.count("c") // 6  # Rough estimate
+
+    # Lipinski's Rule of Five
+    lipinski_compliant = mw <= 500 and logp <= 5 and hbd <= 5 and hba <= 10
+
     properties = {
-        'molecule_id': mol_data['name'],
-        'compound_class': mol_data['compound_class'],
-        'smiles': smiles,
-        'name': mol_data['name'],
-        'molecular_weight': Decimal(str(round(mw, 2))),
-        'logp': Decimal(str(round(logp, 2))),
-        'tpsa': Decimal(str(round(tpsa, 2))),
-        'hbd': int(hbd),
-        'hba': int(hba),
-        'rotatable_bonds': int(rotatable_bonds),
-        'aromatic_rings': int(aromatic_rings),
-        'lipinski_compliant': lipinski_compliant,
-        'source_file': mol_data['source_file'],
-        'calculation_method': 'python_approximation',
-        'note': 'Approximate values - use RDKit for accurate calculations',
-        'timestamp': datetime.utcnow().isoformat()
+        "molecule_id": mol_data["name"],
+        "compound_class": mol_data["compound_class"],
+        "smiles": smiles,
+        "name": mol_data["name"],
+        "molecular_weight": Decimal(str(round(mw, 2))),
+        "logp": Decimal(str(round(logp, 2))),
+        "tpsa": Decimal(str(round(tpsa, 2))),
+        "hbd": int(hbd),
+        "hba": int(hba),
+        "rotatable_bonds": int(rotatable_bonds),
+        "aromatic_rings": int(aromatic_rings),
+        "lipinski_compliant": lipinski_compliant,
+        "source_file": mol_data["source_file"],
+        "calculation_method": "python_approximation",
+        "note": "Approximate values - use RDKit for accurate calculations",
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
     return properties
@@ -432,13 +443,13 @@ def validate_smiles(smiles):
     bracket_count = 0
 
     for char in smiles:
-        if char == '(':
+        if char == "(":
             paren_count += 1
-        elif char == ')':
+        elif char == ")":
             paren_count -= 1
-        elif char == '[':
+        elif char == "[":
             bracket_count += 1
-        elif char == ']':
+        elif char == "]":
             bracket_count -= 1
 
         if paren_count < 0 or bracket_count < 0:
@@ -461,15 +472,15 @@ def count_atoms(smiles):
 
     # Simple regex to find atoms
     # This is simplified and won't handle all SMILES features
-    atom_pattern = r'([A-Z][a-z]?|\[.+?\])'
+    atom_pattern = r"([A-Z][a-z]?|\[.+?\])"
     atoms = re.findall(atom_pattern, smiles)
 
     for atom in atoms:
         # Remove brackets
-        atom = atom.strip('[]')
+        atom = atom.strip("[]")
 
         # Extract element symbol
-        element = re.match(r'([A-Z][a-z]?)', atom)
+        element = re.match(r"([A-Z][a-z]?)", atom)
         if element:
             element = element.group(1)
             atom_counts[element] = atom_counts.get(element, 0) + 1
@@ -505,36 +516,38 @@ def error_response(error_msg, filename=None):
         dict: Error response
     """
     response = {
-        'statusCode': 500,
-        'body': json.dumps({
-            'message': 'Processing failed',
-            'error': error_msg,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+        "statusCode": 500,
+        "body": json.dumps(
+            {
+                "message": "Processing failed",
+                "error": error_msg,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        ),
     }
 
     if filename:
-        body = json.loads(response['body'])
-        body['file'] = filename
-        response['body'] = json.dumps(body)
+        body = json.loads(response["body"])
+        body["file"] = filename
+        response["body"] = json.dumps(body)
 
     return response
 
 
 # Local testing
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Set environment variables for testing
-    os.environ['BUCKET_NAME'] = 'molecular-data-test'
-    os.environ['DYNAMODB_TABLE'] = 'MolecularProperties'
-    os.environ['AWS_REGION'] = 'us-east-1'
+    os.environ["BUCKET_NAME"] = "molecular-data-test"
+    os.environ["DYNAMODB_TABLE"] = "MolecularProperties"
+    os.environ["AWS_REGION"] = "us-east-1"
 
     # Create test event
     test_event = {
-        'Records': [
+        "Records": [
             {
-                's3': {
-                    'bucket': {'name': 'molecular-data-test'},
-                    'object': {'key': 'molecules/drugs/test.smi'}
+                "s3": {
+                    "bucket": {"name": "molecular-data-test"},
+                    "object": {"key": "molecules/drugs/test.smi"},
                 }
             }
         ]
@@ -550,10 +563,10 @@ if __name__ == '__main__':
     # Test pure Python calculations
     test_molecules = [
         {
-            'smiles': 'CC(=O)Oc1ccccc1C(=O)O',
-            'name': 'aspirin',
-            'compound_class': 'drug',
-            'source_file': 'test.smi'
+            "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+            "name": "aspirin",
+            "compound_class": "drug",
+            "source_file": "test.smi",
         }
     ]
 

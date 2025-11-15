@@ -26,22 +26,20 @@ Usage:
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional
-import json
+from typing import Optional
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
-from dotenv import load_dotenv
 import pandas as pd
+from boto3.dynamodb.conditions import Attr, Key
+from dotenv import load_dotenv
 from tabulate import tabulate
 
 # Load environment variables
 load_dotenv()
 
 # AWS configuration
-AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
-DYNAMODB_TABLE = os.getenv('DYNAMODB_TABLE_NAME', 'TrafficAnalysis')
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME", "TrafficAnalysis")
 
 
 class TrafficDataQuery:
@@ -55,12 +53,13 @@ class TrafficDataQuery:
             table_name: DynamoDB table name
             region: AWS region
         """
-        self.dynamodb = boto3.resource('dynamodb', region_name=region)
+        self.dynamodb = boto3.resource("dynamodb", region_name=region)
         self.table = self.dynamodb.Table(table_name)
         self.table_name = table_name
 
-    def query_by_segment(self, segment_id: str, start_time: Optional[int] = None,
-                        end_time: Optional[int] = None) -> List[Dict]:
+    def query_by_segment(
+        self, segment_id: str, start_time: Optional[int] = None, end_time: Optional[int] = None
+    ) -> list[dict]:
         """
         Query traffic data for a specific segment.
 
@@ -76,27 +75,27 @@ class TrafficDataQuery:
 
         # Build query
         if start_time and end_time:
-            key_condition = Key('segment_id').eq(segment_id) & \
-                           Key('timestamp').between(start_time, end_time)
+            key_condition = Key("segment_id").eq(segment_id) & Key("timestamp").between(
+                start_time, end_time
+            )
         elif start_time:
-            key_condition = Key('segment_id').eq(segment_id) & \
-                           Key('timestamp').gte(start_time)
+            key_condition = Key("segment_id").eq(segment_id) & Key("timestamp").gte(start_time)
         elif end_time:
-            key_condition = Key('segment_id').eq(segment_id) & \
-                           Key('timestamp').lte(end_time)
+            key_condition = Key("segment_id").eq(segment_id) & Key("timestamp").lte(end_time)
         else:
-            key_condition = Key('segment_id').eq(segment_id)
+            key_condition = Key("segment_id").eq(segment_id)
 
         # Execute query
         response = self.table.query(KeyConditionExpression=key_condition)
 
-        items = response.get('Items', [])
+        items = response.get("Items", [])
         print(f"Found {len(items)} records for segment {segment_id}")
 
         return items
 
-    def scan_all(self, filter_expression: Optional[Attr] = None,
-                 limit: Optional[int] = None) -> List[Dict]:
+    def scan_all(
+        self, filter_expression: Optional[Attr] = None, limit: Optional[int] = None
+    ) -> list[dict]:
         """
         Scan entire table with optional filter.
 
@@ -111,19 +110,19 @@ class TrafficDataQuery:
 
         scan_kwargs = {}
         if filter_expression:
-            scan_kwargs['FilterExpression'] = filter_expression
+            scan_kwargs["FilterExpression"] = filter_expression
         if limit:
-            scan_kwargs['Limit'] = limit
+            scan_kwargs["Limit"] = limit
 
         # Execute scan
         response = self.table.scan(**scan_kwargs)
-        items = response.get('Items', [])
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response and (not limit or len(items) < limit):
-            scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+        while "LastEvaluatedKey" in response and (not limit or len(items) < limit):
+            scan_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
             response = self.table.scan(**scan_kwargs)
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
             if limit and len(items) >= limit:
                 items = items[:limit]
@@ -132,7 +131,7 @@ class TrafficDataQuery:
         print(f"Found {len(items)} total records")
         return items
 
-    def query_congested_segments(self, threshold: float = 0.8) -> List[Dict]:
+    def query_congested_segments(self, threshold: float = 0.8) -> list[dict]:
         """
         Query segments with high congestion (V/C ratio above threshold).
 
@@ -144,12 +143,12 @@ class TrafficDataQuery:
         """
         print(f"Querying congested segments (V/C > {threshold})")
 
-        filter_expr = Attr('vc_ratio').gt(threshold)
+        filter_expr = Attr("vc_ratio").gt(threshold)
         items = self.scan_all(filter_expression=filter_expr, limit=1000)
 
         return items
 
-    def query_by_los(self, los_grades: List[str]) -> List[Dict]:
+    def query_by_los(self, los_grades: list[str]) -> list[dict]:
         """
         Query segments by Level of Service grade.
 
@@ -161,12 +160,12 @@ class TrafficDataQuery:
         """
         print(f"Querying segments with LOS: {', '.join(los_grades)}")
 
-        filter_expr = Attr('los').is_in(los_grades)
+        filter_expr = Attr("los").is_in(los_grades)
         items = self.scan_all(filter_expression=filter_expr, limit=1000)
 
         return items
 
-    def get_segment_statistics(self, segment_id: str) -> Dict:
+    def get_segment_statistics(self, segment_id: str) -> dict:
         """
         Calculate aggregate statistics for a segment.
 
@@ -184,22 +183,22 @@ class TrafficDataQuery:
         df = pd.DataFrame(records)
 
         stats = {
-            'segment_id': segment_id,
-            'total_records': len(df),
-            'avg_speed': df['avg_speed'].mean(),
-            'min_speed': df['avg_speed'].min(),
-            'max_speed': df['avg_speed'].max(),
-            'avg_vc_ratio': df['vc_ratio'].mean(),
-            'max_vc_ratio': df['vc_ratio'].max(),
-            'avg_travel_time_index': df['travel_time_index'].mean(),
-            'congestion_rate': df['is_congested'].sum() / len(df),
-            'most_common_los': df['los'].mode()[0] if len(df) > 0 else None,
-            'los_distribution': df['los'].value_counts().to_dict()
+            "segment_id": segment_id,
+            "total_records": len(df),
+            "avg_speed": df["avg_speed"].mean(),
+            "min_speed": df["avg_speed"].min(),
+            "max_speed": df["avg_speed"].max(),
+            "avg_vc_ratio": df["vc_ratio"].mean(),
+            "max_vc_ratio": df["vc_ratio"].max(),
+            "avg_travel_time_index": df["travel_time_index"].mean(),
+            "congestion_rate": df["is_congested"].sum() / len(df),
+            "most_common_los": df["los"].mode()[0] if len(df) > 0 else None,
+            "los_distribution": df["los"].value_counts().to_dict(),
         }
 
         return stats
 
-    def get_all_segments(self) -> List[str]:
+    def get_all_segments(self) -> list[str]:
         """
         Get list of all unique segment IDs in the table.
 
@@ -209,7 +208,7 @@ class TrafficDataQuery:
         print("Retrieving all segment IDs...")
 
         items = self.scan_all(limit=10000)
-        segment_ids = list(set(item['segment_id'] for item in items))
+        segment_ids = list({item["segment_id"] for item in items})
 
         print(f"Found {len(segment_ids)} unique segments")
         return sorted(segment_ids)
@@ -226,11 +225,11 @@ class TrafficDataQuery:
         if not items:
             return None, None
 
-        timestamps = [item['timestamp'] for item in items]
+        timestamps = [item["timestamp"] for item in items]
         return min(timestamps), max(timestamps)
 
 
-def format_results_table(records: List[Dict], max_rows: int = 20) -> str:
+def format_results_table(records: list[dict], max_rows: int = 20) -> str:
     """
     Format records as a readable table.
 
@@ -248,20 +247,25 @@ def format_results_table(records: List[Dict], max_rows: int = 20) -> str:
 
     # Select key columns
     columns = [
-        'segment_id', 'timestamp_iso', 'avg_speed', 'vehicle_count',
-        'vc_ratio', 'los', 'is_congested'
+        "segment_id",
+        "timestamp_iso",
+        "avg_speed",
+        "vehicle_count",
+        "vc_ratio",
+        "los",
+        "is_congested",
     ]
     display_cols = [col for col in columns if col in df.columns]
 
     df_display = df[display_cols].head(max_rows)
 
     # Format numeric columns
-    if 'vc_ratio' in df_display.columns:
-        df_display['vc_ratio'] = df_display['vc_ratio'].map('{:.3f}'.format)
-    if 'avg_speed' in df_display.columns:
-        df_display['avg_speed'] = df_display['avg_speed'].map('{:.1f}'.format)
+    if "vc_ratio" in df_display.columns:
+        df_display["vc_ratio"] = df_display["vc_ratio"].map("{:.3f}".format)
+    if "avg_speed" in df_display.columns:
+        df_display["avg_speed"] = df_display["avg_speed"].map("{:.1f}".format)
 
-    table = tabulate(df_display, headers='keys', tablefmt='grid', showindex=False)
+    table = tabulate(df_display, headers="keys", tablefmt="grid", showindex=False)
 
     if len(df) > max_rows:
         table += f"\n\n... and {len(df) - max_rows} more rows"
@@ -269,7 +273,7 @@ def format_results_table(records: List[Dict], max_rows: int = 20) -> str:
     return table
 
 
-def print_summary_statistics(records: List[Dict]):
+def print_summary_statistics(records: list[dict]):
     """
     Print summary statistics for records.
 
@@ -286,25 +290,27 @@ def print_summary_statistics(records: List[Dict]):
     print("SUMMARY STATISTICS")
     print("=" * 70)
     print(f"Total records: {len(df)}")
-    print(f"\nSpeed Statistics:")
+    print("\nSpeed Statistics:")
     print(f"  Average speed: {df['avg_speed'].mean():.2f} mph")
     print(f"  Min speed: {df['avg_speed'].min():.2f} mph")
     print(f"  Max speed: {df['avg_speed'].max():.2f} mph")
-    print(f"\nCongestion Metrics:")
+    print("\nCongestion Metrics:")
     print(f"  Average V/C ratio: {df['vc_ratio'].mean():.3f}")
     print(f"  Max V/C ratio: {df['vc_ratio'].max():.3f}")
-    print(f"  Congested segments: {df['is_congested'].sum()} ({df['is_congested'].sum()/len(df)*100:.1f}%)")
-    print(f"\nLevel of Service Distribution:")
-    los_dist = df['los'].value_counts().sort_index()
+    print(
+        f"  Congested segments: {df['is_congested'].sum()} ({df['is_congested'].sum() / len(df) * 100:.1f}%)"
+    )
+    print("\nLevel of Service Distribution:")
+    los_dist = df["los"].value_counts().sort_index()
     for los_grade, count in los_dist.items():
-        print(f"  LOS {los_grade}: {count} ({count/len(df)*100:.1f}%)")
-    print(f"\nTravel Time:")
+        print(f"  LOS {los_grade}: {count} ({count / len(df) * 100:.1f}%)")
+    print("\nTravel Time:")
     print(f"  Average TTI: {df['travel_time_index'].mean():.3f}")
     print(f"  Max TTI: {df['travel_time_index'].max():.3f}")
     print("=" * 70 + "\n")
 
 
-def export_to_csv(records: List[Dict], output_file: str):
+def export_to_csv(records: list[dict], output_file: str):
     """
     Export records to CSV file.
 
@@ -324,7 +330,7 @@ def export_to_csv(records: List[Dict], output_file: str):
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Query traffic analysis results from DynamoDB',
+        description="Query traffic analysis results from DynamoDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -345,70 +351,43 @@ Examples:
 
   # Export results to CSV
   python query_results.py --segment-id SEG-001 --output results.csv
-        """
+        """,
+    )
+
+    parser.add_argument("--segment-id", type=str, help="Segment ID to query")
+
+    parser.add_argument("--start-time", type=int, help="Start time (Unix timestamp)")
+
+    parser.add_argument("--end-time", type=int, help="End time (Unix timestamp)")
+
+    parser.add_argument(
+        "--congested-only", action="store_true", help="Query only congested segments (V/C > 0.8)"
     )
 
     parser.add_argument(
-        '--segment-id',
-        type=str,
-        help='Segment ID to query'
+        "--los",
+        nargs="+",
+        choices=["A", "B", "C", "D", "E", "F"],
+        help="Query by Level of Service grade(s)",
     )
 
     parser.add_argument(
-        '--start-time',
-        type=int,
-        help='Start time (Unix timestamp)'
+        "--segment-stats", action="store_true", help="Show statistics for all segments"
+    )
+
+    parser.add_argument("--list-segments", action="store_true", help="List all segment IDs")
+
+    parser.add_argument("--output", type=str, help="Export results to CSV file")
+
+    parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum number of records to display (default: 100)"
     )
 
     parser.add_argument(
-        '--end-time',
-        type=int,
-        help='End time (Unix timestamp)'
-    )
-
-    parser.add_argument(
-        '--congested-only',
-        action='store_true',
-        help='Query only congested segments (V/C > 0.8)'
-    )
-
-    parser.add_argument(
-        '--los',
-        nargs='+',
-        choices=['A', 'B', 'C', 'D', 'E', 'F'],
-        help='Query by Level of Service grade(s)'
-    )
-
-    parser.add_argument(
-        '--segment-stats',
-        action='store_true',
-        help='Show statistics for all segments'
-    )
-
-    parser.add_argument(
-        '--list-segments',
-        action='store_true',
-        help='List all segment IDs'
-    )
-
-    parser.add_argument(
-        '--output',
-        type=str,
-        help='Export results to CSV file'
-    )
-
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=100,
-        help='Maximum number of records to display (default: 100)'
-    )
-
-    parser.add_argument(
-        '--table',
+        "--table",
         type=str,
         default=DYNAMODB_TABLE,
-        help=f'DynamoDB table name (default: {DYNAMODB_TABLE})'
+        help=f"DynamoDB table name (default: {DYNAMODB_TABLE})",
     )
 
     args = parser.parse_args()
@@ -436,7 +415,7 @@ Examples:
                 print(f"  Records: {stats['total_records']}")
                 print(f"  Avg Speed: {stats['avg_speed']:.2f} mph")
                 print(f"  Avg V/C: {stats['avg_vc_ratio']:.3f}")
-                print(f"  Congestion Rate: {stats['congestion_rate']*100:.1f}%")
+                print(f"  Congestion Rate: {stats['congestion_rate'] * 100:.1f}%")
                 print(f"  Most Common LOS: {stats['most_common_los']}")
             return
 
@@ -448,9 +427,7 @@ Examples:
 
         elif args.segment_id:
             records = query_client.query_by_segment(
-                args.segment_id,
-                start_time=args.start_time,
-                end_time=args.end_time
+                args.segment_id, start_time=args.start_time, end_time=args.end_time
             )
 
         else:
@@ -470,9 +447,9 @@ Examples:
             print("No records found matching the query criteria.")
 
     except Exception as e:
-        print(f"Error querying DynamoDB: {str(e)}")
+        print(f"Error querying DynamoDB: {e!s}")
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -4,20 +4,19 @@ Data access module for astronomical sky surveys.
 Provides classes for accessing SDSS, Pan-STARRS, Legacy Survey, and other major surveys.
 """
 
-import os
-from typing import List, Optional, Dict, Tuple
-from pathlib import Path
-import pandas as pd
-import numpy as np
-from astropy.io import fits
-from astropy.table import Table
-from astropy.coordinates import SkyCoord
-from astropy import units as u
-from astroquery.sdss import SDSS
-from astroquery.mast import Catalogs
-import boto3
-import requests
 import logging
+from pathlib import Path
+from typing import Optional
+
+import boto3
+import numpy as np
+import pandas as pd
+import requests
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astroquery.mast import Catalogs
+from astroquery.sdss import SDSS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,17 +35,13 @@ class SDSSDataLoader:
         """
         self.bucket_name = bucket_name
         self.data_release = data_release
-        self.s3_client = boto3.client('s3') if bucket_name else None
+        self.s3_client = boto3.client("s3") if bucket_name else None
 
         # SDSS DR18 base URL
-        self.base_url = f'https://data.sdss.org/sas/dr{data_release}/eboss/photoObj/'
+        self.base_url = f"https://data.sdss.org/sas/dr{data_release}/eboss/photoObj/"
 
     def query_region(
-        self,
-        ra: float,
-        dec: float,
-        radius: float = 0.1,
-        filters: Optional[Dict] = None
+        self, ra: float, dec: float, radius: float = 0.1, filters: Optional[dict] = None
     ) -> pd.DataFrame:
         """
         Query SDSS catalog in a sky region.
@@ -63,18 +58,31 @@ class SDSSDataLoader:
         logger.info(f"Querying SDSS at RA={ra:.2f}, Dec={dec:.2f}, radius={radius:.2f} deg")
 
         # Create coordinate
-        coord = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+        coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
 
         # Query using astroquery
         try:
             result = SDSS.query_region(
                 coord,
-                radius=radius*u.deg,
+                radius=radius * u.deg,
                 data_release=self.data_release,
-                photoobj_fields=['ra', 'dec', 'u', 'g', 'r', 'i', 'z',
-                               'petroMag_u', 'petroMag_g', 'petroMag_r',
-                               'petroMag_i', 'petroMag_z',
-                               'type', 'clean', 'objID']
+                photoobj_fields=[
+                    "ra",
+                    "dec",
+                    "u",
+                    "g",
+                    "r",
+                    "i",
+                    "z",
+                    "petroMag_u",
+                    "petroMag_g",
+                    "petroMag_r",
+                    "petroMag_i",
+                    "petroMag_z",
+                    "type",
+                    "clean",
+                    "objID",
+                ],
             )
         except Exception as e:
             logger.error(f"SDSS query failed: {e}")
@@ -99,12 +107,8 @@ class SDSSDataLoader:
         return df
 
     def download_imaging(
-        self,
-        ra: float,
-        dec: float,
-        width: float = 0.5,
-        bands: List[str] = ['g', 'r', 'i']
-    ) -> Dict[str, Path]:
+        self, ra: float, dec: float, width: float = 0.5, bands: Optional[list[str]] = None
+    ) -> dict[str, Path]:
         """
         Download SDSS imaging cutouts.
 
@@ -117,6 +121,8 @@ class SDSSDataLoader:
         Returns:
             Dictionary mapping bands to file paths
         """
+        if bands is None:
+            bands = ["g", "r", "i"]
         logger.info(f"Downloading SDSS images at RA={ra:.2f}, Dec={dec:.2f}")
 
         # SDSS imaging cutout service
@@ -126,7 +132,9 @@ class SDSSDataLoader:
         for band in bands:
             # Construct URL
             width_arcmin = width * 60
-            url = f"{base_url}?ra={ra}&dec={dec}&width={width_arcmin}&height={width_arcmin}&scale=0.4"
+            url = (
+                f"{base_url}?ra={ra}&dec={dec}&width={width_arcmin}&height={width_arcmin}&scale=0.4"
+            )
 
             # Download
             local_path = Path(f"./data/sdss/cutout_ra{ra:.2f}_dec{dec:.2f}_{band}.jpg")
@@ -136,7 +144,7 @@ class SDSSDataLoader:
                 response = requests.get(url)
                 response.raise_for_status()
 
-                with open(local_path, 'wb') as f:
+                with open(local_path, "wb") as f:
                     f.write(response.content)
 
                 logger.info(f"Downloaded {band}-band image to {local_path}")
@@ -145,18 +153,14 @@ class SDSSDataLoader:
                 # Upload to S3 if bucket specified
                 if self.bucket_name:
                     s3_key = f"sdss/images/ra{ra:.2f}_dec{dec:.2f}_{band}.jpg"
-                    self.s3_client.upload_file(
-                        str(local_path),
-                        self.bucket_name,
-                        s3_key
-                    )
+                    self.s3_client.upload_file(str(local_path), self.bucket_name, s3_key)
 
             except Exception as e:
                 logger.error(f"Failed to download {band}-band: {e}")
 
         return images
 
-    def load_spectrum(self, plate: int, mjd: int, fiber: int) -> Dict:
+    def load_spectrum(self, plate: int, mjd: int, fiber: int) -> dict:
         """
         Load SDSS spectrum.
 
@@ -180,17 +184,17 @@ class SDSSDataLoader:
                 header = hdul[0].header
 
                 # Extract arrays
-                wavelength = 10**data['loglam']  # Convert log(wavelength) to wavelength
-                flux = data['flux']
-                ivar = data['ivar']  # Inverse variance
+                wavelength = 10 ** data["loglam"]  # Convert log(wavelength) to wavelength
+                flux = data["flux"]
+                ivar = data["ivar"]  # Inverse variance
                 error = np.sqrt(1.0 / ivar)
 
                 spectrum = {
-                    'wavelength': wavelength,
-                    'flux': flux,
-                    'error': error,
-                    'redshift': header.get('Z', None),
-                    'class': header.get('CLASS', None)
+                    "wavelength": wavelength,
+                    "flux": flux,
+                    "error": error,
+                    "redshift": header.get("Z", None),
+                    "class": header.get("CLASS", None),
                 }
 
                 logger.info(f"Loaded spectrum: plate={plate}, mjd={mjd}, fiber={fiber}")
@@ -202,9 +206,9 @@ class SDSSDataLoader:
 
     def query_spectroscopic_sample(
         self,
-        z_range: Tuple[float, float] = (0.0, 1.0),
-        spec_class: str = 'GALAXY',
-        max_rows: int = 10000
+        z_range: tuple[float, float] = (0.0, 1.0),
+        spec_class: str = "GALAXY",
+        max_rows: int = 10000,
     ) -> pd.DataFrame:
         """
         Query SDSS spectroscopic sample.
@@ -255,14 +259,10 @@ class PanSTARRSLoader:
             bucket_name: S3 bucket for caching data
         """
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3') if bucket_name else None
+        self.s3_client = boto3.client("s3") if bucket_name else None
 
     def query_region(
-        self,
-        ra: float,
-        dec: float,
-        radius: float = 0.1,
-        catalog: str = 'mean'
+        self, ra: float, dec: float, radius: float = 0.1, catalog: str = "mean"
     ) -> pd.DataFrame:
         """
         Query Pan-STARRS catalog.
@@ -279,14 +279,11 @@ class PanSTARRSLoader:
         logger.info(f"Querying Pan-STARRS at RA={ra:.2f}, Dec={dec:.2f}")
 
         # Use astroquery MAST
-        coord = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+        coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
 
         try:
             result = Catalogs.query_region(
-                coord,
-                radius=radius*u.deg,
-                catalog="Panstarrs",
-                table=catalog
+                coord, radius=radius * u.deg, catalog="Panstarrs", table=catalog
             )
 
             if len(result) == 0:
@@ -305,7 +302,7 @@ class PanSTARRSLoader:
         self,
         ra: float,
         dec: float,
-        radius: float = 1.0  # arcseconds
+        radius: float = 1.0,  # arcseconds
     ) -> pd.DataFrame:
         """
         Get Pan-STARRS time-series photometry.
@@ -321,14 +318,11 @@ class PanSTARRSLoader:
         logger.info(f"Getting lightcurve for RA={ra:.2f}, Dec={dec:.2f}")
 
         # Query detection table (individual epochs)
-        coord = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+        coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
 
         try:
             result = Catalogs.query_region(
-                coord,
-                radius=radius*u.arcsec,
-                catalog="Panstarrs",
-                table="detection"
+                coord, radius=radius * u.arcsec, catalog="Panstarrs", table="detection"
             )
 
             if len(result) == 0:
@@ -337,8 +331,8 @@ class PanSTARRSLoader:
             df = result.to_pandas()
 
             # Sort by time
-            if 'obsTime' in df.columns:
-                df = df.sort_values('obsTime')
+            if "obsTime" in df.columns:
+                df = df.sort_values("obsTime")
 
             logger.info(f"Found {len(df)} detections")
             return df
@@ -361,12 +355,7 @@ class LegacySurveyLoader:
         self.bucket_name = bucket_name
         self.base_url = "https://www.legacysurvey.org/viewer"
 
-    def query_region(
-        self,
-        ra: float,
-        dec: float,
-        radius: float = 0.1
-    ) -> pd.DataFrame:
+    def query_region(self, ra: float, dec: float, radius: float = 0.1) -> pd.DataFrame:
         """
         Query Legacy Survey catalog.
 
@@ -383,10 +372,10 @@ class LegacySurveyLoader:
         # Legacy Survey catalog service
         url = f"{self.base_url}/catalog-search/"
         params = {
-            'ra': ra,
-            'dec': dec,
-            'radius': radius * 3600,  # Convert to arcseconds
-            'format': 'json'
+            "ra": ra,
+            "dec": dec,
+            "radius": radius * 3600,  # Convert to arcseconds
+            "format": "json",
         }
 
         try:
@@ -394,11 +383,11 @@ class LegacySurveyLoader:
             response.raise_for_status()
             data = response.json()
 
-            if not data.get('rd'):
+            if not data.get("rd"):
                 logger.warning("No objects found")
                 return pd.DataFrame()
 
-            df = pd.DataFrame(data['rd'])
+            df = pd.DataFrame(data["rd"])
             logger.info(f"Found {len(df)} objects")
             return df
 
@@ -407,12 +396,7 @@ class LegacySurveyLoader:
             return pd.DataFrame()
 
     def download_cutout(
-        self,
-        ra: float,
-        dec: float,
-        size: int = 256,
-        layer: str = 'ls-dr10',
-        bands: str = 'grz'
+        self, ra: float, dec: float, size: int = 256, layer: str = "ls-dr10", bands: str = "grz"
     ) -> Path:
         """
         Download Legacy Survey image cutout.
@@ -429,13 +413,7 @@ class LegacySurveyLoader:
         """
         # Cutout service URL
         url = f"{self.base_url}/jpeg-cutout/"
-        params = {
-            'ra': ra,
-            'dec': dec,
-            'size': size,
-            'layer': layer,
-            'bands': bands
-        }
+        params = {"ra": ra, "dec": dec, "size": size, "layer": layer, "bands": bands}
 
         try:
             response = requests.get(url, params=params)
@@ -445,7 +423,7 @@ class LegacySurveyLoader:
             local_path = Path(f"./data/legacy/cutout_ra{ra:.2f}_dec{dec:.2f}.jpg")
             local_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(local_path, 'wb') as f:
+            with open(local_path, "wb") as f:
                 f.write(response.content)
 
             logger.info(f"Downloaded cutout to {local_path}")
@@ -459,11 +437,11 @@ class LegacySurveyLoader:
 def crossmatch_catalogs(
     catalog1: pd.DataFrame,
     catalog2: pd.DataFrame,
-    ra_col1: str = 'ra',
-    dec_col1: str = 'dec',
-    ra_col2: str = 'ra',
-    dec_col2: str = 'dec',
-    max_separation: float = 1.0  # arcseconds
+    ra_col1: str = "ra",
+    dec_col1: str = "dec",
+    ra_col2: str = "ra",
+    dec_col2: str = "dec",
+    max_separation: float = 1.0,  # arcseconds
 ) -> pd.DataFrame:
     """
     Cross-match two astronomical catalogs by sky position.
@@ -486,15 +464,11 @@ def crossmatch_catalogs(
 
     # Create SkyCoord objects
     coord1 = SkyCoord(
-        ra=catalog1[ra_col1].values*u.deg,
-        dec=catalog1[dec_col1].values*u.deg,
-        frame='icrs'
+        ra=catalog1[ra_col1].values * u.deg, dec=catalog1[dec_col1].values * u.deg, frame="icrs"
     )
 
     coord2 = SkyCoord(
-        ra=catalog2[ra_col2].values*u.deg,
-        dec=catalog2[dec_col2].values*u.deg,
-        frame='icrs'
+        ra=catalog2[ra_col2].values * u.deg, dec=catalog2[dec_col2].values * u.deg, frame="icrs"
     )
 
     # Match
@@ -505,15 +479,15 @@ def crossmatch_catalogs(
 
     # Merge catalogs
     matched = catalog1[mask].copy()
-    matched['match_idx'] = idx[mask]
-    matched['match_sep'] = sep2d[mask].arcsec
+    matched["match_idx"] = idx[mask]
+    matched["match_sep"] = sep2d[mask].arcsec
 
     # Add columns from catalog2
     for col in catalog2.columns:
         if col not in [ra_col2, dec_col2]:
-            matched[f'{col}_2'] = catalog2.iloc[idx[mask]][col].values
+            matched[f"{col}_2"] = catalog2.iloc[idx[mask]][col].values
 
-    logger.info(f"Found {len(matched)} matches within {max_separation}\"")
+    logger.info(f'Found {len(matched)} matches within {max_separation}"')
 
     return matched
 
@@ -524,26 +498,27 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Access astronomical survey data')
-    parser.add_argument('--survey', type=str, default='sdss',
-                       choices=['sdss', 'panstarrs', 'legacy'],
-                       help='Survey to query')
-    parser.add_argument('--ra', type=float, required=True,
-                       help='Right ascension (degrees)')
-    parser.add_argument('--dec', type=float, required=True,
-                       help='Declination (degrees)')
-    parser.add_argument('--radius', type=float, default=0.1,
-                       help='Search radius (degrees)')
+    parser = argparse.ArgumentParser(description="Access astronomical survey data")
+    parser.add_argument(
+        "--survey",
+        type=str,
+        default="sdss",
+        choices=["sdss", "panstarrs", "legacy"],
+        help="Survey to query",
+    )
+    parser.add_argument("--ra", type=float, required=True, help="Right ascension (degrees)")
+    parser.add_argument("--dec", type=float, required=True, help="Declination (degrees)")
+    parser.add_argument("--radius", type=float, default=0.1, help="Search radius (degrees)")
     args = parser.parse_args()
 
     # Query survey
-    if args.survey == 'sdss':
+    if args.survey == "sdss":
         loader = SDSSDataLoader()
         catalog = loader.query_region(args.ra, args.dec, args.radius)
-    elif args.survey == 'panstarrs':
+    elif args.survey == "panstarrs":
         loader = PanSTARRSLoader()
         catalog = loader.query_region(args.ra, args.dec, args.radius)
-    elif args.survey == 'legacy':
+    elif args.survey == "legacy":
         loader = LegacySurveyLoader()
         catalog = loader.query_region(args.ra, args.dec, args.radius)
 
@@ -556,5 +531,5 @@ def main():
     print(f"\nSaved to {output_file}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,10 +2,9 @@
 Catalog cross-matching utilities using spatial indexing.
 """
 
-import numpy as np
-from astropy.coordinates import SkyCoord, match_coordinates_sky
-from astropy import units as u
 import healpy as hp
+from astropy import units as u
+from astropy.coordinates import SkyCoord, match_coordinates_sky
 
 
 def build_healpix_index(ra, dec, nside=1024):
@@ -53,8 +52,8 @@ def spatial_crossmatch(ra1, dec1, ra2, dec2, max_sep_arcsec=1.0):
         Boolean mask: True where separation < max_sep_arcsec
     """
     # Create SkyCoord objects
-    coords1 = SkyCoord(ra=ra1*u.deg, dec=dec1*u.deg)
-    coords2 = SkyCoord(ra=ra2*u.deg, dec=dec2*u.deg)
+    coords1 = SkyCoord(ra=ra1 * u.deg, dec=dec1 * u.deg)
+    coords2 = SkyCoord(ra=ra2 * u.deg, dec=dec2 * u.deg)
 
     # Match catalogs
     idx, sep2d, _ = match_coordinates_sky(coords1, coords2)
@@ -65,18 +64,25 @@ def spatial_crossmatch(ra1, dec1, ra2, dec2, max_sep_arcsec=1.0):
     # Create mask for good matches
     mask = sep_arcsec < max_sep_arcsec
 
-    print(f"Cross-match results:")
+    print("Cross-match results:")
     print(f"  Total in catalog 1: {len(ra1)}")
     print(f"  Total in catalog 2: {len(ra2)}")
     print(f"  Matches within {max_sep_arcsec} arcsec: {mask.sum()}")
-    print(f"  Match rate: {100*mask.sum()/len(ra1):.1f}%")
+    print(f"  Match rate: {100 * mask.sum() / len(ra1):.1f}%")
 
     return idx, sep_arcsec, mask
 
 
-def match_catalogs(cat1, cat2, ra_col1='ra', dec_col1='dec',
-                  ra_col2='ra', dec_col2='dec', max_sep_arcsec=1.0,
-                  join_type='left'):
+def match_catalogs(
+    cat1,
+    cat2,
+    ra_col1="ra",
+    dec_col1="dec",
+    ra_col2="ra",
+    dec_col2="dec",
+    max_sep_arcsec=1.0,
+    join_type="left",
+):
     """
     Match two astropy Tables by position.
 
@@ -112,18 +118,18 @@ def match_catalogs(cat1, cat2, ra_col1='ra', dec_col1='dec',
     idx, sep_arcsec, mask = spatial_crossmatch(ra1, dec1, ra2, dec2, max_sep_arcsec)
 
     # Build matched catalog
-    if join_type == 'inner':
+    if join_type == "inner":
         # Only keep matches
         matched_cat1 = cat1[mask]
         matched_cat2 = cat2[idx[mask]]
 
         # Add separation column
         sep_col = Table()
-        sep_col['separation_arcsec'] = sep_arcsec[mask]
+        sep_col["separation_arcsec"] = sep_arcsec[mask]
 
         result = hstack([matched_cat1, matched_cat2, sep_col])
 
-    elif join_type == 'left':
+    elif join_type == "left":
         # Keep all cat1, fill non-matches with masked values
         matched_cat2 = cat2[idx]
 
@@ -133,8 +139,8 @@ def match_catalogs(cat1, cat2, ra_col1='ra', dec_col1='dec',
 
         # Add separation column
         sep_col = Table()
-        sep_col['separation_arcsec'] = sep_arcsec
-        sep_col['separation_arcsec'].mask = ~mask
+        sep_col["separation_arcsec"] = sep_arcsec
+        sep_col["separation_arcsec"].mask = ~mask
 
         result = hstack([cat1, matched_cat2, sep_col])
 
@@ -144,8 +150,7 @@ def match_catalogs(cat1, cat2, ra_col1='ra', dec_col1='dec',
     return result
 
 
-def build_multi_survey_catalog(sdss, gaia, tmass, wise,
-                               max_sep_arcsec=1.0):
+def build_multi_survey_catalog(sdss, gaia, tmass, wise, max_sep_arcsec=1.0):
     """
     Cross-match catalogs from multiple surveys.
 
@@ -171,39 +176,48 @@ def build_multi_survey_catalog(sdss, gaia, tmass, wise,
 
     # Start with SDSS as reference
     result = sdss.copy()
-    result['catalog_source'] = 'SDSS'
+    result["catalog_source"] = "SDSS"
 
     # Match with Gaia
     if gaia is not None:
         print("\n1. Matching SDSS + Gaia...")
         result = match_catalogs(
-            result, gaia,
-            ra_col1='ra', dec_col1='dec',
-            ra_col2='ra', dec_col2='dec',
+            result,
+            gaia,
+            ra_col1="ra",
+            dec_col1="dec",
+            ra_col2="ra",
+            dec_col2="dec",
             max_sep_arcsec=max_sep_arcsec,
-            join_type='left'
+            join_type="left",
         )
 
     # Match with 2MASS
     if tmass is not None:
         print("\n2. Matching SDSS + Gaia + 2MASS...")
         result = match_catalogs(
-            result, tmass,
-            ra_col1='ra', dec_col1='dec',
-            ra_col2='ra', dec_col2='dec',
+            result,
+            tmass,
+            ra_col1="ra",
+            dec_col1="dec",
+            ra_col2="ra",
+            dec_col2="dec",
             max_sep_arcsec=max_sep_arcsec,
-            join_type='left'
+            join_type="left",
         )
 
     # Match with WISE
     if wise is not None:
         print("\n3. Matching SDSS + Gaia + 2MASS + WISE...")
         result = match_catalogs(
-            result, wise,
-            ra_col1='ra', dec_col1='dec',
-            ra_col2='ra', dec_col2='dec',
+            result,
+            wise,
+            ra_col1="ra",
+            dec_col1="dec",
+            ra_col2="ra",
+            dec_col2="dec",
             max_sep_arcsec=max_sep_arcsec,
-            join_type='left'
+            join_type="left",
         )
 
     print(f"\nFinal matched catalog: {len(result)} sources")
@@ -228,7 +242,7 @@ def calculate_match_statistics(matched_catalog):
     stats = {}
 
     # Check which surveys have data for each source
-    stats['total_sources'] = len(matched_catalog)
+    stats["total_sources"] = len(matched_catalog)
 
     # Count non-null entries from each survey
     # (This is simplified - adjust column names as needed)

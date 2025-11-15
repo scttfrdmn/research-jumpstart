@@ -2,17 +2,14 @@
 Statistical analysis functions for climate data.
 """
 
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from scipy import stats
 from statsmodels.tsa.seasonal import seasonal_decompose
-from typing import Tuple, Dict
 
 
-def calculate_trend(
-    data: pd.Series,
-    x: pd.Series = None
-) -> Dict[str, float]:
+def calculate_trend(data: pd.Series, x: pd.Series = None) -> dict[str, float]:
     """
     Calculate linear trend using least squares regression.
 
@@ -29,19 +26,17 @@ def calculate_trend(
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, data)
 
     return {
-        'slope': slope,
-        'intercept': intercept,
-        'r_squared': r_value ** 2,
-        'p_value': p_value,
-        'std_err': std_err
+        "slope": slope,
+        "intercept": intercept,
+        "r_squared": r_value**2,
+        "p_value": p_value,
+        "std_err": std_err,
     }
 
 
 def decompose_time_series(
-    data: pd.Series,
-    period: int = 12,
-    model: str = 'additive'
-) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    data: pd.Series, period: int = 12, model: str = "additive"
+) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
     Decompose time series into trend, seasonal, and residual components.
 
@@ -55,17 +50,10 @@ def decompose_time_series(
     """
     decomposition = seasonal_decompose(data, model=model, period=period)
 
-    return (
-        decomposition.trend,
-        decomposition.seasonal,
-        decomposition.resid
-    )
+    return (decomposition.trend, decomposition.seasonal, decomposition.resid)
 
 
-def calculate_correlation_matrix(
-    df: pd.DataFrame,
-    variables: list
-) -> pd.DataFrame:
+def calculate_correlation_matrix(df: pd.DataFrame, variables: list) -> pd.DataFrame:
     """
     Calculate correlation matrix for specified variables.
 
@@ -79,10 +67,7 @@ def calculate_correlation_matrix(
     return df[variables].corr()
 
 
-def detect_change_points(
-    data: pd.Series,
-    window: int = 10
-) -> pd.Series:
+def detect_change_points(data: pd.Series, window: int = 10) -> pd.Series:
     """
     Detect significant change points using rolling statistics.
 
@@ -103,11 +88,7 @@ def detect_change_points(
     return z_scores.abs()
 
 
-def calculate_acceleration(
-    data: pd.Series,
-    dates: pd.Series,
-    periods: list
-) -> pd.DataFrame:
+def calculate_acceleration(data: pd.Series, dates: pd.Series, periods: list) -> pd.DataFrame:
     """
     Calculate rate of change across different time periods.
 
@@ -128,15 +109,17 @@ def calculate_acceleration(
 
         if len(period_data) > 1:
             trend_info = calculate_trend(period_data, period_years)
-            results.append({
-                'Period': label,
-                'Start_Year': start,
-                'End_Year': end,
-                'Years': end - start,
-                'Slope': trend_info['slope'],
-                'Rate_per_decade': trend_info['slope'] * 10,
-                'R_squared': trend_info['r_squared'],
-                'P_value': trend_info['p_value']
-            })
+            results.append(
+                {
+                    "Period": label,
+                    "Start_Year": start,
+                    "End_Year": end,
+                    "Years": end - start,
+                    "Slope": trend_info["slope"],
+                    "Rate_per_decade": trend_info["slope"] * 10,
+                    "R_squared": trend_info["r_squared"],
+                    "P_value": trend_info["p_value"],
+                }
+            )
 
     return pd.DataFrame(results)

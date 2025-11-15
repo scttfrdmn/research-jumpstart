@@ -7,42 +7,42 @@ Utilities for querying surveys, cross-matching catalogs, and classifying sources
 __version__ = "1.0.0"
 __author__ = "AWS Research Jumpstart"
 
-from .survey_utils import (
-    query_sdss,
-    query_gaia,
-    query_2mass,
-    query_wise,
-)
 from .crossmatch import (
-    spatial_crossmatch,
     build_healpix_index,
     match_catalogs,
+    spatial_crossmatch,
 )
 from .features import (
+    build_feature_matrix,
     calculate_colors,
     calculate_proper_motions,
     extract_morphology,
-    build_feature_matrix,
+)
+from .survey_utils import (
+    query_2mass,
+    query_gaia,
+    query_sdss,
+    query_wise,
 )
 from .visualization import (
-    plot_sky_distribution,
     plot_color_color,
     plot_confusion_matrix,
+    plot_sky_distribution,
 )
 
 __all__ = [
-    "query_sdss",
-    "query_gaia",
-    "query_2mass",
-    "query_wise",
-    "spatial_crossmatch",
+    "build_feature_matrix",
     "build_healpix_index",
-    "match_catalogs",
     "calculate_colors",
     "calculate_proper_motions",
     "extract_morphology",
-    "build_feature_matrix",
-    "plot_sky_distribution",
+    "match_catalogs",
     "plot_color_color",
     "plot_confusion_matrix",
+    "plot_sky_distribution",
+    "query_2mass",
+    "query_gaia",
+    "query_sdss",
+    "query_wise",
+    "spatial_crossmatch",
 ]

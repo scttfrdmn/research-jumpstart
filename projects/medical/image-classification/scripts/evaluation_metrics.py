@@ -12,13 +12,17 @@ Usage:
     plot_roc_curve(y_true, y_probs, class_names=['Benign', 'Malignant'])
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from sklearn.metrics import (
-    confusion_matrix, classification_report,
-    roc_curve, auc, roc_auc_score,
-    precision_recall_curve, average_precision_score
+    auc,
+    average_precision_score,
+    classification_report,
+    confusion_matrix,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
 )
 
 
@@ -62,24 +66,25 @@ def compute_clinical_metrics(y_true, y_pred, pos_label=1):
     balanced_acc = (sensitivity + specificity) / 2
 
     metrics = {
-        'accuracy': accuracy,
-        'sensitivity': sensitivity,  # Also called recall or TPR
-        'specificity': specificity,  # TNR
-        'ppv': ppv,  # Also called precision
-        'npv': npv,
-        'f1_score': f1_score,
-        'balanced_accuracy': balanced_acc,
-        'true_positives': int(tp),
-        'true_negatives': int(tn),
-        'false_positives': int(fp),
-        'false_negatives': int(fn)
+        "accuracy": accuracy,
+        "sensitivity": sensitivity,  # Also called recall or TPR
+        "specificity": specificity,  # TNR
+        "ppv": ppv,  # Also called precision
+        "npv": npv,
+        "f1_score": f1_score,
+        "balanced_accuracy": balanced_acc,
+        "true_positives": int(tp),
+        "true_negatives": int(tn),
+        "false_positives": int(fp),
+        "false_negatives": int(fn),
     }
 
     return metrics
 
 
-def plot_confusion_matrix(y_true, y_pred, class_names=None, normalize=False,
-                         figsize=(8, 6), save_path=None):
+def plot_confusion_matrix(
+    y_true, y_pred, class_names=None, normalize=False, figsize=(8, 6), save_path=None
+):
     """
     Plot confusion matrix.
 
@@ -101,32 +106,31 @@ def plot_confusion_matrix(y_true, y_pred, class_names=None, normalize=False,
     cm = confusion_matrix(y_true, y_pred)
 
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        fmt = '.2%'
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+        fmt = ".2%"
     else:
-        fmt = 'd'
+        fmt = "d"
 
     plt.figure(figsize=figsize)
     sns.heatmap(
         cm,
         annot=True,
         fmt=fmt,
-        cmap='Blues',
-        xticklabels=class_names if class_names else 'auto',
-        yticklabels=class_names if class_names else 'auto',
-        cbar_kws={'label': 'Proportion' if normalize else 'Count'}
+        cmap="Blues",
+        xticklabels=class_names if class_names else "auto",
+        yticklabels=class_names if class_names else "auto",
+        cbar_kws={"label": "Proportion" if normalize else "Count"},
     )
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.title('Confusion Matrix' + (' (Normalized)' if normalize else ''))
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix" + (" (Normalized)" if normalize else ""))
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
 
 
-def plot_roc_curve(y_true, y_probs, class_names=None, figsize=(8, 6),
-                  save_path=None):
+def plot_roc_curve(y_true, y_probs, class_names=None, figsize=(8, 6), save_path=None):
     """
     Plot ROC curve for binary or multiclass classification.
 
@@ -156,7 +160,7 @@ def plot_roc_curve(y_true, y_probs, class_names=None, figsize=(8, 6),
         fpr, tpr, _ = roc_curve(y_true, y_probs)
         roc_auc = auc(fpr, tpr)
 
-        plt.plot(fpr, tpr, lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
+        plt.plot(fpr, tpr, lw=2, label=f"ROC curve (AUC = {roc_auc:.3f})")
 
     # Multiclass classification
     else:
@@ -168,27 +172,26 @@ def plot_roc_curve(y_true, y_probs, class_names=None, figsize=(8, 6),
             fpr, tpr, _ = roc_curve(y_true_binary, y_probs[:, i])
             roc_auc = auc(fpr, tpr)
 
-            class_name = class_names[i] if class_names else f'Class {i}'
-            plt.plot(fpr, tpr, lw=2, label=f'{class_name} (AUC = {roc_auc:.3f})')
+            class_name = class_names[i] if class_names else f"Class {i}"
+            plt.plot(fpr, tpr, lw=2, label=f"{class_name} (AUC = {roc_auc:.3f})")
 
     # Diagonal reference line
-    plt.plot([0, 1], [0, 1], 'k--', lw=1, label='Random (AUC = 0.500)')
+    plt.plot([0, 1], [0, 1], "k--", lw=1, label="Random (AUC = 0.500)")
 
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate (1 - Specificity)')
-    plt.ylabel('True Positive Rate (Sensitivity)')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc='lower right')
+    plt.xlabel("False Positive Rate (1 - Specificity)")
+    plt.ylabel("True Positive Rate (Sensitivity)")
+    plt.title("Receiver Operating Characteristic (ROC) Curve")
+    plt.legend(loc="lower right")
     plt.grid(alpha=0.3)
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
 
 
-def plot_precision_recall_curve(y_true, y_probs, class_names=None,
-                                figsize=(8, 6), save_path=None):
+def plot_precision_recall_curve(y_true, y_probs, class_names=None, figsize=(8, 6), save_path=None):
     """
     Plot precision-recall curve.
 
@@ -219,8 +222,7 @@ def plot_precision_recall_curve(y_true, y_probs, class_names=None,
         precision, recall, _ = precision_recall_curve(y_true, y_probs)
         avg_precision = average_precision_score(y_true, y_probs)
 
-        plt.plot(recall, precision, lw=2,
-                label=f'PR curve (AP = {avg_precision:.3f})')
+        plt.plot(recall, precision, lw=2, label=f"PR curve (AP = {avg_precision:.3f})")
 
     # Multiclass
     else:
@@ -231,23 +233,21 @@ def plot_precision_recall_curve(y_true, y_probs, class_names=None,
             precision, recall, _ = precision_recall_curve(y_true_binary, y_probs[:, i])
             avg_precision = average_precision_score(y_true_binary, y_probs[:, i])
 
-            class_name = class_names[i] if class_names else f'Class {i}'
-            plt.plot(recall, precision, lw=2,
-                    label=f'{class_name} (AP = {avg_precision:.3f})')
+            class_name = class_names[i] if class_names else f"Class {i}"
+            plt.plot(recall, precision, lw=2, label=f"{class_name} (AP = {avg_precision:.3f})")
 
-    plt.xlabel('Recall (Sensitivity)')
-    plt.ylabel('Precision (PPV)')
-    plt.title('Precision-Recall Curve')
-    plt.legend(loc='best')
+    plt.xlabel("Recall (Sensitivity)")
+    plt.ylabel("Precision (PPV)")
+    plt.title("Precision-Recall Curve")
+    plt.legend(loc="best")
     plt.grid(alpha=0.3)
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
 
 
-def print_classification_summary(y_true, y_pred, y_probs=None,
-                                class_names=None):
+def print_classification_summary(y_true, y_pred, y_probs=None, class_names=None):
     """
     Print comprehensive classification summary.
 
@@ -301,8 +301,9 @@ def print_classification_summary(y_true, y_pred, y_probs=None,
     print(classification_report(y_true, y_pred, target_names=class_names))
 
 
-def compute_bootstrap_ci(y_true, y_pred, metric_func, n_bootstrap=1000,
-                        confidence=0.95, random_state=42):
+def compute_bootstrap_ci(
+    y_true, y_pred, metric_func, n_bootstrap=1000, confidence=0.95, random_state=42
+):
     """
     Compute confidence interval for a metric using bootstrap.
 
@@ -395,21 +396,21 @@ def analyze_errors(y_true, y_pred, y_probs, image_paths=None, top_k=10):
     errors = []
     for idx in sorted_indices:
         error_info = {
-            'index': int(idx),
-            'true_label': int(y_true[idx]),
-            'pred_label': int(y_pred[idx]),
-            'confidence': float(y_probs[idx, y_pred[idx]] if y_probs.ndim == 2 else y_probs[idx])
+            "index": int(idx),
+            "true_label": int(y_true[idx]),
+            "pred_label": int(y_pred[idx]),
+            "confidence": float(y_probs[idx, y_pred[idx]] if y_probs.ndim == 2 else y_probs[idx]),
         }
 
         if image_paths is not None:
-            error_info['image_path'] = image_paths[idx]
+            error_info["image_path"] = image_paths[idx]
 
         errors.append(error_info)
 
     return errors
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage with synthetic data
     print("Medical Image Classification Evaluation Metrics")
     print("=" * 60)
@@ -422,7 +423,7 @@ if __name__ == '__main__':
     y_probs = y_probs / y_probs.sum(axis=1, keepdims=True)  # Normalize
     y_pred = y_probs.argmax(axis=1)
 
-    class_names = ['Benign', 'Malignant']
+    class_names = ["Benign", "Malignant"]
 
     # Print classification summary
     print_classification_summary(y_true, y_pred, y_probs, class_names)
@@ -431,6 +432,7 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print("\nBootstrap Confidence Interval for Accuracy:")
     from sklearn.metrics import accuracy_score
+
     ci = compute_bootstrap_ci(y_true, y_pred, accuracy_score, n_bootstrap=1000)
     print(f"  95% CI: [{ci[0]:.3f}, {ci[1]:.3f}]")
 
@@ -439,9 +441,11 @@ if __name__ == '__main__':
     print("\nTop 5 Most Confident Errors:")
     errors = analyze_errors(y_true, y_pred, y_probs, top_k=5)
     for i, error in enumerate(errors, 1):
-        print(f"  {i}. Index {error['index']}: "
-              f"True={error['true_label']}, "
-              f"Pred={error['pred_label']}, "
-              f"Confidence={error['confidence']:.3f}")
+        print(
+            f"  {i}. Index {error['index']}: "
+            f"True={error['true_label']}, "
+            f"Pred={error['pred_label']}, "
+            f"Confidence={error['confidence']:.3f}"
+        )
 
     print("\n✓ Evaluation metrics ready")

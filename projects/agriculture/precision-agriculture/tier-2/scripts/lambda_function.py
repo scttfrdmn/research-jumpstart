@@ -31,18 +31,19 @@ Output files created in S3:
 """
 
 import json
-import boto3
-import numpy as np
-from datetime import datetime
 import os
 import sys
+from datetime import datetime
+
+import boto3
+import numpy as np
 
 # Initialize AWS clients
-s3_client = boto3.client('s3')
-logs_client = boto3.client('logs')
+s3_client = boto3.client("s3")
+logs_client = boto3.client("logs")
 
 # Configuration
-AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 print(f"Lambda running in region: {AWS_REGION}")
 
 
@@ -61,23 +62,23 @@ def lambda_handler(event, context):
         print(f"Event: {json.dumps(event)}")
 
         # Parse S3 event
-        if 'Records' not in event or len(event['Records']) == 0:
+        if "Records" not in event or len(event["Records"]) == 0:
             return error_response(400, "No S3 records in event")
 
-        bucket = event['Records'][0]['s3']['bucket']['name']
-        key = event['Records'][0]['s3']['object']['key']
+        bucket = event["Records"][0]["s3"]["bucket"]["name"]
+        key = event["Records"][0]["s3"]["object"]["key"]
 
         print(f"Processing: s3://{bucket}/{key}")
 
         # Parse metadata from filename
         # Expected format: field_XXX_YYYYMMDD.tif
-        filename = key.split('/')[-1].replace('.tif', '')
-        parts = filename.split('_')
+        filename = key.split("/")[-1].replace(".tif", "")
+        parts = filename.split("_")
 
         if len(parts) < 2:
             return error_response(400, f"Invalid filename format: {filename}")
 
-        field_id = '_'.join(parts[:2])
+        field_id = "_".join(parts[:2])
         date_str = parts[2] if len(parts) > 2 else datetime.now().strftime("%Y%m%d")
 
         print(f"Field ID: {field_id}, Date: {date_str}")
@@ -89,25 +90,24 @@ def lambda_handler(event, context):
             return error_response(500, "Failed to calculate NDVI")
 
         # Save metrics to S3
-        metrics_key = key.replace('raw/', 'results/').replace('.tif', '_metrics.json')
+        metrics_key = key.replace("raw/", "results/").replace(".tif", "_metrics.json")
         save_metrics_to_s3(bucket, metrics_key, metrics)
 
         print(f"Metrics saved to: {metrics_key}")
 
         return success_response(
-            message="NDVI calculation successful",
-            field_id=field_id,
-            metrics=metrics
+            message="NDVI calculation successful", field_id=field_id, metrics=metrics
         )
 
     except KeyError as e:
         return error_response(400, f"Missing required field in event: {e}")
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         import traceback
+
         traceback.print_exc()
-        return error_response(500, f"Internal error: {str(e)}")
+        return error_response(500, f"Internal error: {e!s}")
 
 
 def calculate_ndvi_metrics(field_id, date_str):
@@ -157,39 +157,36 @@ def calculate_ndvi_metrics(field_id, date_str):
             health_status = "Stressed"
 
         metrics = {
-            'field_id': field_id,
-            'date': date_str,
-            'timestamp': datetime.now().isoformat(),
-
+            "field_id": field_id,
+            "date": date_str,
+            "timestamp": datetime.now().isoformat(),
             # NDVI statistics
-            'avg_ndvi': round(avg_ndvi, 4),
-            'min_ndvi': round(min_ndvi, 4),
-            'max_ndvi': round(max_ndvi, 4),
-            'std_ndvi': round(std_ndvi, 4),
-
+            "avg_ndvi": round(avg_ndvi, 4),
+            "min_ndvi": round(min_ndvi, 4),
+            "max_ndvi": round(max_ndvi, 4),
+            "std_ndvi": round(std_ndvi, 4),
             # Health metrics
-            'vegetation_coverage': round(vegetation_coverage, 4),
-            'health_status': health_status,
-
+            "vegetation_coverage": round(vegetation_coverage, 4),
+            "health_status": health_status,
             # Additional indices (simplified)
-            'evi': round(2.5 * (avg_ndvi - 0.1), 4),  # Enhanced Vegetation Index
-            'lai': round(3.6 * avg_ndvi - 0.1, 4),    # Leaf Area Index
-
+            "evi": round(2.5 * (avg_ndvi - 0.1), 4),  # Enhanced Vegetation Index
+            "lai": round(3.6 * avg_ndvi - 0.1, 4),  # Leaf Area Index
             # Processing metadata
-            'processor_version': '1.0',
-            'processing_time_ms': 2500
+            "processor_version": "1.0",
+            "processing_time_ms": 2500,
         }
 
-        print(f"Metrics calculated:")
+        print("Metrics calculated:")
         print(f"  NDVI: {metrics['avg_ndvi']} (±{metrics['std_ndvi']})")
         print(f"  Health: {metrics['health_status']}")
-        print(f"  Vegetation: {metrics['vegetation_coverage']*100:.1f}%")
+        print(f"  Vegetation: {metrics['vegetation_coverage'] * 100:.1f}%")
 
         return metrics
 
     except Exception as e:
         print(f"Error calculating metrics: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -208,7 +205,7 @@ def save_metrics_to_s3(bucket_name, key, metrics):
             Bucket=bucket_name,
             Key=key,
             Body=json.dumps(metrics, indent=2),
-            ContentType='application/json'
+            ContentType="application/json",
         )
         print(f"Saved metrics to: s3://{bucket_name}/{key}")
 
@@ -242,65 +239,48 @@ def save_ndvi_geotiff_to_s3(bucket_name, key, ndvi_array, profile):
 
 def success_response(message, field_id=None, metrics=None):
     """Generate successful Lambda response."""
-    body = {
-        'message': message,
-        'timestamp': datetime.now().isoformat()
-    }
+    body = {"message": message, "timestamp": datetime.now().isoformat()}
 
     if field_id:
-        body['field_id'] = field_id
+        body["field_id"] = field_id
 
     if metrics:
-        body['metrics'] = metrics
+        body["metrics"] = metrics
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps(body)
-    }
+    return {"statusCode": 200, "body": json.dumps(body)}
 
 
 def error_response(status_code, error_message):
     """Generate error Lambda response."""
     return {
-        'statusCode': status_code,
-        'body': json.dumps({
-            'error': error_message,
-            'timestamp': datetime.now().isoformat()
-        })
+        "statusCode": status_code,
+        "body": json.dumps({"error": error_message, "timestamp": datetime.now().isoformat()}),
     }
 
 
 # Test function for local development
 def test_lambda_locally():
     """Test Lambda function with sample event."""
-    test_event = {
-        'Records': [{
-            's3': {
-                'bucket': {'name': 'satellite-imagery-test'},
-                'object': {'key': 'raw/field_001_20240615.tif'}
-            }
-        }]
-    }
 
     class MockContext:
         def __init__(self):
             self.function_name = "process-ndvi-calculation"
             self.aws_request_id = "test-123"
 
-    context = MockContext()
+    MockContext()
 
     print("Testing Lambda locally...")
     print("=" * 60)
 
     # Note: This won't actually upload to S3 without credentials
     # but will show the metrics calculation
-    response = calculate_ndvi_metrics('field_001', '20240615')
+    response = calculate_ndvi_metrics("field_001", "20240615")
 
     print(json.dumps(response, indent=2))
     print("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Local testing (requires boto3 credentials)
-    if len(sys.argv) > 1 and sys.argv[1] == '--test':
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
         test_lambda_locally()

@@ -16,24 +16,21 @@ Usage:
         --limit 100
 """
 
+import argparse
+import logging
 import os
 import sys
-import argparse
-import json
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 from collections import Counter
-import logging
+from typing import Any
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,7 @@ load_dotenv()
 class SentimentAnalyzer:
     """Query and analyze sentiment data from DynamoDB."""
 
-    def __init__(self, table_name: str, region: str = 'us-east-1'):
+    def __init__(self, table_name: str, region: str = "us-east-1"):
         """
         Initialize analyzer.
 
@@ -54,10 +51,10 @@ class SentimentAnalyzer:
         """
         self.table_name = table_name
         self.region = region
-        self.dynamodb = boto3.resource('dynamodb', region_name=region)
+        self.dynamodb = boto3.resource("dynamodb", region_name=region)
         self.table = self.dynamodb.Table(table_name)
 
-    def query_all_posts(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def query_all_posts(self, limit: int = 100) -> list[dict[str, Any]]:
         """
         Query all posts from DynamoDB.
 
@@ -70,7 +67,7 @@ class SentimentAnalyzer:
         try:
             logger.info(f"Querying table: {self.table_name}")
             response = self.table.scan(Limit=limit)
-            items = response.get('Items', [])
+            items = response.get("Items", [])
             logger.info(f"Retrieved {len(items)} posts")
             return items
 
@@ -78,7 +75,7 @@ class SentimentAnalyzer:
             logger.error(f"DynamoDB query error: {e}")
             return []
 
-    def query_by_sentiment(self, sentiment: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def query_by_sentiment(self, sentiment: str, limit: int = 100) -> list[dict[str, Any]]:
         """
         Query posts by sentiment.
 
@@ -91,16 +88,15 @@ class SentimentAnalyzer:
         """
         try:
             response = self.table.scan(
-                FilterExpression=Attr('sentiment').eq(sentiment),
-                Limit=limit
+                FilterExpression=Attr("sentiment").eq(sentiment), Limit=limit
             )
-            return response.get('Items', [])
+            return response.get("Items", [])
 
         except ClientError as e:
             logger.error(f"Query error: {e}")
             return []
 
-    def get_statistics(self, posts: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_statistics(self, posts: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Calculate sentiment statistics.
 
@@ -111,34 +107,34 @@ class SentimentAnalyzer:
             Statistics dictionary
         """
         if not posts:
-            return {'error': 'No posts to analyze'}
+            return {"error": "No posts to analyze"}
 
-        sentiments = [post.get('sentiment', 'UNKNOWN') for post in posts]
+        sentiments = [post.get("sentiment", "UNKNOWN") for post in posts]
         sentiment_counts = Counter(sentiments)
 
         # Calculate average scores
-        avg_positive = sum(post.get('positive_score', 0) for post in posts) / len(posts)
-        avg_negative = sum(post.get('negative_score', 0) for post in posts) / len(posts)
-        avg_neutral = sum(post.get('neutral_score', 0) for post in posts) / len(posts)
+        avg_positive = sum(post.get("positive_score", 0) for post in posts) / len(posts)
+        avg_negative = sum(post.get("negative_score", 0) for post in posts) / len(posts)
+        avg_neutral = sum(post.get("neutral_score", 0) for post in posts) / len(posts)
 
         # Hashtag analysis
         all_hashtags = []
         for post in posts:
-            all_hashtags.extend(post.get('hashtags', []))
+            all_hashtags.extend(post.get("hashtags", []))
         hashtag_counts = Counter(all_hashtags)
 
         return {
-            'total_posts': len(posts),
-            'sentiment_distribution': dict(sentiment_counts),
-            'average_scores': {
-                'positive': round(avg_positive, 3),
-                'negative': round(avg_negative, 3),
-                'neutral': round(avg_neutral, 3)
+            "total_posts": len(posts),
+            "sentiment_distribution": dict(sentiment_counts),
+            "average_scores": {
+                "positive": round(avg_positive, 3),
+                "negative": round(avg_negative, 3),
+                "neutral": round(avg_neutral, 3),
             },
-            'top_hashtags': hashtag_counts.most_common(10)
+            "top_hashtags": hashtag_counts.most_common(10),
         }
 
-    def display_posts(self, posts: List[Dict[str, Any]], max_display: int = 10):
+    def display_posts(self, posts: list[dict[str, Any]], max_display: int = 10):
         """
         Display posts in formatted table.
 
@@ -155,16 +151,18 @@ class SentimentAnalyzer:
             print(f"  User: {post.get('username', 'N/A')}")
             print(f"  Text: {post.get('text', 'N/A')[:100]}...")
             print(f"  Sentiment: {post.get('sentiment', 'N/A')}")
-            print(f"  Scores: P={post.get('positive_score', 0):.2f}, "
-                  f"N={post.get('negative_score', 0):.2f}, "
-                  f"Neu={post.get('neutral_score', 0):.2f}")
+            print(
+                f"  Scores: P={post.get('positive_score', 0):.2f}, "
+                f"N={post.get('negative_score', 0):.2f}, "
+                f"Neu={post.get('neutral_score', 0):.2f}"
+            )
             print(f"  Hashtags: {', '.join(post.get('hashtags', []))}")
             print(f"  Mentions: {', '.join(post.get('mentions', []))}")
 
         if len(posts) > max_display:
             print(f"\n... and {len(posts) - max_display} more posts")
 
-    def display_statistics(self, stats: Dict[str, Any]):
+    def display_statistics(self, stats: dict[str, Any]):
         """
         Display statistics in formatted output.
 
@@ -177,18 +175,18 @@ class SentimentAnalyzer:
         print(f"\nTotal posts: {stats['total_posts']}")
 
         print("\nSentiment Distribution:")
-        for sentiment, count in stats['sentiment_distribution'].items():
-            percentage = (count / stats['total_posts']) * 100
+        for sentiment, count in stats["sentiment_distribution"].items():
+            percentage = (count / stats["total_posts"]) * 100
             print(f"  {sentiment}: {count} ({percentage:.1f}%)")
 
         print("\nAverage Sentiment Scores:")
-        scores = stats['average_scores']
+        scores = stats["average_scores"]
         print(f"  Positive: {scores['positive']:.3f}")
         print(f"  Negative: {scores['negative']:.3f}")
         print(f"  Neutral:  {scores['neutral']:.3f}")
 
         print("\nTop Hashtags:")
-        for hashtag, count in stats['top_hashtags']:
+        for hashtag, count in stats["top_hashtags"]:
             print(f"  #{hashtag}: {count}")
 
         print("=" * 80)
@@ -197,7 +195,7 @@ class SentimentAnalyzer:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Query sentiment analysis results from DynamoDB',
+        description="Query sentiment analysis results from DynamoDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -209,35 +207,32 @@ Examples:
 
   # Limit results
   python query_results.py --table-name SocialMediaPosts --limit 50
-        """
+        """,
     )
 
     parser.add_argument(
-        '--table-name',
+        "--table-name",
         type=str,
-        default=os.getenv('DYNAMODB_TABLE', 'SocialMediaPosts'),
-        help='DynamoDB table name (default: SocialMediaPosts)'
+        default=os.getenv("DYNAMODB_TABLE", "SocialMediaPosts"),
+        help="DynamoDB table name (default: SocialMediaPosts)",
     )
 
     parser.add_argument(
-        '--sentiment',
+        "--sentiment",
         type=str,
-        choices=['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'MIXED'],
-        help='Filter by sentiment type'
+        choices=["POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"],
+        help="Filter by sentiment type",
     )
 
     parser.add_argument(
-        '--limit',
-        type=int,
-        default=100,
-        help='Maximum number of results (default: 100)'
+        "--limit", type=int, default=100, help="Maximum number of results (default: 100)"
     )
 
     parser.add_argument(
-        '--region',
+        "--region",
         type=str,
-        default=os.getenv('AWS_REGION', 'us-east-1'),
-        help='AWS region (default: us-east-1)'
+        default=os.getenv("AWS_REGION", "us-east-1"),
+        help="AWS region (default: us-east-1)",
     )
 
     args = parser.parse_args()
@@ -264,5 +259,5 @@ Examples:
     analyzer.display_statistics(stats)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,14 +2,19 @@
 Brain and network visualization utilities.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
+import numpy as np
 
 
-def plot_connectivity_matrix(conn_matrix, labels=None, title='Connectivity Matrix',
-                             vmin=-1, vmax=1, cmap='RdBu_r', figsize=(10, 9)):
+def plot_connectivity_matrix(
+    conn_matrix,
+    labels=None,
+    title="Connectivity Matrix",
+    vmin=-1,
+    vmax=1,
+    cmap="RdBu_r",
+    figsize=(10, 9),
+):
     """
     Plot connectivity matrix as heatmap.
 
@@ -34,17 +39,18 @@ def plot_connectivity_matrix(conn_matrix, labels=None, title='Connectivity Matri
     """
     fig, ax = plt.subplots(figsize=figsize)
 
-    im = ax.imshow(conn_matrix, cmap=cmap, vmin=vmin, vmax=vmax,
-                   aspect='auto', interpolation='nearest')
+    im = ax.imshow(
+        conn_matrix, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto", interpolation="nearest"
+    )
 
     # Colorbar
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Correlation', rotation=270, labelpad=20)
+    cbar.set_label("Correlation", rotation=270, labelpad=20)
 
     # Labels
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('ROI', fontsize=12)
-    ax.set_ylabel('ROI', fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax.set_xlabel("ROI", fontsize=12)
+    ax.set_ylabel("ROI", fontsize=12)
 
     # Tick labels if provided
     if labels is not None:
@@ -53,15 +59,14 @@ def plot_connectivity_matrix(conn_matrix, labels=None, title='Connectivity Matri
         tick_positions = range(0, n_rois, tick_interval)
         ax.set_xticks(tick_positions)
         ax.set_yticks(tick_positions)
-        ax.set_xticklabels([labels[i] for i in tick_positions], rotation=45, ha='right')
+        ax.set_xticklabels([labels[i] for i in tick_positions], rotation=45, ha="right")
         ax.set_yticklabels([labels[i] for i in tick_positions])
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_connectome(conn_matrix, coords, threshold=0.3, node_size=50,
-                   title='Brain Connectome'):
+def plot_connectome(conn_matrix, coords, threshold=0.3, node_size=50, title="Brain Connectome"):
     """
     Plot brain connectome (requires Nilearn).
 
@@ -99,13 +104,13 @@ def plot_connectome(conn_matrix, coords, threshold=0.3, node_size=50,
         edge_threshold=threshold,
         node_size=node_size,
         title=title,
-        colorbar=True
+        colorbar=True,
     )
 
     return fig
 
 
-def plot_brain_network(conn_matrix, network_labels, title='Brain Networks'):
+def plot_brain_network(conn_matrix, network_labels, title="Brain Networks"):
     """
     Plot connectivity matrix organized by networks.
 
@@ -132,8 +137,9 @@ def plot_brain_network(conn_matrix, network_labels, title='Brain Networks'):
     # Plot
     fig, ax = plt.subplots(figsize=(10, 9))
 
-    im = ax.imshow(conn_sorted, cmap='RdBu_r', vmin=-1, vmax=1,
-                   aspect='auto', interpolation='nearest')
+    im = ax.imshow(
+        conn_sorted, cmap="RdBu_r", vmin=-1, vmax=1, aspect="auto", interpolation="nearest"
+    )
 
     # Add network boundaries
     network_boundaries = []
@@ -142,23 +148,23 @@ def plot_brain_network(conn_matrix, network_labels, title='Brain Networks'):
         if len(idx) > 0:
             network_boundaries.append((idx[0], idx[-1]))
 
-    for start, end in network_boundaries:
-        ax.axhline(y=end+0.5, color='white', linewidth=2)
-        ax.axvline(x=end+0.5, color='white', linewidth=2)
+    for _start, end in network_boundaries:
+        ax.axhline(y=end + 0.5, color="white", linewidth=2)
+        ax.axvline(x=end + 0.5, color="white", linewidth=2)
 
     # Colorbar
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Correlation', rotation=270, labelpad=20)
+    cbar.set_label("Correlation", rotation=270, labelpad=20)
 
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('ROI (sorted by network)', fontsize=12)
-    ax.set_ylabel('ROI (sorted by network)', fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax.set_xlabel("ROI (sorted by network)", fontsize=12)
+    ax.set_ylabel("ROI (sorted by network)", fontsize=12)
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_degree_distribution(conn_matrix, threshold=0.3, title='Degree Distribution'):
+def plot_degree_distribution(conn_matrix, threshold=0.3, title="Degree Distribution"):
     """
     Plot node degree distribution.
 
@@ -185,24 +191,34 @@ def plot_degree_distribution(conn_matrix, threshold=0.3, title='Degree Distribut
     # Plot
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    ax.hist(degrees, bins=30, color='steelblue', edgecolor='black', alpha=0.7)
+    ax.hist(degrees, bins=30, color="steelblue", edgecolor="black", alpha=0.7)
 
-    ax.set_xlabel('Degree', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Count', fontsize=12, fontweight='bold')
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
+    ax.set_xlabel("Degree", fontsize=12, fontweight="bold")
+    ax.set_ylabel("Count", fontsize=12, fontweight="bold")
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
 
     # Add statistics
-    ax.axvline(np.mean(degrees), color='red', linestyle='--', linewidth=2,
-               label=f'Mean: {np.mean(degrees):.1f}')
-    ax.axvline(np.median(degrees), color='orange', linestyle='--', linewidth=2,
-               label=f'Median: {np.median(degrees):.1f}')
+    ax.axvline(
+        np.mean(degrees),
+        color="red",
+        linestyle="--",
+        linewidth=2,
+        label=f"Mean: {np.mean(degrees):.1f}",
+    )
+    ax.axvline(
+        np.median(degrees),
+        color="orange",
+        linestyle="--",
+        linewidth=2,
+        label=f"Median: {np.median(degrees):.1f}",
+    )
     ax.legend()
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_training_history(history, title='Training History'):
+def plot_training_history(history, title="Training History"):
     """
     Plot model training history.
 
@@ -217,39 +233,38 @@ def plot_training_history(history, title='Training History'):
     -------
     fig, axes : matplotlib objects
     """
-    if hasattr(history, 'history'):
+    if hasattr(history, "history"):
         history = history.history
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     # Accuracy
-    axes[0].plot(history['accuracy'], label='Train', linewidth=2)
-    if 'val_accuracy' in history:
-        axes[0].plot(history['val_accuracy'], label='Validation', linewidth=2)
-    axes[0].set_xlabel('Epoch', fontsize=12, fontweight='bold')
-    axes[0].set_ylabel('Accuracy', fontsize=12, fontweight='bold')
-    axes[0].set_title('Model Accuracy', fontsize=13, fontweight='bold')
+    axes[0].plot(history["accuracy"], label="Train", linewidth=2)
+    if "val_accuracy" in history:
+        axes[0].plot(history["val_accuracy"], label="Validation", linewidth=2)
+    axes[0].set_xlabel("Epoch", fontsize=12, fontweight="bold")
+    axes[0].set_ylabel("Accuracy", fontsize=12, fontweight="bold")
+    axes[0].set_title("Model Accuracy", fontsize=13, fontweight="bold")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
     # Loss
-    axes[1].plot(history['loss'], label='Train', linewidth=2)
-    if 'val_loss' in history:
-        axes[1].plot(history['val_loss'], label='Validation', linewidth=2)
-    axes[1].set_xlabel('Epoch', fontsize=12, fontweight='bold')
-    axes[1].set_ylabel('Loss', fontsize=12, fontweight='bold')
-    axes[1].set_title('Model Loss', fontsize=13, fontweight='bold')
+    axes[1].plot(history["loss"], label="Train", linewidth=2)
+    if "val_loss" in history:
+        axes[1].plot(history["val_loss"], label="Validation", linewidth=2)
+    axes[1].set_xlabel("Epoch", fontsize=12, fontweight="bold")
+    axes[1].set_ylabel("Loss", fontsize=12, fontweight="bold")
+    axes[1].set_title("Model Loss", fontsize=13, fontweight="bold")
     axes[1].legend()
     axes[1].grid(alpha=0.3)
 
-    fig.suptitle(title, fontsize=15, fontweight='bold', y=1.02)
+    fig.suptitle(title, fontsize=15, fontweight="bold", y=1.02)
     plt.tight_layout()
 
     return fig, axes
 
 
-def plot_confusion_matrix(y_true, y_pred, labels=None, normalize=True,
-                         title='Confusion Matrix'):
+def plot_confusion_matrix(y_true, y_pred, labels=None, normalize=True, title="Confusion Matrix"):
     """
     Plot confusion matrix.
 
@@ -276,12 +291,12 @@ def plot_confusion_matrix(y_true, y_pred, labels=None, normalize=True,
     cm = confusion_matrix(y_true, y_pred)
 
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    im = ax.imshow(cm, interpolation='nearest', cmap='Blues')
+    im = ax.imshow(cm, interpolation="nearest", cmap="Blues")
     ax.figure.colorbar(im, ax=ax)
 
     # Labels
@@ -289,28 +304,32 @@ def plot_confusion_matrix(y_true, y_pred, labels=None, normalize=True,
         tick_marks = np.arange(len(labels))
         ax.set_xticks(tick_marks)
         ax.set_yticks(tick_marks)
-        ax.set_xticklabels(labels, rotation=45, ha='right')
+        ax.set_xticklabels(labels, rotation=45, ha="right")
         ax.set_yticklabels(labels)
 
     # Annotate
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
+    fmt = ".2f" if normalize else "d"
+    thresh = cm.max() / 2.0
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            ax.text(j, i, format(cm[i, j], fmt),
-                   ha="center", va="center",
-                   color="white" if cm[i, j] > thresh else "black")
+            ax.text(
+                j,
+                i,
+                format(cm[i, j], fmt),
+                ha="center",
+                va="center",
+                color="white" if cm[i, j] > thresh else "black",
+            )
 
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
-    ax.set_ylabel('True label', fontsize=12, fontweight='bold')
-    ax.set_xlabel('Predicted label', fontsize=12, fontweight='bold')
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax.set_ylabel("True label", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Predicted label", fontsize=12, fontweight="bold")
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_brain_activation(stat_map, bg_img=None, threshold=2.0,
-                         title='Brain Activation'):
+def plot_brain_activation(stat_map, bg_img=None, threshold=2.0, title="Brain Activation"):
     """
     Plot statistical brain map (requires Nilearn).
 
@@ -340,15 +359,15 @@ def plot_brain_activation(stat_map, bg_img=None, threshold=2.0,
         bg_img=bg_img,
         threshold=threshold,
         title=title,
-        display_mode='ortho',
+        display_mode="ortho",
         cut_coords=(0, 0, 0),
-        colorbar=True
+        colorbar=True,
     )
 
     return display
 
 
-def plot_roc_curves(y_true, y_probs, class_names=None, title='ROC Curves'):
+def plot_roc_curves(y_true, y_probs, class_names=None, title="ROC Curves"):
     """
     Plot ROC curves for multi-class classification.
 
@@ -367,7 +386,7 @@ def plot_roc_curves(y_true, y_probs, class_names=None, title='ROC Curves'):
     -------
     fig, ax : matplotlib objects
     """
-    from sklearn.metrics import roc_curve, auc
+    from sklearn.metrics import auc, roc_curve
     from sklearn.preprocessing import label_binarize
 
     n_classes = y_probs.shape[1]
@@ -382,23 +401,23 @@ def plot_roc_curves(y_true, y_probs, class_names=None, title='ROC Curves'):
         fpr, tpr, _ = roc_curve(y_true_bin[:, i], y_probs[:, i])
         roc_auc = auc(fpr, tpr)
 
-        label = f'Class {i}' if class_names is None else class_names[i]
-        ax.plot(fpr, tpr, linewidth=2, label=f'{label} (AUC = {roc_auc:.2f})')
+        label = f"Class {i}" if class_names is None else class_names[i]
+        ax.plot(fpr, tpr, linewidth=2, label=f"{label} (AUC = {roc_auc:.2f})")
 
     # Diagonal line
-    ax.plot([0, 1], [0, 1], 'k--', linewidth=2, label='Chance')
+    ax.plot([0, 1], [0, 1], "k--", linewidth=2, label="Chance")
 
-    ax.set_xlabel('False Positive Rate', fontsize=12, fontweight='bold')
-    ax.set_ylabel('True Positive Rate', fontsize=12, fontweight='bold')
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
-    ax.legend(loc='lower right')
+    ax.set_xlabel("False Positive Rate", fontsize=12, fontweight="bold")
+    ax.set_ylabel("True Positive Rate", fontsize=12, fontweight="bold")
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax.legend(loc="lower right")
     ax.grid(alpha=0.3)
 
     plt.tight_layout()
     return fig, ax
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test visualization functions
     print("Testing visualization utilities...")
 
@@ -410,7 +429,7 @@ if __name__ == '__main__':
 
     # Test connectivity matrix plot
     print("\n1. Connectivity Matrix:")
-    fig, ax = plot_connectivity_matrix(conn_matrix, title='Test Connectivity')
+    fig, ax = plot_connectivity_matrix(conn_matrix, title="Test Connectivity")
     plt.close()
     print("   ✓ Plot generated")
 

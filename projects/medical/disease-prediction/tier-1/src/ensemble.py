@@ -4,10 +4,11 @@ Ensemble learning methods for multi-modal medical imaging.
 Combines predictions from X-ray, CT, and MRI models.
 """
 
+from typing import Optional
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from typing import List, Dict, Optional
 
 
 class EnsemblePredictor:
@@ -22,9 +23,9 @@ class EnsemblePredictor:
 
     def __init__(
         self,
-        models: List[nn.Module],
-        weights: Optional[List[float]] = None,
-        method: str = 'weighted_average'
+        models: list[nn.Module],
+        weights: Optional[list[float]] = None,
+        method: str = "weighted_average",
     ):
         """
         Args:
@@ -47,11 +48,7 @@ class EnsemblePredictor:
         for model in self.models:
             model.eval()
 
-    def predict(
-        self,
-        inputs: List[torch.Tensor],
-        return_individual: bool = False
-    ) -> torch.Tensor:
+    def predict(self, inputs: list[torch.Tensor], return_individual: bool = False) -> torch.Tensor:
         """
         Make ensemble prediction.
 
@@ -73,11 +70,11 @@ class EnsemblePredictor:
                 individual_preds.append(pred)
 
         # Combine predictions based on method
-        if self.method in ['average', 'weighted_average']:
+        if self.method in ["average", "weighted_average"]:
             ensemble_pred = self._weighted_average(individual_preds)
-        elif self.method == 'voting':
+        elif self.method == "voting":
             ensemble_pred = self._majority_voting(individual_preds)
-        elif self.method == 'stacking':
+        elif self.method == "stacking":
             ensemble_pred = self._stacking(individual_preds)
         else:
             raise ValueError(f"Unknown ensemble method: {self.method}")
@@ -86,14 +83,12 @@ class EnsemblePredictor:
             return ensemble_pred, individual_preds
         return ensemble_pred
 
-    def _weighted_average(self, predictions: List[torch.Tensor]) -> torch.Tensor:
+    def _weighted_average(self, predictions: list[torch.Tensor]) -> torch.Tensor:
         """Weighted average of predictions."""
-        weighted_preds = [
-            pred * weight for pred, weight in zip(predictions, self.weights)
-        ]
+        weighted_preds = [pred * weight for pred, weight in zip(predictions, self.weights)]
         return torch.stack(weighted_preds).sum(dim=0)
 
-    def _majority_voting(self, predictions: List[torch.Tensor]) -> torch.Tensor:
+    def _majority_voting(self, predictions: list[torch.Tensor]) -> torch.Tensor:
         """Majority voting for classification."""
         # Convert logits to class predictions
         class_preds = [torch.argmax(pred, dim=-1) for pred in predictions]
@@ -103,7 +98,7 @@ class EnsemblePredictor:
         voted, _ = torch.mode(stacked, dim=0)
         return voted
 
-    def _stacking(self, predictions: List[torch.Tensor]) -> torch.Tensor:
+    def _stacking(self, predictions: list[torch.Tensor]) -> torch.Tensor:
         """
         Stacking ensemble (requires trained meta-learner).
         For now, falls back to weighted average.
@@ -111,7 +106,7 @@ class EnsemblePredictor:
         # TODO: Implement meta-learner
         return self._weighted_average(predictions)
 
-    def update_weights(self, new_weights: List[float]):
+    def update_weights(self, new_weights: list[float]):
         """Update ensemble weights."""
         assert len(new_weights) == len(self.models)
         assert abs(sum(new_weights) - 1.0) < 1e-6
@@ -132,7 +127,7 @@ class MetaLearner(nn.Module):
             num_classes: Number of output classes
             hidden_dim: Hidden layer dimension
         """
-        super(MetaLearner, self).__init__()
+        super().__init__()
 
         input_dim = num_models * num_classes
 
@@ -142,7 +137,7 @@ class MetaLearner(nn.Module):
         self.dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, predictions: List[torch.Tensor]) -> torch.Tensor:
+    def forward(self, predictions: list[torch.Tensor]) -> torch.Tensor:
         """
         Args:
             predictions: List of predictions from base models
@@ -170,7 +165,7 @@ class UncertaintyEnsemble:
     Uses Monte Carlo dropout or ensemble variance to estimate prediction confidence.
     """
 
-    def __init__(self, models: List[nn.Module], num_samples: int = 10):
+    def __init__(self, models: list[nn.Module], num_samples: int = 10):
         """
         Args:
             models: List of trained models
@@ -180,8 +175,7 @@ class UncertaintyEnsemble:
         self.num_samples = num_samples
 
     def predict_with_uncertainty(
-        self,
-        inputs: List[torch.Tensor]
+        self, inputs: list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Predict with uncertainty estimates.
@@ -217,11 +211,8 @@ class UncertaintyEnsemble:
 
 
 def optimize_weights(
-    models: List[nn.Module],
-    val_loader,
-    criterion,
-    device: str = 'cuda'
-) -> List[float]:
+    models: list[nn.Module], val_loader, criterion, device: str = "cuda"
+) -> list[float]:
     """
     Find optimal ensemble weights using validation set.
 
@@ -254,16 +245,12 @@ def optimize_weights(
     initial_weights = np.ones(len(models)) / len(models)
 
     # Constraints: weights sum to 1 and are non-negative
-    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0}
+    constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1.0}
     bounds = [(0.0, 1.0) for _ in range(len(models))]
 
     # Optimize
     result = minimize(
-        objective,
-        initial_weights,
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
+        objective, initial_weights, method="SLSQP", bounds=bounds, constraints=constraints
     )
 
     optimal_weights = result.x.tolist()
@@ -271,10 +258,8 @@ def optimize_weights(
 
 
 def calculate_contribution_scores(
-    models: List[nn.Module],
-    inputs: List[torch.Tensor],
-    ensemble_pred: torch.Tensor
-) -> List[float]:
+    models: list[nn.Module], inputs: list[torch.Tensor], ensemble_pred: torch.Tensor
+) -> list[float]:
     """
     Calculate how much each model contributes to the ensemble prediction.
 
@@ -294,11 +279,7 @@ def calculate_contribution_scores(
 
             # Calculate similarity to ensemble prediction
             # Using cosine similarity
-            similarity = torch.cosine_similarity(
-                pred.flatten(),
-                ensemble_pred.flatten(),
-                dim=0
-            )
+            similarity = torch.cosine_similarity(pred.flatten(), ensemble_pred.flatten(), dim=0)
             contributions.append(similarity.item())
 
     # Normalize to sum to 1
@@ -309,7 +290,7 @@ def calculate_contribution_scores(
     return contributions
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Multi-Modal Medical Imaging Ensemble")
     print("=" * 50)
     print("\\nEnsemble methods available:")

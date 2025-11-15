@@ -6,12 +6,12 @@ from public sources (NOAA, NASA, etc.). Data is cached in Studio Lab's
 persistent storage to avoid re-downloading.
 """
 
-import pandas as pd
-import numpy as np
 from pathlib import Path
-import requests
-from typing import Optional, Tuple
+from typing import Optional
 
+import numpy as np
+import pandas as pd
+import requests
 
 # Data directory (persistent in Studio Lab)
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -66,7 +66,7 @@ def load_temperature_data(force_download: bool = False) -> pd.DataFrame:
 
     # Check for processed cache
     if processed_file.exists() and not force_download:
-        print(f"✓ Loading processed temperature data from cache")
+        print("✓ Loading processed temperature data from cache")
         return pd.read_csv(processed_file)
 
     # Download raw data
@@ -76,22 +76,19 @@ def load_temperature_data(force_download: bool = False) -> pd.DataFrame:
     df = pd.read_csv(cache_file, skiprows=1)
 
     # Reshape to long format (Year, Month, Anomaly)
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
     records = []
     for _, row in df.iterrows():
-        year = row['Year']
+        year = row["Year"]
         for month_idx, month in enumerate(months, 1):
-            if month in row and row[month] != '***':
-                records.append({
-                    'Year': int(year),
-                    'Month': month_idx,
-                    'Anomaly': float(row[month])
-                })
+            if month in row and row[month] != "***":
+                records.append(
+                    {"Year": int(year), "Month": month_idx, "Anomaly": float(row[month])}
+                )
 
     result = pd.DataFrame(records)
-    result['Date'] = pd.to_datetime(result[['Year', 'Month']].assign(day=1))
+    result["Date"] = pd.to_datetime(result[["Year", "Month"]].assign(day=1))
 
     # Cache processed data
     result.to_csv(processed_file, index=False)
@@ -115,8 +112,8 @@ def load_co2_data(force_download: bool = False) -> pd.DataFrame:
     processed_file = PROCESSED_DATA_DIR / "co2_monthly.csv"
 
     if processed_file.exists() and not force_download:
-        print(f"✓ Loading processed CO2 data from cache")
-        return pd.read_csv(processed_file, parse_dates=['Date'])
+        print("✓ Loading processed CO2 data from cache")
+        return pd.read_csv(processed_file, parse_dates=["Date"])
 
     download_file(url, cache_file, force=force_download)
 
@@ -124,17 +121,25 @@ def load_co2_data(force_download: bool = False) -> pd.DataFrame:
     df = pd.read_csv(
         cache_file,
         delim_whitespace=True,
-        comment='#',
-        names=['year', 'month', 'decimal_date', 'average', 'deseasonalized',
-               'ndays', 'stddev', 'uncertainty']
+        comment="#",
+        names=[
+            "year",
+            "month",
+            "decimal_date",
+            "average",
+            "deseasonalized",
+            "ndays",
+            "stddev",
+            "uncertainty",
+        ],
     )
 
     # Filter valid data
-    df = df[df['average'] > 0].copy()
-    df['Date'] = pd.to_datetime(df[['year', 'month']].assign(day=1))
+    df = df[df["average"] > 0].copy()
+    df["Date"] = pd.to_datetime(df[["year", "month"]].assign(day=1))
 
-    result = df[['year', 'month', 'average', 'Date']].copy()
-    result.columns = ['Year', 'Month', 'CO2_ppm', 'Date']
+    result = df[["year", "month", "average", "Date"]].copy()
+    result.columns = ["Year", "Month", "CO2_ppm", "Date"]
 
     result.to_csv(processed_file, index=False)
     print(f"✓ Processed and cached CO2 data ({len(result)} records)")
@@ -153,29 +158,25 @@ def load_sea_level_data(force_download: bool = False) -> pd.DataFrame:
         DataFrame with columns: Date, Sea_Level_mm
     """
     # Note: This is a simplified example. Real implementation would use actual NOAA data.
-    url = "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/slr/slr_sla_gbl_free_txj1j2_90.csv"
-    cache_file = RAW_DATA_DIR / "sea_level.csv"
+    RAW_DATA_DIR / "sea_level.csv"
     processed_file = PROCESSED_DATA_DIR / "sea_level_monthly.csv"
 
     if processed_file.exists() and not force_download:
-        print(f"✓ Loading processed sea level data from cache")
-        return pd.read_csv(processed_file, parse_dates=['Date'])
+        print("✓ Loading processed sea level data from cache")
+        return pd.read_csv(processed_file, parse_dates=["Date"])
 
     # For demo purposes, create synthetic data based on real trends
     # In production, would download actual data
-    print(f"⚠️  Using synthetic sea level data (real download URL may change)")
+    print("⚠️  Using synthetic sea level data (real download URL may change)")
 
-    dates = pd.date_range(start='1993-01-01', end='2024-01-01', freq='MS')
+    dates = pd.date_range(start="1993-01-01", end="2024-01-01", freq="MS")
     # Real trend: ~3.3mm/year with seasonal cycle
     years = (dates - dates[0]).days / 365.25
     trend = 3.3 * years  # mm/year
     seasonal = 10 * np.sin(2 * np.pi * years)  # Seasonal variation
     noise = np.random.normal(0, 5, len(dates))
 
-    result = pd.DataFrame({
-        'Date': dates,
-        'Sea_Level_mm': trend + seasonal + noise
-    })
+    result = pd.DataFrame({"Date": dates, "Sea_Level_mm": trend + seasonal + noise})
 
     result.to_csv(processed_file, index=False)
     print(f"✓ Processed and cached sea level data ({len(result)} records)")
@@ -184,10 +185,7 @@ def load_sea_level_data(force_download: bool = False) -> pd.DataFrame:
 
 
 def calculate_anomalies(
-    data: pd.Series,
-    baseline_start: int,
-    baseline_end: int,
-    date_column: Optional[pd.Series] = None
+    data: pd.Series, baseline_start: int, baseline_end: int, date_column: Optional[pd.Series] = None
 ) -> pd.Series:
     """
     Calculate anomalies relative to a baseline period.
@@ -202,8 +200,9 @@ def calculate_anomalies(
         Series of anomalies
     """
     if date_column is not None:
-        baseline_mask = (date_column.dt.year >= baseline_start) & \
-                       (date_column.dt.year <= baseline_end)
+        baseline_mask = (date_column.dt.year >= baseline_start) & (
+            date_column.dt.year <= baseline_end
+        )
         baseline_mean = data[baseline_mask].mean()
     else:
         # Assume data is indexed by year
@@ -213,9 +212,7 @@ def calculate_anomalies(
 
 
 def merge_climate_datasets(
-    temp_df: pd.DataFrame,
-    co2_df: pd.DataFrame,
-    sea_level_df: Optional[pd.DataFrame] = None
+    temp_df: pd.DataFrame, co2_df: pd.DataFrame, sea_level_df: Optional[pd.DataFrame] = None
 ) -> pd.DataFrame:
     """
     Merge multiple climate datasets on common date column.
@@ -229,18 +226,10 @@ def merge_climate_datasets(
         Merged DataFrame with all variables
     """
     # Merge on Date column
-    merged = temp_df[['Date', 'Anomaly']].merge(
-        co2_df[['Date', 'CO2_ppm']],
-        on='Date',
-        how='inner'
-    )
+    merged = temp_df[["Date", "Anomaly"]].merge(co2_df[["Date", "CO2_ppm"]], on="Date", how="inner")
 
     if sea_level_df is not None:
-        merged = merged.merge(
-            sea_level_df[['Date', 'Sea_Level_mm']],
-            on='Date',
-            how='left'
-        )
+        merged = merged.merge(sea_level_df[["Date", "Sea_Level_mm"]], on="Date", how="left")
 
-    merged = merged.sort_values('Date').reset_index(drop=True)
+    merged = merged.sort_values("Date").reset_index(drop=True)
     return merged

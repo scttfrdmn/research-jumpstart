@@ -2,13 +2,13 @@
 Multilingual text corpus utilities
 """
 
-import os
-from pathlib import Path
-from typing import Dict, List, Tuple
+
 import pandas as pd
 
 
-def load_parallel_texts(language_pair: Tuple[str, str], data_dir: str = 'data/parallel') -> pd.DataFrame:
+def load_parallel_texts(
+    language_pair: tuple[str, str], data_dir: str = "data/parallel"
+) -> pd.DataFrame:
     """
     Load parallel texts for a language pair.
 
@@ -23,7 +23,7 @@ def load_parallel_texts(language_pair: Tuple[str, str], data_dir: str = 'data/pa
     pass
 
 
-def align_translations(source_texts: List[str], target_texts: List[str]) -> List[Tuple[str, str]]:
+def align_translations(source_texts: list[str], target_texts: list[str]) -> list[tuple[str, str]]:
     """
     Align source and target texts at sentence level.
 

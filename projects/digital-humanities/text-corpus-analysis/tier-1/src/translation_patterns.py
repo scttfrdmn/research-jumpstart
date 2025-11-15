@@ -2,15 +2,11 @@
 Translation pattern detection and analysis
 """
 
-from typing import List, Tuple, Dict
 
 
 def detect_translation_patterns(
-    source_text: str,
-    target_text: str,
-    source_lang: str,
-    target_lang: str
-) -> Dict[str, float]:
+    source_text: str, target_text: str, source_lang: str, target_lang: str
+) -> dict[str, float]:
     """
     Detect systematic translation patterns between texts.
 
@@ -28,9 +24,8 @@ def detect_translation_patterns(
 
 
 def identify_translation_effects(
-    original_style: Dict[str, float],
-    translated_style: Dict[str, float]
-) -> Dict[str, float]:
+    original_style: dict[str, float], translated_style: dict[str, float]
+) -> dict[str, float]:
     """
     Quantify how translation affects stylistic features.
 
@@ -45,7 +40,7 @@ def identify_translation_effects(
     pass
 
 
-def classify_translation_vs_original(text: str, model, tokenizer) -> Tuple[str, float]:
+def classify_translation_vs_original(text: str, model, tokenizer) -> tuple[str, float]:
     """
     Classify whether text is translated or original.
 

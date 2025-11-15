@@ -28,18 +28,18 @@ AWS Setup:
 """
 
 import os
+
 import boto3
+import xarray as xr
 from botocore import UNSIGNED
 from botocore.config import Config
-import xarray as xr
-
 
 # AWS Open Data Registry S3 buckets
 BUCKETS = {
-    'cmip6': 'cmip6-pds',  # Public, no credentials needed
-    'era5': 'era5-pds',     # Public, no credentials needed
-    'noaa_gfs': 'noaa-gfs-bdp-pds',  # Public
-    'sentinel2': 'sentinel-s2-l2a'    # Public but large
+    "cmip6": "cmip6-pds",  # Public, no credentials needed
+    "era5": "era5-pds",  # Public, no credentials needed
+    "noaa_gfs": "noaa-gfs-bdp-pds",  # Public
+    "sentinel2": "sentinel-s2-l2a",  # Public but large
 }
 
 
@@ -61,14 +61,20 @@ def get_s3_client(anonymous=True):
     if anonymous:
         # Unsigned requests for public buckets
         config = Config(signature_version=UNSIGNED)
-        return boto3.client('s3', config=config)
+        return boto3.client("s3", config=config)
     else:
         # Use AWS credentials
-        return boto3.client('s3')
+        return boto3.client("s3")
 
 
-def list_cmip6_data(variable='tas', experiment='historical', model='CESM2',
-                   frequency='mon', max_results=20, anonymous=True):
+def list_cmip6_data(
+    variable="tas",
+    experiment="historical",
+    model="CESM2",
+    frequency="mon",
+    max_results=20,
+    anonymous=True,
+):
     """
     List CMIP6 data files on AWS.
 
@@ -96,10 +102,10 @@ def list_cmip6_data(variable='tas', experiment='historical', model='CESM2',
         S3 keys for matching files
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['cmip6']
+    bucket = BUCKETS["cmip6"]
 
     # Construct prefix (simplified search)
-    prefix = f'CMIP6/'
+    prefix = "CMIP6/"
 
     print(f"Searching CMIP6 data on s3://{bucket}/")
     print(f"  Variable: {variable}")
@@ -107,25 +113,27 @@ def list_cmip6_data(variable='tas', experiment='historical', model='CESM2',
     print(f"  Model: {model}")
 
     try:
-        paginator = s3.get_paginator('list_objects_v2')
+        paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=bucket, Prefix=prefix, MaxKeys=1000)
 
         files = []
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                key = obj['Key']
+            for obj in page["Contents"]:
+                key = obj["Key"]
 
                 # Filter by criteria
-                if all([
-                    variable in key,
-                    experiment in key,
-                    model in key,
-                    frequency in key,
-                    key.endswith('.nc')
-                ]):
+                if all(
+                    [
+                        variable in key,
+                        experiment in key,
+                        model in key,
+                        frequency in key,
+                        key.endswith(".nc"),
+                    ]
+                ):
                     files.append(key)
 
                     if len(files) >= max_results:
@@ -163,7 +171,7 @@ def download_cmip6_file(s3_key, output_path=None, anonymous=True):
         Path to downloaded file
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['cmip6']
+    bucket = BUCKETS["cmip6"]
 
     if output_path is None:
         output_path = os.path.basename(s3_key)
@@ -203,8 +211,8 @@ def open_cmip6_from_s3(s3_key, anonymous=True):
     except ImportError:
         raise ImportError("s3fs required: pip install s3fs")
 
-    bucket = BUCKETS['cmip6']
-    s3_path = f's3://{bucket}/{s3_key}'
+    bucket = BUCKETS["cmip6"]
+    s3_path = f"s3://{bucket}/{s3_key}"
 
     # Create S3 filesystem
     fs = s3fs.S3FileSystem(anon=anonymous)
@@ -212,7 +220,7 @@ def open_cmip6_from_s3(s3_key, anonymous=True):
     print(f"Opening: {s3_path}")
 
     try:
-        with fs.open(s3_path, 'rb') as f:
+        with fs.open(s3_path, "rb") as f:
             ds = xr.open_dataset(f)
         return ds
     except Exception as e:
@@ -220,8 +228,9 @@ def open_cmip6_from_s3(s3_key, anonymous=True):
         return None
 
 
-def list_era5_data(variable='2m_temperature', year=2020, month=None,
-                  max_results=10, anonymous=True):
+def list_era5_data(
+    variable="2m_temperature", year=2020, month=None, max_results=10, anonymous=True
+):
     """
     List ERA5 reanalysis data on AWS.
 
@@ -247,14 +256,11 @@ def list_era5_data(variable='2m_temperature', year=2020, month=None,
         S3 keys for matching files
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['era5']
+    bucket = BUCKETS["era5"]
 
     files = []
 
-    if month is not None:
-        months = [month]
-    else:
-        months = range(1, 13)
+    months = [month] if month is not None else range(1, 13)
 
     print(f"Searching ERA5 data on s3://{bucket}/")
     print(f"  Variable: {variable}")
@@ -262,14 +268,14 @@ def list_era5_data(variable='2m_temperature', year=2020, month=None,
 
     try:
         for m in months:
-            prefix = f'{year}/{m:02d}/data/'
+            prefix = f"{year}/{m:02d}/data/"
 
             response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=100)
 
-            if 'Contents' in response:
-                for obj in response['Contents']:
-                    key = obj['Key']
-                    if variable in key and key.endswith('.nc'):
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    key = obj["Key"]
+                    if variable in key and key.endswith(".nc"):
                         files.append(key)
 
                         if len(files) >= max_results:
@@ -288,8 +294,9 @@ def list_era5_data(variable='2m_temperature', year=2020, month=None,
         return []
 
 
-def download_era5_sample(variable='2m_temperature', year=2020, month=1,
-                        output_dir='data', anonymous=True):
+def download_era5_sample(
+    variable="2m_temperature", year=2020, month=1, output_dir="data", anonymous=True
+):
     """
     Download a sample ERA5 file.
 
@@ -322,7 +329,7 @@ def download_era5_sample(variable='2m_temperature', year=2020, month=1,
     output_path = os.path.join(output_dir, os.path.basename(s3_key))
 
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['era5']
+    bucket = BUCKETS["era5"]
 
     print(f"\nDownloading: s3://{bucket}/{s3_key}")
     print(f"         to: {output_path}")
@@ -336,8 +343,7 @@ def download_era5_sample(variable='2m_temperature', year=2020, month=1,
         return None
 
 
-def list_noaa_gfs_data(date='20240101', hour='00', max_results=10,
-                      anonymous=True):
+def list_noaa_gfs_data(date="20240101", hour="00", max_results=10, anonymous=True):
     """
     List NOAA GFS forecast data on AWS.
 
@@ -361,9 +367,9 @@ def list_noaa_gfs_data(date='20240101', hour='00', max_results=10,
         S3 keys for matching files
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['noaa_gfs']
+    bucket = BUCKETS["noaa_gfs"]
 
-    prefix = f'gfs.{date}/{hour}/atmos/'
+    prefix = f"gfs.{date}/{hour}/atmos/"
 
     print(f"Searching NOAA GFS data on s3://{bucket}/")
     print(f"  Date: {date}")
@@ -373,8 +379,8 @@ def list_noaa_gfs_data(date='20240101', hour='00', max_results=10,
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=max_results)
 
         files = []
-        if 'Contents' in response:
-            files = [obj['Key'] for obj in response['Contents']]
+        if "Contents" in response:
+            files = [obj["Key"] for obj in response["Contents"]]
 
         print(f"\nFound {len(files)} files")
         return files
@@ -394,38 +400,38 @@ def get_bucket_info():
     print("=" * 70)
 
     datasets = {
-        'CMIP6': {
-            'bucket': 's3://cmip6-pds',
-            'description': 'Coupled Model Intercomparison Project Phase 6',
-            'size': '~400 TB',
-            'variables': 'Temperature, precipitation, sea level, etc.',
-            'access': 'Public, no credentials required',
-            'docs': 'https://registry.opendata.aws/cmip6/'
+        "CMIP6": {
+            "bucket": "s3://cmip6-pds",
+            "description": "Coupled Model Intercomparison Project Phase 6",
+            "size": "~400 TB",
+            "variables": "Temperature, precipitation, sea level, etc.",
+            "access": "Public, no credentials required",
+            "docs": "https://registry.opendata.aws/cmip6/",
         },
-        'ERA5': {
-            'bucket': 's3://era5-pds',
-            'description': 'ECMWF Reanalysis v5',
-            'size': '~500 TB',
-            'variables': 'Temperature, pressure, wind, humidity, etc.',
-            'access': 'Public, no credentials required',
-            'docs': 'https://registry.opendata.aws/ecmwf-era5/'
+        "ERA5": {
+            "bucket": "s3://era5-pds",
+            "description": "ECMWF Reanalysis v5",
+            "size": "~500 TB",
+            "variables": "Temperature, pressure, wind, humidity, etc.",
+            "access": "Public, no credentials required",
+            "docs": "https://registry.opendata.aws/ecmwf-era5/",
         },
-        'NOAA GFS': {
-            'bucket': 's3://noaa-gfs-bdp-pds',
-            'description': 'Global Forecast System',
-            'size': 'Updated 4x daily',
-            'variables': 'Operational weather forecasts',
-            'access': 'Public, no credentials required',
-            'docs': 'https://registry.opendata.aws/noaa-gfs-bdp-pds/'
+        "NOAA GFS": {
+            "bucket": "s3://noaa-gfs-bdp-pds",
+            "description": "Global Forecast System",
+            "size": "Updated 4x daily",
+            "variables": "Operational weather forecasts",
+            "access": "Public, no credentials required",
+            "docs": "https://registry.opendata.aws/noaa-gfs-bdp-pds/",
         },
-        'Sentinel-2': {
-            'bucket': 's3://sentinel-s2-l2a',
-            'description': 'Sentinel-2 Level-2A (atmospherically corrected)',
-            'size': '~2 PB',
-            'variables': 'Multispectral satellite imagery',
-            'access': 'Public, no credentials required',
-            'docs': 'https://registry.opendata.aws/sentinel-2/'
-        }
+        "Sentinel-2": {
+            "bucket": "s3://sentinel-s2-l2a",
+            "description": "Sentinel-2 Level-2A (atmospherically corrected)",
+            "size": "~2 PB",
+            "variables": "Multispectral satellite imagery",
+            "access": "Public, no credentials required",
+            "docs": "https://registry.opendata.aws/sentinel-2/",
+        },
     }
 
     for name, info in datasets.items():
@@ -444,7 +450,7 @@ def get_bucket_info():
     print("  pip install boto3 s3fs xarray")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("AWS Open Data Access for Climate Science")
     print("=" * 70)
 
@@ -457,10 +463,7 @@ if __name__ == '__main__':
     print("\n\n2. Example: Searching CMIP6 Data")
     print("-" * 70)
     cmip6_files = list_cmip6_data(
-        variable='tas',
-        experiment='historical',
-        model='CESM2',
-        max_results=5
+        variable="tas", experiment="historical", model="CESM2", max_results=5
     )
     if cmip6_files:
         print("\nSample files:")
@@ -470,12 +473,7 @@ if __name__ == '__main__':
     # Example: List ERA5 data
     print("\n\n3. Example: Searching ERA5 Data")
     print("-" * 70)
-    era5_files = list_era5_data(
-        variable='2m_temperature',
-        year=2020,
-        month=1,
-        max_results=3
-    )
+    era5_files = list_era5_data(variable="2m_temperature", year=2020, month=1, max_results=3)
     if era5_files:
         print("\nSample files:")
         for f in era5_files:
@@ -484,11 +482,7 @@ if __name__ == '__main__':
     # Example: List GFS data
     print("\n\n4. Example: Searching NOAA GFS Data")
     print("-" * 70)
-    gfs_files = list_noaa_gfs_data(
-        date='20240101',
-        hour='00',
-        max_results=5
-    )
+    gfs_files = list_noaa_gfs_data(date="20240101", hour="00", max_results=5)
     if gfs_files:
         print("\nSample files:")
         for f in gfs_files[:3]:

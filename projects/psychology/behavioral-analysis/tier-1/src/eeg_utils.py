@@ -5,11 +5,9 @@ This module provides functions to preprocess EEG data, extract spectral features
 and compute connectivity measures.
 """
 
+
 import numpy as np
 from scipy import signal
-from scipy.fft import fft, fftfreq
-from pathlib import Path
-from typing import Tuple, Dict, Optional
 
 
 def preprocess_eeg(
@@ -17,7 +15,7 @@ def preprocess_eeg(
     sampling_rate: int = 256,
     lowcut: float = 0.5,
     highcut: float = 45.0,
-    remove_baseline: bool = True
+    remove_baseline: bool = True,
 ) -> np.ndarray:
     """
     Preprocess EEG data with filtering and baseline removal.
@@ -37,7 +35,7 @@ def preprocess_eeg(
     low = lowcut / nyquist
     high = highcut / nyquist
 
-    b, a = signal.butter(4, [low, high], btype='band')
+    b, a = signal.butter(4, [low, high], btype="band")
     filtered = signal.filtfilt(b, a, eeg_data, axis=1)
 
     # Remove baseline
@@ -48,10 +46,8 @@ def preprocess_eeg(
 
 
 def extract_spectral_features(
-    eeg_data: np.ndarray,
-    sampling_rate: int = 256,
-    window_size: float = 2.0
-) -> Dict[str, np.ndarray]:
+    eeg_data: np.ndarray, sampling_rate: int = 256, window_size: float = 2.0
+) -> dict[str, np.ndarray]:
     """
     Extract spectral power features from EEG data.
 
@@ -70,15 +66,15 @@ def extract_spectral_features(
     Returns:
         Dictionary with band powers for each channel
     """
-    n_channels, n_samples = eeg_data.shape
+    _n_channels, _n_samples = eeg_data.shape
 
     # Define frequency bands
     bands = {
-        'delta': (0.5, 4),
-        'theta': (4, 8),
-        'alpha': (8, 13),
-        'beta': (13, 30),
-        'gamma': (30, 45)
+        "delta": (0.5, 4),
+        "theta": (4, 8),
+        "alpha": (8, 13),
+        "beta": (13, 30),
+        "gamma": (30, 45),
     }
 
     # Compute power spectral density
@@ -93,17 +89,15 @@ def extract_spectral_features(
         features[band_name] = band_power
 
     # Add relative powers (normalized by total power)
-    total_power = np.sum([features[band] for band in bands.keys()], axis=0)
-    for band_name in bands.keys():
-        features[f'{band_name}_relative'] = features[band_name] / (total_power + 1e-10)
+    total_power = np.sum([features[band] for band in bands], axis=0)
+    for band_name in bands:
+        features[f"{band_name}_relative"] = features[band_name] / (total_power + 1e-10)
 
     return features
 
 
 def compute_eeg_connectivity(
-    eeg_data: np.ndarray,
-    method: str = 'coherence',
-    sampling_rate: int = 256
+    eeg_data: np.ndarray, method: str = "coherence", sampling_rate: int = 256
 ) -> np.ndarray:
     """
     Compute functional connectivity between EEG channels.
@@ -119,25 +113,23 @@ def compute_eeg_connectivity(
     n_channels = eeg_data.shape[0]
     connectivity = np.zeros((n_channels, n_channels))
 
-    if method == 'correlation':
+    if method == "correlation":
         # Simple Pearson correlation
         connectivity = np.corrcoef(eeg_data)
 
-    elif method == 'coherence':
+    elif method == "coherence":
         # Magnitude squared coherence
         for i in range(n_channels):
             for j in range(i, n_channels):
                 freqs, Cxy = signal.coherence(
-                    eeg_data[i], eeg_data[j],
-                    fs=sampling_rate,
-                    nperseg=256
+                    eeg_data[i], eeg_data[j], fs=sampling_rate, nperseg=256
                 )
                 # Average coherence across alpha band (8-13 Hz)
                 alpha_mask = (freqs >= 8) & (freqs <= 13)
                 connectivity[i, j] = np.mean(Cxy[alpha_mask])
                 connectivity[j, i] = connectivity[i, j]
 
-    elif method == 'plv':
+    elif method == "plv":
         # Phase Locking Value (simplified)
         # Extract instantaneous phase using Hilbert transform
         analytic_signal = signal.hilbert(eeg_data, axis=1)
@@ -156,10 +148,7 @@ def compute_eeg_connectivity(
     return connectivity
 
 
-def extract_eeg_features_vector(
-    eeg_data: np.ndarray,
-    sampling_rate: int = 256
-) -> np.ndarray:
+def extract_eeg_features_vector(eeg_data: np.ndarray, sampling_rate: int = 256) -> np.ndarray:
     """
     Extract comprehensive feature vector from EEG data.
 
@@ -176,12 +165,14 @@ def extract_eeg_features_vector(
 
     # Spectral features
     spectral = extract_spectral_features(eeg_data, sampling_rate)
-    for band in ['delta', 'theta', 'alpha', 'beta', 'gamma']:
+    for band in ["delta", "theta", "alpha", "beta", "gamma"]:
         features.append(spectral[band])
-        features.append(spectral[f'{band}_relative'])
+        features.append(spectral[f"{band}_relative"])
 
     # Connectivity features (upper triangle)
-    connectivity = compute_eeg_connectivity(eeg_data, method='coherence', sampling_rate=sampling_rate)
+    connectivity = compute_eeg_connectivity(
+        eeg_data, method="coherence", sampling_rate=sampling_rate
+    )
     triu_indices = np.triu_indices_from(connectivity, k=1)
     features.append(connectivity[triu_indices])
 
@@ -196,10 +187,7 @@ def extract_eeg_features_vector(
     return feature_vector
 
 
-def detect_artifacts(
-    eeg_data: np.ndarray,
-    threshold_std: float = 3.0
-) -> np.ndarray:
+def detect_artifacts(eeg_data: np.ndarray, threshold_std: float = 3.0) -> np.ndarray:
     """
     Detect artifacts in EEG data using simple threshold method.
 
@@ -225,7 +213,7 @@ def segment_eeg(
     eeg_data: np.ndarray,
     sampling_rate: int = 256,
     segment_duration: float = 2.0,
-    overlap: float = 0.5
+    overlap: float = 0.5,
 ) -> np.ndarray:
     """
     Segment continuous EEG data into overlapping windows.
@@ -239,13 +227,13 @@ def segment_eeg(
     Returns:
         Segmented data, shape (n_segments, n_channels, segment_samples)
     """
-    n_channels, n_samples = eeg_data.shape
+    _n_channels, n_samples = eeg_data.shape
     segment_samples = int(segment_duration * sampling_rate)
     step_samples = int(segment_samples * (1 - overlap))
 
     segments = []
     for start in range(0, n_samples - segment_samples + 1, step_samples):
-        segment = eeg_data[:, start:start + segment_samples]
+        segment = eeg_data[:, start : start + segment_samples]
         segments.append(segment)
 
     return np.array(segments)

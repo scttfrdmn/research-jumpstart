@@ -4,13 +4,14 @@ Upload oceanographic data to S3 for Lambda processing.
 Supports CSV and NetCDF formats.
 """
 
+import argparse
 import os
 import sys
-import argparse
 from datetime import datetime, timedelta
+
+import boto3
 import numpy as np
 import pandas as pd
-import boto3
 from botocore.exceptions import ClientError
 
 
@@ -49,7 +50,9 @@ def generate_sample_ocean_data(num_profiles=10, depths=20):
             # Temperature decreases with depth (thermocline model)
             surface_temp = 20.0 + np.random.normal(0, 2)
             deep_temp = 4.0 + np.random.normal(0, 0.5)
-            temperature = surface_temp * np.exp(-depth / 100) + deep_temp * (1 - np.exp(-depth / 100))
+            temperature = surface_temp * np.exp(-depth / 100) + deep_temp * (
+                1 - np.exp(-depth / 100)
+            )
 
             # Add temperature anomaly (simulate marine heatwave)
             if location["name"] == "Gulf Stream" and depth < 50:
@@ -73,24 +76,26 @@ def generate_sample_ocean_data(num_profiles=10, depths=20):
             if location["name"] == "Labrador Sea" and depth < 30:
                 chlorophyll = 25.0  # Spring bloom
 
-            data.append({
-                "timestamp": profile_time.isoformat() + "Z",
-                "location_name": location["name"],
-                "latitude": location["lat"],
-                "longitude": location["lon"],
-                "depth": round(depth, 1),
-                "temperature": round(temperature, 2),
-                "salinity": round(salinity, 2),
-                "ph": round(ph, 3),
-                "dissolved_oxygen": round(max(0.1, do), 2),
-                "chlorophyll": round(max(0.1, chlorophyll), 2),
-            })
+            data.append(
+                {
+                    "timestamp": profile_time.isoformat() + "Z",
+                    "location_name": location["name"],
+                    "latitude": location["lat"],
+                    "longitude": location["lon"],
+                    "depth": round(depth, 1),
+                    "temperature": round(temperature, 2),
+                    "salinity": round(salinity, 2),
+                    "ph": round(ph, 3),
+                    "dissolved_oxygen": round(max(0.1, do), 2),
+                    "chlorophyll": round(max(0.1, chlorophyll), 2),
+                }
+            )
 
     df = pd.DataFrame(data)
     print(f"Generated {len(df)} ocean observations")
-    print(f"\nSample data:")
+    print("\nSample data:")
     print(df.head(10))
-    print(f"\nStatistics:")
+    print("\nStatistics:")
     print(df.describe())
 
     return df
@@ -113,7 +118,7 @@ def upload_to_s3(bucket_name, local_file, s3_key):
     - local_file: Local file path
     - s3_key: S3 object key (path in bucket)
     """
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client("s3")
 
     try:
         print(f"\nUploading {local_file} to s3://{bucket_name}/{s3_key}")
@@ -123,14 +128,9 @@ def upload_to_s3(bucket_name, local_file, s3_key):
 
         def upload_progress(bytes_transferred):
             percent = (bytes_transferred / file_size) * 100
-            print(f"\rProgress: {percent:.1f}% ({bytes_transferred}/{file_size} bytes)", end='')
+            print(f"\rProgress: {percent:.1f}% ({bytes_transferred}/{file_size} bytes)", end="")
 
-        s3_client.upload_file(
-            local_file,
-            bucket_name,
-            s3_key,
-            Callback=upload_progress
-        )
+        s3_client.upload_file(local_file, bucket_name, s3_key, Callback=upload_progress)
 
         print(f"\n✓ Successfully uploaded to s3://{bucket_name}/{s3_key}")
 
@@ -151,17 +151,17 @@ def upload_to_s3(bucket_name, local_file, s3_key):
 
 def verify_bucket_exists(bucket_name):
     """Verify S3 bucket exists and is accessible."""
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client("s3")
 
     try:
         s3_client.head_bucket(Bucket=bucket_name)
         print(f"✓ Bucket '{bucket_name}' exists and is accessible")
         return True
     except ClientError as e:
-        error_code = e.response['Error']['Code']
-        if error_code == '404':
+        error_code = e.response["Error"]["Code"]
+        if error_code == "404":
             print(f"✗ Bucket '{bucket_name}' does not exist")
-        elif error_code == '403':
+        elif error_code == "403":
             print(f"✗ Access denied to bucket '{bucket_name}'")
         else:
             print(f"✗ Error accessing bucket: {e}")
@@ -170,41 +170,33 @@ def verify_bucket_exists(bucket_name):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Upload oceanographic data to S3 for Lambda processing'
+        description="Upload oceanographic data to S3 for Lambda processing"
     )
     parser.add_argument(
-        '--bucket',
+        "--bucket",
         type=str,
-        help='S3 bucket name (or set BUCKET_NAME env variable)',
-        default=os.environ.get('BUCKET_NAME')
+        help="S3 bucket name (or set BUCKET_NAME env variable)",
+        default=os.environ.get("BUCKET_NAME"),
     )
     parser.add_argument(
-        '--generate-sample',
-        action='store_true',
-        help='Generate sample ocean data instead of uploading existing file'
+        "--generate-sample",
+        action="store_true",
+        help="Generate sample ocean data instead of uploading existing file",
     )
     parser.add_argument(
-        '--file',
-        type=str,
-        help='Local CSV file to upload (if not generating sample data)'
+        "--file", type=str, help="Local CSV file to upload (if not generating sample data)"
     )
     parser.add_argument(
-        '--s3-key',
-        type=str,
-        help='S3 key (path in bucket). Default: raw/<filename>',
-        default=None
+        "--s3-key", type=str, help="S3 key (path in bucket). Default: raw/<filename>", default=None
     )
     parser.add_argument(
-        '--profiles',
+        "--profiles",
         type=int,
         default=10,
-        help='Number of ocean profiles to generate (default: 10)'
+        help="Number of ocean profiles to generate (default: 10)",
     )
     parser.add_argument(
-        '--depths',
-        type=int,
-        default=20,
-        help='Number of depth levels per profile (default: 20)'
+        "--depths", type=int, default=20, help="Number of depth levels per profile (default: 20)"
     )
 
     args = parser.parse_args()
@@ -226,13 +218,10 @@ def main():
     # Generate or use existing data
     if args.generate_sample:
         print("\n=== Generating Sample Ocean Data ===")
-        df = generate_sample_ocean_data(
-            num_profiles=args.profiles,
-            depths=args.depths
-        )
+        df = generate_sample_ocean_data(num_profiles=args.profiles, depths=args.depths)
 
         # Save to local file
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         local_file = f"ocean_data_{timestamp}.csv"
         save_to_csv(df, local_file)
 
@@ -258,11 +247,11 @@ def main():
 
     if success:
         print("\n=== Upload Complete ===")
-        print(f"✓ File uploaded successfully")
+        print("✓ File uploaded successfully")
         print(f"✓ S3 URI: s3://{args.bucket}/{s3_key}")
-        print(f"\nLambda will automatically process this file.")
-        print(f"Check CloudWatch logs for processing status:")
-        print(f"  aws logs tail /aws/lambda/analyze-ocean-data --follow")
+        print("\nLambda will automatically process this file.")
+        print("Check CloudWatch logs for processing status:")
+        print("  aws logs tail /aws/lambda/analyze-ocean-data --follow")
 
         # Clean up local file if it was generated
         if args.generate_sample:

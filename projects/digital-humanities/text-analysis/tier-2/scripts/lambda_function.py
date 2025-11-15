@@ -16,22 +16,23 @@ Results stored in DynamoDB for fast querying.
 import json
 import os
 import re
-import boto3
-from datetime import datetime
-from typing import Dict, List, Any
-from collections import Counter
 import urllib.parse
+from collections import Counter
+from datetime import datetime
+from typing import Any
+
+import boto3
 
 # Initialize AWS clients
-s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+s3 = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 
 # Configuration from environment variables
-DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE', 'TextAnalysis')
-BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
+DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "TextAnalysis")
+BUCKET_NAME = os.environ.get("BUCKET_NAME", "")
 
 # Set NLTK data path for Lambda environment
-os.environ['NLTK_DATA'] = '/var/task/nltk_data:/tmp/nltk_data'
+os.environ["NLTK_DATA"] = "/var/task/nltk_data:/tmp/nltk_data"
 
 
 def lambda_handler(event, context):
@@ -47,15 +48,15 @@ def lambda_handler(event, context):
     """
     try:
         # Parse S3 event
-        if 'Records' in event:
+        if "Records" in event:
             # Triggered by S3 upload
-            record = event['Records'][0]
-            bucket = record['s3']['bucket']['name']
-            key = urllib.parse.unquote_plus(record['s3']['object']['key'])
+            record = event["Records"][0]
+            bucket = record["s3"]["bucket"]["name"]
+            key = urllib.parse.unquote_plus(record["s3"]["object"]["key"])
         else:
             # Manual invocation
-            bucket = event.get('bucket', BUCKET_NAME)
-            key = event.get('key', '')
+            bucket = event.get("bucket", BUCKET_NAME)
+            key = event.get("key", "")
 
         print(f"Processing: s3://{bucket}/{key}")
 
@@ -66,10 +67,10 @@ def lambda_handler(event, context):
         analysis_results = analyze_text(text_content, metadata)
 
         # Add document metadata
-        analysis_results['document_id'] = f"{metadata['author']}-{os.path.basename(key)}"
-        analysis_results['s3_key'] = key
-        analysis_results['bucket'] = bucket
-        analysis_results['timestamp'] = int(datetime.now().timestamp())
+        analysis_results["document_id"] = f"{metadata['author']}-{os.path.basename(key)}"
+        analysis_results["s3_key"] = key
+        analysis_results["bucket"] = bucket
+        analysis_results["timestamp"] = int(datetime.now().timestamp())
 
         # Store results in DynamoDB
         store_results_in_dynamodb(analysis_results)
@@ -78,20 +79,19 @@ def lambda_handler(event, context):
         save_detailed_results_to_s3(bucket, key, analysis_results)
 
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Processing completed successfully',
-                'document_id': analysis_results['document_id'],
-                'word_count': analysis_results['word_count']
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Processing completed successfully",
+                    "document_id": analysis_results["document_id"],
+                    "word_count": analysis_results["word_count"],
+                }
+            ),
         }
 
     except Exception as e:
-        print(f"Error processing text: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        print(f"Error processing text: {e!s}")
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
 
 
 def download_text_from_s3(bucket: str, key: str) -> tuple:
@@ -110,21 +110,23 @@ def download_text_from_s3(bucket: str, key: str) -> tuple:
         response = s3.get_object(Bucket=bucket, Key=key)
 
         # Read text content
-        text_content = response['Body'].read().decode('utf-8', errors='ignore')
+        text_content = response["Body"].read().decode("utf-8", errors="ignore")
 
         # Extract metadata
-        metadata = response.get('Metadata', {})
+        metadata = response.get("Metadata", {})
 
         # Parse author from key if not in metadata
-        if 'author' not in metadata:
-            parts = key.split('/')
+        if "author" not in metadata:
+            parts = key.split("/")
             if len(parts) >= 3:  # raw/author/filename.txt
-                metadata['author'] = parts[1].replace('-', ' ').title()
+                metadata["author"] = parts[1].replace("-", " ").title()
 
         # Ensure required metadata fields
-        metadata.setdefault('title', os.path.basename(key).replace('.txt', '').replace('-', ' ').title())
-        metadata.setdefault('period', 'Unknown')
-        metadata.setdefault('genre', 'Text')
+        metadata.setdefault(
+            "title", os.path.basename(key).replace(".txt", "").replace("-", " ").title()
+        )
+        metadata.setdefault("period", "Unknown")
+        metadata.setdefault("genre", "Text")
 
         print(f"Downloaded {len(text_content)} characters from {key}")
         return text_content, metadata
@@ -134,7 +136,7 @@ def download_text_from_s3(bucket: str, key: str) -> tuple:
         raise
 
 
-def analyze_text(text: str, metadata: Dict) -> Dict[str, Any]:
+def analyze_text(text: str, metadata: dict) -> dict[str, Any]:
     """
     Perform comprehensive NLP analysis on text.
 
@@ -148,10 +150,10 @@ def analyze_text(text: str, metadata: Dict) -> Dict[str, Any]:
     # Import NLP libraries
     try:
         import nltk
-        from nltk.tokenize import word_tokenize, sent_tokenize
+        from nltk.chunk import ne_chunk
         from nltk.corpus import stopwords
         from nltk.tag import pos_tag
-        from nltk.chunk import ne_chunk
+        from nltk.tokenize import sent_tokenize, word_tokenize
     except ImportError:
         print("Warning: NLTK not available, using basic analysis")
         return basic_analysis(text, metadata)
@@ -174,15 +176,14 @@ def analyze_text(text: str, metadata: Dict) -> Dict[str, Any]:
     vocabulary_richness = unique_words / total_words if total_words > 0 else 0
 
     # Word frequency analysis
-    word_freq = Counter(words)
-    stop_words = set(stopwords.words('english'))
+    Counter(words)
+    stop_words = set(stopwords.words("english"))
     content_words = [w for w in words if w not in stop_words]
     content_word_freq = Counter(content_words)
 
     # Top words
     top_words = [
-        {'word': word, 'count': count}
-        for word, count in content_word_freq.most_common(50)
+        {"word": word, "count": count} for word, count in content_word_freq.most_common(50)
     ]
 
     # Sentence analysis
@@ -196,26 +197,26 @@ def analyze_text(text: str, metadata: Dict) -> Dict[str, Any]:
 
     # Assemble results
     results = {
-        'author': metadata.get('author', 'Unknown'),
-        'title': metadata.get('title', 'Unknown'),
-        'period': metadata.get('period', 'Unknown'),
-        'genre': metadata.get('genre', 'Text'),
-        'word_count': total_words,
-        'unique_words': unique_words,
-        'vocabulary_richness': round(vocabulary_richness, 4),
-        'sentence_count': len(sentences),
-        'avg_sentence_length': round(avg_sentence_length, 2),
-        'top_words': top_words[:30],  # Top 30 for DynamoDB size limits
-        'named_entities': named_entities,
-        'literary_features': literary_features,
-        'processing_timestamp': datetime.now().isoformat()
+        "author": metadata.get("author", "Unknown"),
+        "title": metadata.get("title", "Unknown"),
+        "period": metadata.get("period", "Unknown"),
+        "genre": metadata.get("genre", "Text"),
+        "word_count": total_words,
+        "unique_words": unique_words,
+        "vocabulary_richness": round(vocabulary_richness, 4),
+        "sentence_count": len(sentences),
+        "avg_sentence_length": round(avg_sentence_length, 2),
+        "top_words": top_words[:30],  # Top 30 for DynamoDB size limits
+        "named_entities": named_entities,
+        "literary_features": literary_features,
+        "processing_timestamp": datetime.now().isoformat(),
     }
 
     print(f"Analysis complete: {total_words} words, {unique_words} unique")
     return results
 
 
-def basic_analysis(text: str, metadata: Dict) -> Dict[str, Any]:
+def basic_analysis(text: str, metadata: dict) -> dict[str, Any]:
     """
     Basic analysis without NLTK (fallback).
 
@@ -227,35 +228,32 @@ def basic_analysis(text: str, metadata: Dict) -> Dict[str, Any]:
         Dict with basic analysis results
     """
     # Simple tokenization
-    words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+    words = re.findall(r"\b[a-zA-Z]+\b", text.lower())
     words = [w for w in words if len(w) > 2]
 
-    sentences = re.split(r'[.!?]+', text)
+    sentences = re.split(r"[.!?]+", text)
     sentences = [s.strip() for s in sentences if s.strip()]
 
     total_words = len(words)
     unique_words = len(set(words))
 
     word_freq = Counter(words)
-    top_words = [
-        {'word': word, 'count': count}
-        for word, count in word_freq.most_common(30)
-    ]
+    top_words = [{"word": word, "count": count} for word, count in word_freq.most_common(30)]
 
     return {
-        'author': metadata.get('author', 'Unknown'),
-        'title': metadata.get('title', 'Unknown'),
-        'period': metadata.get('period', 'Unknown'),
-        'genre': metadata.get('genre', 'Text'),
-        'word_count': total_words,
-        'unique_words': unique_words,
-        'vocabulary_richness': round(unique_words / total_words, 4) if total_words > 0 else 0,
-        'sentence_count': len(sentences),
-        'avg_sentence_length': round(total_words / len(sentences), 2) if sentences else 0,
-        'top_words': top_words,
-        'named_entities': {'people': [], 'places': [], 'organizations': []},
-        'literary_features': {},
-        'processing_timestamp': datetime.now().isoformat()
+        "author": metadata.get("author", "Unknown"),
+        "title": metadata.get("title", "Unknown"),
+        "period": metadata.get("period", "Unknown"),
+        "genre": metadata.get("genre", "Text"),
+        "word_count": total_words,
+        "unique_words": unique_words,
+        "vocabulary_richness": round(unique_words / total_words, 4) if total_words > 0 else 0,
+        "sentence_count": len(sentences),
+        "avg_sentence_length": round(total_words / len(sentences), 2) if sentences else 0,
+        "top_words": top_words,
+        "named_entities": {"people": [], "places": [], "organizations": []},
+        "literary_features": {},
+        "processing_timestamp": datetime.now().isoformat(),
     }
 
 
@@ -273,7 +271,7 @@ def clean_gutenberg_text(text: str) -> str:
     start_markers = [
         "*** START OF THE PROJECT GUTENBERG",
         "*** START OF THIS PROJECT GUTENBERG",
-        "***START OF THE PROJECT GUTENBERG"
+        "***START OF THE PROJECT GUTENBERG",
     ]
 
     start_pos = 0
@@ -281,7 +279,7 @@ def clean_gutenberg_text(text: str) -> str:
         pos = text.find(marker)
         if pos != -1:
             # Find end of marker line
-            start_pos = text.find('\n', pos) + 1
+            start_pos = text.find("\n", pos) + 1
             break
 
     # Find end of content
@@ -289,7 +287,7 @@ def clean_gutenberg_text(text: str) -> str:
         "*** END OF THE PROJECT GUTENBERG",
         "*** END OF THIS PROJECT GUTENBERG",
         "End of the Project Gutenberg",
-        "End of Project Gutenberg"
+        "End of Project Gutenberg",
     ]
 
     end_pos = len(text)
@@ -302,7 +300,7 @@ def clean_gutenberg_text(text: str) -> str:
     return text[start_pos:end_pos].strip()
 
 
-def extract_named_entities(text: str) -> Dict[str, List[str]]:
+def extract_named_entities(text: str) -> dict[str, list[str]]:
     """
     Extract named entities (people, places, organizations).
 
@@ -313,8 +311,7 @@ def extract_named_entities(text: str) -> Dict[str, List[str]]:
         Dict with entity lists
     """
     try:
-        import nltk
-        from nltk import word_tokenize, pos_tag, ne_chunk
+        from nltk import ne_chunk, pos_tag, word_tokenize
 
         # Limit text length for performance (first 50,000 chars)
         sample_text = text[:50000]
@@ -332,14 +329,14 @@ def extract_named_entities(text: str) -> Dict[str, List[str]]:
         organizations = []
 
         for chunk in entities:
-            if hasattr(chunk, 'label'):
-                entity_text = ' '.join(c[0] for c in chunk)
+            if hasattr(chunk, "label"):
+                entity_text = " ".join(c[0] for c in chunk)
 
-                if chunk.label() == 'PERSON':
+                if chunk.label() == "PERSON":
                     people.append(entity_text)
-                elif chunk.label() == 'GPE':  # Geo-political entity (place)
+                elif chunk.label() == "GPE":  # Geo-political entity (place)
                     places.append(entity_text)
-                elif chunk.label() == 'ORGANIZATION':
+                elif chunk.label() == "ORGANIZATION":
                     organizations.append(entity_text)
 
         # Count and get top entities
@@ -348,17 +345,17 @@ def extract_named_entities(text: str) -> Dict[str, List[str]]:
         org_counts = Counter(organizations).most_common(20)
 
         return {
-            'people': [{'name': name, 'count': count} for name, count in people_counts],
-            'places': [{'name': name, 'count': count} for name, count in places_counts],
-            'organizations': [{'name': name, 'count': count} for name, count in org_counts]
+            "people": [{"name": name, "count": count} for name, count in people_counts],
+            "places": [{"name": name, "count": count} for name, count in places_counts],
+            "organizations": [{"name": name, "count": count} for name, count in org_counts],
         }
 
     except Exception as e:
         print(f"Error in NER: {e}")
-        return {'people': [], 'places': [], 'organizations': []}
+        return {"people": [], "places": [], "organizations": []}
 
 
-def calculate_literary_features(words: List[str], sentences: List[str]) -> Dict[str, Any]:
+def calculate_literary_features(words: list[str], sentences: list[str]) -> dict[str, Any]:
     """
     Calculate literary and stylistic features.
 
@@ -372,34 +369,32 @@ def calculate_literary_features(words: List[str], sentences: List[str]) -> Dict[
     features = {}
 
     # Lexical diversity (Type-Token Ratio)
-    features['type_token_ratio'] = len(set(words)) / len(words) if words else 0
+    features["type_token_ratio"] = len(set(words)) / len(words) if words else 0
 
     # Average word length
-    features['avg_word_length'] = sum(len(w) for w in words) / len(words) if words else 0
+    features["avg_word_length"] = sum(len(w) for w in words) / len(words) if words else 0
 
     # Long words (> 6 characters)
     long_words = [w for w in words if len(w) > 6]
-    features['long_word_ratio'] = len(long_words) / len(words) if words else 0
+    features["long_word_ratio"] = len(long_words) / len(words) if words else 0
 
     # Sentence length variation (standard deviation approximation)
     sentence_lengths = [len(s.split()) for s in sentences]
     if sentence_lengths:
         avg_len = sum(sentence_lengths) / len(sentence_lengths)
         variance = sum((l - avg_len) ** 2 for l in sentence_lengths) / len(sentence_lengths)
-        features['sentence_length_std'] = variance ** 0.5
+        features["sentence_length_std"] = variance**0.5
     else:
-        features['sentence_length_std'] = 0
+        features["sentence_length_std"] = 0
 
     # Readability score (simplified Flesch-Kincaid)
     total_syllables = estimate_syllables(words)
     if words and sentences:
-        features['readability_score'] = (
-            206.835
-            - 1.015 * (len(words) / len(sentences))
-            - 84.6 * (total_syllables / len(words))
+        features["readability_score"] = (
+            206.835 - 1.015 * (len(words) / len(sentences)) - 84.6 * (total_syllables / len(words))
         )
     else:
-        features['readability_score'] = 0
+        features["readability_score"] = 0
 
     # Round values
     for key in features:
@@ -409,7 +404,7 @@ def calculate_literary_features(words: List[str], sentences: List[str]) -> Dict[
     return features
 
 
-def estimate_syllables(words: List[str]) -> int:
+def estimate_syllables(words: list[str]) -> int:
     """
     Estimate syllable count (simplified).
 
@@ -422,7 +417,7 @@ def estimate_syllables(words: List[str]) -> int:
     total = 0
     for word in words:
         # Simple vowel counting heuristic
-        vowels = 'aeiou'
+        vowels = "aeiou"
         syllables = sum(1 for char in word.lower() if char in vowels)
         # Minimum 1 syllable per word
         syllables = max(1, syllables)
@@ -430,7 +425,7 @@ def estimate_syllables(words: List[str]) -> int:
     return total
 
 
-def store_results_in_dynamodb(results: Dict[str, Any]):
+def store_results_in_dynamodb(results: dict[str, Any]):
     """
     Store analysis results in DynamoDB.
 
@@ -442,25 +437,25 @@ def store_results_in_dynamodb(results: Dict[str, Any]):
 
         # Prepare item for DynamoDB
         item = {
-            'document_id': results['document_id'],
-            'timestamp': results['timestamp'],
-            'author': results['author'],
-            'title': results['title'],
-            'period': results['period'],
-            'genre': results['genre'],
-            'word_count': results['word_count'],
-            'unique_words': results['unique_words'],
-            'vocabulary_richness': results['vocabulary_richness'],
-            'sentence_count': results['sentence_count'],
-            'avg_sentence_length': results['avg_sentence_length'],
-            's3_key': results['s3_key'],
-            'bucket': results['bucket'],
+            "document_id": results["document_id"],
+            "timestamp": results["timestamp"],
+            "author": results["author"],
+            "title": results["title"],
+            "period": results["period"],
+            "genre": results["genre"],
+            "word_count": results["word_count"],
+            "unique_words": results["unique_words"],
+            "vocabulary_richness": results["vocabulary_richness"],
+            "sentence_count": results["sentence_count"],
+            "avg_sentence_length": results["avg_sentence_length"],
+            "s3_key": results["s3_key"],
+            "bucket": results["bucket"],
         }
 
         # Add literary features if present
-        if 'literary_features' in results:
-            for key, value in results['literary_features'].items():
-                item[f'literary_{key}'] = value
+        if "literary_features" in results:
+            for key, value in results["literary_features"].items():
+                item[f"literary_{key}"] = value
 
         # Store in DynamoDB
         table.put_item(Item=item)
@@ -472,7 +467,7 @@ def store_results_in_dynamodb(results: Dict[str, Any]):
         raise
 
 
-def save_detailed_results_to_s3(bucket: str, original_key: str, results: Dict[str, Any]):
+def save_detailed_results_to_s3(bucket: str, original_key: str, results: dict[str, Any]):
     """
     Save detailed analysis results to S3 as JSON.
 
@@ -483,7 +478,7 @@ def save_detailed_results_to_s3(bucket: str, original_key: str, results: Dict[st
     """
     try:
         # Create results key
-        filename = os.path.basename(original_key).replace('.txt', '.json')
+        filename = os.path.basename(original_key).replace(".txt", ".json")
         results_key = f"processed/{filename}"
 
         # Convert to JSON
@@ -494,11 +489,11 @@ def save_detailed_results_to_s3(bucket: str, original_key: str, results: Dict[st
             Bucket=bucket,
             Key=results_key,
             Body=results_json,
-            ContentType='application/json',
+            ContentType="application/json",
             Metadata={
-                'original_key': original_key,
-                'processed_timestamp': datetime.now().isoformat()
-            }
+                "original_key": original_key,
+                "processed_timestamp": datetime.now().isoformat(),
+            },
         )
 
         print(f"Saved detailed results to s3://{bucket}/{results_key}")
@@ -512,17 +507,14 @@ def save_detailed_results_to_s3(bucket: str, original_key: str, results: Dict[st
 def test_lambda_locally():
     """Test Lambda function locally with sample event."""
     # Sample event
-    event = {
-        'bucket': BUCKET_NAME,
-        'key': 'raw/test/sample.txt'
-    }
+    event = {"bucket": BUCKET_NAME, "key": "raw/test/sample.txt"}
 
     # Mock context
     class Context:
         def __init__(self):
-            self.function_name = 'process-text-document'
+            self.function_name = "process-text-document"
             self.memory_limit_in_mb = 512
-            self.invoked_function_arn = 'arn:aws:lambda:us-east-1:123456789:function:test'
+            self.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789:function:test"
 
     context = Context()
 
@@ -531,6 +523,6 @@ def test_lambda_locally():
     print(json.dumps(response, indent=2))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # For local testing
     test_lambda_locally()

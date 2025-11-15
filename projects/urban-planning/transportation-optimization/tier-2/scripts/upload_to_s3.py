@@ -17,25 +17,24 @@ Usage:
         --prefix raw/
 """
 
-import os
-import sys
 import argparse
 import json
-from pathlib import Path
-from typing import List, Tuple, Dict, Optional
-from datetime import datetime
 import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
 import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from tqdm import tqdm
-from dotenv import load_dotenv
 import pandas as pd
+from botocore.exceptions import BotoCoreError, ClientError
+from dotenv import load_dotenv
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -43,21 +42,25 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Constants
-SUPPORTED_FORMATS = {'.csv', '.json', '.parquet'}
+SUPPORTED_FORMATS = {".csv", ".json", ".parquet"}
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
 # Traffic data validation
 REQUIRED_CSV_COLUMNS = [
-    'timestamp', 'segment_id', 'latitude', 'longitude',
-    'vehicle_count', 'avg_speed'
+    "timestamp",
+    "segment_id",
+    "latitude",
+    "longitude",
+    "vehicle_count",
+    "avg_speed",
 ]
 
 
 class S3TrafficDataUploader:
     """Handle uploading traffic data to AWS S3."""
 
-    def __init__(self, bucket_name: str, region: str = 'us-east-1'):
+    def __init__(self, bucket_name: str, region: str = "us-east-1"):
         """
         Initialize S3 uploader.
 
@@ -67,7 +70,7 @@ class S3TrafficDataUploader:
         """
         self.bucket_name = bucket_name
         self.region = region
-        self.s3_client = boto3.client('s3', region_name=region)
+        self.s3_client = boto3.client("s3", region_name=region)
         self.upload_log = []
 
     def validate_bucket_exists(self) -> bool:
@@ -77,16 +80,16 @@ class S3TrafficDataUploader:
             logger.info(f"Bucket '{self.bucket_name}' is accessible")
             return True
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == '404':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
                 logger.error(f"Bucket '{self.bucket_name}' does not exist")
-            elif error_code == '403':
+            elif error_code == "403":
                 logger.error(f"Access denied to bucket '{self.bucket_name}'")
             else:
                 logger.error(f"Error accessing bucket: {error_code}")
             return False
 
-    def validate_traffic_data(self, file_path: Path) -> Tuple[bool, str]:
+    def validate_traffic_data(self, file_path: Path) -> tuple[bool, str]:
         """
         Validate traffic data file format and required fields.
 
@@ -97,7 +100,7 @@ class S3TrafficDataUploader:
             Tuple of (is_valid: bool, message: str)
         """
         try:
-            if file_path.suffix.lower() == '.csv':
+            if file_path.suffix.lower() == ".csv":
                 df = pd.read_csv(file_path, nrows=5)
 
                 # Check required columns
@@ -106,25 +109,25 @@ class S3TrafficDataUploader:
                     return False, f"Missing required columns: {missing_cols}"
 
                 # Validate data types
-                if not pd.api.types.is_numeric_dtype(df['latitude']):
+                if not pd.api.types.is_numeric_dtype(df["latitude"]):
                     return False, "latitude must be numeric"
-                if not pd.api.types.is_numeric_dtype(df['longitude']):
+                if not pd.api.types.is_numeric_dtype(df["longitude"]):
                     return False, "longitude must be numeric"
-                if not pd.api.types.is_numeric_dtype(df['vehicle_count']):
+                if not pd.api.types.is_numeric_dtype(df["vehicle_count"]):
                     return False, "vehicle_count must be numeric"
-                if not pd.api.types.is_numeric_dtype(df['avg_speed']):
+                if not pd.api.types.is_numeric_dtype(df["avg_speed"]):
                     return False, "avg_speed must be numeric"
 
                 # Validate coordinate ranges
-                if (df['latitude'] < -90).any() or (df['latitude'] > 90).any():
+                if (df["latitude"] < -90).any() or (df["latitude"] > 90).any():
                     return False, "latitude must be between -90 and 90"
-                if (df['longitude'] < -180).any() or (df['longitude'] > 180).any():
+                if (df["longitude"] < -180).any() or (df["longitude"] > 180).any():
                     return False, "longitude must be between -180 and 180"
 
                 return True, "Valid traffic data"
 
-            elif file_path.suffix.lower() == '.json':
-                with open(file_path, 'r') as f:
+            elif file_path.suffix.lower() == ".json":
+                with open(file_path) as f:
                     data = json.load(f)
 
                 # Check if it's a list or single record
@@ -147,9 +150,9 @@ class S3TrafficDataUploader:
                 return True, "Format accepted"
 
         except Exception as e:
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"
 
-    def get_data_files(self, input_dir: str) -> List[Path]:
+    def get_data_files(self, input_dir: str) -> list[Path]:
         """
         Get list of supported data files from directory.
 
@@ -171,15 +174,16 @@ class S3TrafficDataUploader:
 
         # Find all supported data files
         data_files = []
-        for file_path in input_path.rglob('*'):
+        for file_path in input_path.rglob("*"):
             if file_path.is_file() and file_path.suffix.lower() in SUPPORTED_FORMATS:
                 data_files.append(file_path)
 
         logger.info(f"Found {len(data_files)} data files in '{input_dir}'")
         return sorted(data_files)
 
-    def upload_file(self, file_path: Path, s3_key: str,
-                   extra_args: Optional[Dict] = None) -> Tuple[bool, str]:
+    def upload_file(
+        self, file_path: Path, s3_key: str, extra_args: Optional[dict] = None
+    ) -> tuple[bool, str]:
         """
         Upload single file to S3 with retry logic.
 
@@ -193,22 +197,19 @@ class S3TrafficDataUploader:
         """
         if extra_args is None:
             extra_args = {
-                'ContentType': self._get_content_type(file_path),
-                'Metadata': {
-                    'uploaded_at': datetime.utcnow().isoformat(),
-                    'original_path': str(file_path),
-                    'file_type': 'traffic_data'
-                }
+                "ContentType": self._get_content_type(file_path),
+                "Metadata": {
+                    "uploaded_at": datetime.utcnow().isoformat(),
+                    "original_path": str(file_path),
+                    "file_type": "traffic_data",
+                },
             }
 
         for attempt in range(MAX_RETRIES):
             try:
                 file_size = file_path.stat().st_size
                 self.s3_client.upload_file(
-                    str(file_path),
-                    self.bucket_name,
-                    s3_key,
-                    ExtraArgs=extra_args
+                    str(file_path), self.bucket_name, s3_key, ExtraArgs=extra_args
                 )
 
                 message = f"✓ Uploaded {s3_key} ({self._format_size(file_size)})"
@@ -217,7 +218,7 @@ class S3TrafficDataUploader:
                 return True, message
 
             except (ClientError, BotoCoreError) as e:
-                logger.warning(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for {s3_key}: {str(e)}")
+                logger.warning(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for {s3_key}: {e!s}")
                 if attempt == MAX_RETRIES - 1:
                     error_msg = f"✗ Failed to upload {s3_key} after {MAX_RETRIES} attempts"
                     logger.error(error_msg)
@@ -230,23 +231,22 @@ class S3TrafficDataUploader:
         """Get MIME type for file."""
         suffix = file_path.suffix.lower()
         mime_types = {
-            '.csv': 'text/csv',
-            '.json': 'application/json',
-            '.parquet': 'application/octet-stream'
+            ".csv": "text/csv",
+            ".json": "application/json",
+            ".parquet": "application/octet-stream",
         }
-        return mime_types.get(suffix, 'application/octet-stream')
+        return mime_types.get(suffix, "application/octet-stream")
 
     @staticmethod
     def _format_size(size_bytes: int) -> str:
         """Format file size in human-readable format."""
-        for unit in ['B', 'KB', 'MB', 'GB']:
+        for unit in ["B", "KB", "MB", "GB"]:
             if size_bytes < 1024.0:
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024.0
         return f"{size_bytes:.2f} TB"
 
-    def upload_directory(self, input_dir: str, s3_prefix: str = '',
-                        validate: bool = True) -> Dict:
+    def upload_directory(self, input_dir: str, s3_prefix: str = "", validate: bool = True) -> dict:
         """
         Upload all traffic data files from directory to S3.
 
@@ -261,11 +261,11 @@ class S3TrafficDataUploader:
         # Validate bucket
         if not self.validate_bucket_exists():
             return {
-                'total': 0,
-                'successful': 0,
-                'failed': 0,
-                'total_bytes': 0,
-                'errors': ['Bucket validation failed']
+                "total": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_bytes": 0,
+                "errors": ["Bucket validation failed"],
             }
 
         # Get data files
@@ -273,11 +273,11 @@ class S3TrafficDataUploader:
         if not data_files:
             logger.warning("No data files found to upload")
             return {
-                'total': 0,
-                'successful': 0,
-                'failed': 0,
-                'total_bytes': 0,
-                'errors': ['No data files found']
+                "total": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_bytes": 0,
+                "errors": ["No data files found"],
             }
 
         # Upload with progress bar
@@ -287,7 +287,9 @@ class S3TrafficDataUploader:
         errors = []
         validation_warnings = []
 
-        logger.info(f"Starting upload of {len(data_files)} files to s3://{self.bucket_name}/{s3_prefix}")
+        logger.info(
+            f"Starting upload of {len(data_files)} files to s3://{self.bucket_name}/{s3_prefix}"
+        )
 
         with tqdm(total=len(data_files), desc="Uploading traffic data") as pbar:
             for file_path in data_files:
@@ -301,7 +303,7 @@ class S3TrafficDataUploader:
 
                 # Build S3 key
                 relative_path = file_path.relative_to(Path(input_dir))
-                s3_key = f"{s3_prefix}{relative_path}".replace('\\', '/')
+                s3_key = f"{s3_prefix}{relative_path}".replace("\\", "/")
 
                 # Upload file
                 success, upload_message = self.upload_file(file_path, s3_key)
@@ -309,24 +311,28 @@ class S3TrafficDataUploader:
                 if success:
                     successful += 1
                     total_bytes += file_path.stat().st_size
-                    self.upload_log.append({
-                        'local_path': str(file_path),
-                        's3_key': s3_key,
-                        's3_uri': f"s3://{self.bucket_name}/{s3_key}",
-                        'size': file_path.stat().st_size,
-                        'status': 'success',
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
+                    self.upload_log.append(
+                        {
+                            "local_path": str(file_path),
+                            "s3_key": s3_key,
+                            "s3_uri": f"s3://{self.bucket_name}/{s3_key}",
+                            "size": file_path.stat().st_size,
+                            "status": "success",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
                 else:
                     failed += 1
                     errors.append(upload_message)
-                    self.upload_log.append({
-                        'local_path': str(file_path),
-                        's3_key': s3_key,
-                        'status': 'failed',
-                        'error': upload_message,
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
+                    self.upload_log.append(
+                        {
+                            "local_path": str(file_path),
+                            "s3_key": s3_key,
+                            "status": "failed",
+                            "error": upload_message,
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
                 pbar.update(1)
 
@@ -357,18 +363,18 @@ class S3TrafficDataUploader:
                 logger.warning(f"  ... and {len(errors) - 5} more errors")
 
         return {
-            'total': len(data_files),
-            'successful': successful,
-            'failed': failed,
-            'total_bytes': total_bytes,
-            'errors': errors,
-            'validation_warnings': validation_warnings
+            "total": len(data_files),
+            "successful": successful,
+            "failed": failed,
+            "total_bytes": total_bytes,
+            "errors": errors,
+            "validation_warnings": validation_warnings,
         }
 
-    def save_upload_log(self, output_file: str = 'upload_log.json'):
+    def save_upload_log(self, output_file: str = "upload_log.json"):
         """Save upload log to JSON file."""
         try:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(self.upload_log, f, indent=2)
             logger.info(f"Upload log saved to {output_file}")
         except Exception as e:
@@ -378,7 +384,7 @@ class S3TrafficDataUploader:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Upload traffic data to AWS S3',
+        description="Upload traffic data to AWS S3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -392,49 +398,49 @@ Examples:
 
   # Skip validation (faster, but risky)
   python upload_to_s3.py --input-dir ./data --no-validate
-        """
+        """,
     )
 
     parser.add_argument(
-        '--input-dir',
+        "--input-dir",
         type=str,
-        default=os.getenv('INPUT_DIR', './data'),
-        help='Directory containing traffic data files (default: ./data)'
+        default=os.getenv("INPUT_DIR", "./data"),
+        help="Directory containing traffic data files (default: ./data)",
     )
 
     parser.add_argument(
-        '--s3-bucket',
+        "--s3-bucket",
         type=str,
-        default=os.getenv('S3_BUCKET_NAME'),
-        required=not os.getenv('S3_BUCKET_NAME'),
-        help='S3 bucket name (required if S3_BUCKET_NAME env var not set)'
+        default=os.getenv("S3_BUCKET_NAME"),
+        required=not os.getenv("S3_BUCKET_NAME"),
+        help="S3 bucket name (required if S3_BUCKET_NAME env var not set)",
     )
 
     parser.add_argument(
-        '--prefix',
+        "--prefix",
         type=str,
-        default=os.getenv('S3_RAW_PREFIX', 'raw/'),
-        help='S3 prefix for uploads (default: raw/)'
+        default=os.getenv("S3_RAW_PREFIX", "raw/"),
+        help="S3 prefix for uploads (default: raw/)",
     )
 
     parser.add_argument(
-        '--region',
+        "--region",
         type=str,
-        default=os.getenv('AWS_REGION', 'us-east-1'),
-        help='AWS region (default: us-east-1)'
+        default=os.getenv("AWS_REGION", "us-east-1"),
+        help="AWS region (default: us-east-1)",
     )
 
     parser.add_argument(
-        '--log-file',
+        "--log-file",
         type=str,
-        default='upload_log.json',
-        help='Output file for upload log (default: upload_log.json)'
+        default="upload_log.json",
+        help="Output file for upload log (default: upload_log.json)",
     )
 
     parser.add_argument(
-        '--no-validate',
-        action='store_true',
-        help='Skip data validation (faster but not recommended)'
+        "--no-validate",
+        action="store_true",
+        help="Skip data validation (faster but not recommended)",
     )
 
     args = parser.parse_args()
@@ -444,17 +450,15 @@ Examples:
 
     # Upload directory
     results = uploader.upload_directory(
-        args.input_dir,
-        s3_prefix=args.prefix,
-        validate=not args.no_validate
+        args.input_dir, s3_prefix=args.prefix, validate=not args.no_validate
     )
 
     # Save log
     uploader.save_upload_log(args.log_file)
 
     # Return exit code based on failures
-    sys.exit(0 if results['failed'] == 0 else 1)
+    sys.exit(0 if results["failed"] == 0 else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

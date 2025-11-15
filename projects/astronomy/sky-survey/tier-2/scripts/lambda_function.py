@@ -5,12 +5,12 @@ Performs source detection on FITS images using SEP.
 Saves results as Parquet file to S3.
 """
 
-import json
-import os
 import io
+import json
 import logging
-from datetime import datetime
+import os
 import traceback
+from datetime import datetime
 
 import boto3
 import numpy as np
@@ -19,6 +19,7 @@ from astropy.io import fits
 # Try to import SEP, fallback to simpler method if not available
 try:
     import sep
+
     HAS_SEP = True
 except ImportError:
     HAS_SEP = False
@@ -29,7 +30,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # AWS clients
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
 
 def simple_source_detection(data, threshold=5.0):
@@ -48,11 +49,12 @@ def simple_source_detection(data, threshold=5.0):
 
     # Label connected components
     from scipy import ndimage
+
     labeled, num_features = ndimage.label(mask)
 
     sources = []
     for i in range(1, num_features + 1):
-        component = (labeled == i)
+        component = labeled == i
         y, x = np.where(component)
 
         if len(x) < 3:  # Require at least 3 pixels
@@ -68,17 +70,19 @@ def simple_source_detection(data, threshold=5.0):
         # Estimate SNR
         snr = (peak - median) / (std if std > 0 else 1)
 
-        sources.append({
-            'x': float(x_center),
-            'y': float(y_center),
-            'flux': float(flux),
-            'peak': float(peak),
-            'fwhm': float(fwhm),
-            'snr': float(snr),
-            'a': float(fwhm / 2.35),  # Sigma estimate
-            'b': float(fwhm / 2.35),
-            'theta': 0.0
-        })
+        sources.append(
+            {
+                "x": float(x_center),
+                "y": float(y_center),
+                "flux": float(flux),
+                "peak": float(peak),
+                "fwhm": float(fwhm),
+                "snr": float(snr),
+                "a": float(fwhm / 2.35),  # Sigma estimate
+                "b": float(fwhm / 2.35),
+                "theta": 0.0,
+            }
+        )
 
     return np.array(sources) if sources else np.array([])
 
@@ -135,20 +139,20 @@ def detect_sources_in_image(image_data):
     sources = []
     for obj in objects:
         # Calculate SNR
-        flux = float(obj['flux'])
-        peak = float(obj.get('peak', obj.get('cpeak', 0)))
-        snr = float(obj.get('snr', (peak - median) / (std if std > 0 else 1)))
+        flux = float(obj["flux"])
+        peak = float(obj.get("peak", obj.get("cpeak", 0)))
+        snr = float(obj.get("snr", (peak - median) / (std if std > 0 else 1)))
 
         source = {
-            'x': float(obj.get('x', obj.get('xpeak', 0))),
-            'y': float(obj.get('y', obj.get('ypeak', 0))),
-            'flux': flux,
-            'peak': peak,
-            'fwhm': float(obj.get('fwhm', 1.0)),
-            'a': float(obj.get('a', 1.0)),
-            'b': float(obj.get('b', 1.0)),
-            'theta': float(obj.get('theta', 0.0)),
-            'snr': snr
+            "x": float(obj.get("x", obj.get("xpeak", 0))),
+            "y": float(obj.get("y", obj.get("ypeak", 0))),
+            "flux": flux,
+            "peak": peak,
+            "fwhm": float(obj.get("fwhm", 1.0)),
+            "a": float(obj.get("a", 1.0)),
+            "b": float(obj.get("b", 1.0)),
+            "theta": float(obj.get("theta", 0.0)),
+            "snr": snr,
         }
         sources.append(source)
 
@@ -175,27 +179,27 @@ def convert_to_catalog_format(sources, image_id, ra, dec, pixel_scale=0.396):
     for i, source in enumerate(sources):
         # Convert pixel coordinates to celestial coordinates
         # Simple linear transformation from image center
-        dx = source['x'] - 256  # Assume 512x512 image
-        dy = source['y'] - 256
+        dx = source["x"] - 256  # Assume 512x512 image
+        dy = source["y"] - 256
         src_ra = ra + (dx * pixel_scale / 3600.0)
         src_dec = dec + (dy * pixel_scale / 3600.0)
 
         entry = {
-            'image_id': image_id,
-            'source_id': i,
-            'ra': src_ra,
-            'dec': src_dec,
-            'x': source['x'],
-            'y': source['y'],
-            'flux': source['flux'],
-            'flux_err': source.get('flux_err', source['flux'] * 0.1),
-            'peak': source['peak'],
-            'fwhm': source['fwhm'],
-            'a': source['a'],
-            'b': source['b'],
-            'theta': source['theta'],
-            'snr': source['snr'],
-            'detection_time': datetime.utcnow().isoformat()
+            "image_id": image_id,
+            "source_id": i,
+            "ra": src_ra,
+            "dec": src_dec,
+            "x": source["x"],
+            "y": source["y"],
+            "flux": source["flux"],
+            "flux_err": source.get("flux_err", source["flux"] * 0.1),
+            "peak": source["peak"],
+            "fwhm": source["fwhm"],
+            "a": source["a"],
+            "b": source["b"],
+            "theta": source["theta"],
+            "snr": source["snr"],
+            "detection_time": datetime.utcnow().isoformat(),
         }
         catalog.append(entry)
 
@@ -223,7 +227,7 @@ def save_catalog_parquet(catalog, output_key, bucket_catalog):
 
     # Convert to Parquet
     parquet_buffer = io.BytesIO()
-    df.to_parquet(parquet_buffer, index=False, engine='pyarrow')
+    df.to_parquet(parquet_buffer, index=False, engine="pyarrow")
     parquet_buffer.seek(0)
 
     # Upload to S3
@@ -231,12 +235,12 @@ def save_catalog_parquet(catalog, output_key, bucket_catalog):
         Bucket=bucket_catalog,
         Key=output_key,
         Body=parquet_buffer.getvalue(),
-        ContentType='application/octet-stream',
+        ContentType="application/octet-stream",
         Metadata={
-            'source': 'lambda-source-detection',
-            'format': 'parquet',
-            'num_sources': str(len(catalog))
-        }
+            "source": "lambda-source-detection",
+            "format": "parquet",
+            "num_sources": str(len(catalog)),
+        },
     )
 
     logger.info(f"Saved catalog to s3://{bucket_catalog}/{output_key}")
@@ -252,19 +256,19 @@ def save_catalog_json(catalog, output_key, bucket_catalog):
         bucket_catalog: S3 bucket for catalogs
     """
     # Convert to JSON
-    json_buffer = json.dumps(catalog, indent=2, default=str).encode('utf-8')
+    json_buffer = json.dumps(catalog, indent=2, default=str).encode("utf-8")
 
     # Upload to S3
     s3.put_object(
         Bucket=bucket_catalog,
         Key=output_key,
         Body=json_buffer,
-        ContentType='application/json',
+        ContentType="application/json",
         Metadata={
-            'source': 'lambda-source-detection',
-            'format': 'json',
-            'num_sources': str(len(catalog))
-        }
+            "source": "lambda-source-detection",
+            "format": "json",
+            "num_sources": str(len(catalog)),
+        },
     )
 
     logger.info(f"Saved catalog to s3://{bucket_catalog}/{output_key}")
@@ -284,9 +288,9 @@ def lambda_handler(event, context):
 
     try:
         # Get parameters
-        bucket_raw = os.environ.get('BUCKET_RAW', event.get('bucket'))
-        bucket_catalog = os.environ.get('BUCKET_CATALOG')
-        s3_key = event.get('key')
+        bucket_raw = os.environ.get("BUCKET_RAW", event.get("bucket"))
+        bucket_catalog = os.environ.get("BUCKET_CATALOG")
+        s3_key = event.get("key")
 
         if not all([bucket_raw, bucket_catalog, s3_key]):
             raise ValueError("Missing required parameters: bucket, bucket_catalog, or key")
@@ -296,7 +300,7 @@ def lambda_handler(event, context):
         # Download FITS file from S3
         logger.info("Downloading FITS file...")
         response = s3.get_object(Bucket=bucket_raw, Key=s3_key)
-        fits_data = response['Body'].read()
+        fits_data = response["Body"].read()
 
         # Parse FITS
         logger.info("Parsing FITS...")
@@ -309,9 +313,9 @@ def lambda_handler(event, context):
             raise ValueError("No image data in FITS file")
 
         # Get image metadata
-        filter_band = header.get('FILTER', 'unknown')
-        ra = float(header.get('RA', 0.0))
-        dec = float(header.get('DEC', 0.0))
+        filter_band = header.get("FILTER", "unknown")
+        ra = float(header.get("RA", 0.0))
+        dec = float(header.get("DEC", 0.0))
         image_id = os.path.splitext(os.path.basename(s3_key))[0]
 
         logger.info(f"Image: {image_id}, Filter: {filter_band}, RA: {ra}, Dec: {dec}")
@@ -329,14 +333,16 @@ def lambda_handler(event, context):
 
         # Return success
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Source detection successful',
-                'image_id': image_id,
-                'num_sources': len(catalog),
-                'output_key': output_key,
-                'output_bucket': bucket_catalog
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Source detection successful",
+                    "image_id": image_id,
+                    "num_sources": len(catalog),
+                    "output_key": output_key,
+                    "output_bucket": bucket_catalog,
+                }
+            ),
         }
 
     except Exception as e:
@@ -344,9 +350,6 @@ def lambda_handler(event, context):
         logger.error(traceback.format_exc())
 
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            })
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e), "traceback": traceback.format_exc()}),
         }

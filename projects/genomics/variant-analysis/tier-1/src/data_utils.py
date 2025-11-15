@@ -6,14 +6,12 @@ extract variant features, and manage genomic data. Data is cached in Studio Lab'
 persistent storage to avoid re-downloading.
 """
 
-import numpy as np
-import pandas as pd
-import pysam
-from pathlib import Path
 import urllib.request
-from typing import Optional, Tuple, List, Dict
-from tqdm import tqdm
+from pathlib import Path
 
+import numpy as np
+import pysam
+from tqdm import tqdm
 
 # Data directory (persistent in Studio Lab)
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -28,7 +26,7 @@ REFERENCE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Base encoding for pileup tensors
-BASE_ENCODING = {'A': 0, 'C': 1, 'G': 2, 'T': 3, 'N': 4}
+BASE_ENCODING = {"A": 0, "C": 1, "G": 2, "T": 3, "N": 4}
 
 
 def download_file(url: str, destination: Path, force: bool = False) -> Path:
@@ -53,7 +51,10 @@ def download_file(url: str, destination: Path, force: bool = False) -> Path:
     def show_progress(block_num, block_size, total_size):
         downloaded = block_num * block_size
         percent = min(downloaded / total_size * 100, 100)
-        print(f"\r  Progress: {percent:.1f}% ({downloaded / 1e9:.2f} GB / {total_size / 1e9:.2f} GB)", end='')
+        print(
+            f"\r  Progress: {percent:.1f}% ({downloaded / 1e9:.2f} GB / {total_size / 1e9:.2f} GB)",
+            end="",
+        )
 
     urllib.request.urlretrieve(url, destination, reporthook=show_progress)
     print(f"\n✓ Saved to {destination}")
@@ -61,10 +62,8 @@ def download_file(url: str, destination: Path, force: bool = False) -> Path:
 
 
 def download_bam_file(
-    sample_id: str,
-    chromosome: str = "20",
-    force: bool = False
-) -> Tuple[Path, Path]:
+    sample_id: str, chromosome: str = "20", force: bool = False
+) -> tuple[Path, Path]:
     """
     Download BAM file and index from 1000 Genomes AWS Open Data Registry.
 
@@ -82,14 +81,22 @@ def download_bam_file(
     # Determine population directory (simplified - in practice would query from metadata)
     # This is a placeholder - real implementation would look up sample metadata
     population_map = {
-        "NA12878": "CEU", "NA12891": "CEU", "NA12892": "CEU",
-        "NA19238": "YRI", "NA19239": "YRI", "NA19240": "YRI",
-        "NA18525": "CHB", "NA18526": "CHB",
-        "NA19648": "MXL", "NA19649": "MXL"
+        "NA12878": "CEU",
+        "NA12891": "CEU",
+        "NA12892": "CEU",
+        "NA19238": "YRI",
+        "NA19239": "YRI",
+        "NA19240": "YRI",
+        "NA18525": "CHB",
+        "NA18526": "CHB",
+        "NA19648": "MXL",
+        "NA19649": "MXL",
     }
     population = population_map.get(sample_id, "CEU")
 
-    bam_filename = f"{sample_id}.chrom{chromosome}.ILLUMINA.bwa.{population}.low_coverage.20121211.bam"
+    bam_filename = (
+        f"{sample_id}.chrom{chromosome}.ILLUMINA.bwa.{population}.low_coverage.20121211.bam"
+    )
     bai_filename = f"{bam_filename}.bai"
 
     bam_url = f"{base_url}/{sample_id}/alignment/{bam_filename}"
@@ -121,10 +128,7 @@ def load_bam_file(bam_path: Path) -> pysam.AlignmentFile:
     return pysam.AlignmentFile(str(bam_path), "rb")
 
 
-def load_reference_genome(
-    chromosome: str = "20",
-    force_download: bool = False
-) -> pysam.FastaFile:
+def load_reference_genome(chromosome: str = "20", force_download: bool = False) -> pysam.FastaFile:
     """
     Load reference genome (hg19/GRCh37).
 
@@ -148,10 +152,10 @@ def load_reference_genome(
         # Uncompress
         import gzip
         import shutil
+
         print(f"Decompressing {gz_path.name}...")
-        with gzip.open(gz_path, 'rb') as f_in:
-            with open(ref_path, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+        with gzip.open(gz_path, "rb") as f_in, open(ref_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
         print(f"✓ Decompressed to {ref_path}")
 
         # Create FASTA index
@@ -166,7 +170,7 @@ def generate_pileup_tensor(
     chrom: str,
     start: int,
     end: int,
-    max_depth: int = 100
+    max_depth: int = 100,
 ) -> np.ndarray:
     """
     Create pileup tensor for a genomic region.
@@ -191,7 +195,7 @@ def generate_pileup_tensor(
 
     # For each position, collect overlapping reads
     for pos_idx, pos in enumerate(range(start, end)):
-        pileup_column = bamfile.pileup(chrom, pos, pos+1, truncate=True, max_depth=max_depth)
+        pileup_column = bamfile.pileup(chrom, pos, pos + 1, truncate=True, max_depth=max_depth)
 
         read_idx = 0
         for pileup_col in pileup_column:
@@ -217,7 +221,7 @@ def generate_pileup_tensor(
                 tensor[pos_idx, read_idx, 3] = 0 if read.is_reverse else 1
 
                 # Channel 4: Is match to reference
-                ref_base = reference[pos - start] if pos - start < len(reference) else 'N'
+                ref_base = reference[pos - start] if pos - start < len(reference) else "N"
                 if not pileup_read.is_del and not pileup_read.is_refskip:
                     read_base = read.query_sequence[pileup_read.query_position]
                     tensor[pos_idx, read_idx, 4] = 1.0 if read_base == ref_base else 0.0
@@ -238,8 +242,8 @@ def extract_variant_features(
     reference_file: pysam.FastaFile,
     chrom: str,
     position: int,
-    window: int = 10
-) -> Dict[str, float]:
+    window: int = 10,
+) -> dict[str, float]:
     """
     Extract hand-crafted features for a potential variant position.
 
@@ -258,21 +262,21 @@ def extract_variant_features(
     features = {}
 
     # Reference base
-    ref_base = reference_file.fetch(chrom, position, position+1)
-    features['ref_base'] = BASE_ENCODING.get(ref_base, 4)
+    ref_base = reference_file.fetch(chrom, position, position + 1)
+    features["ref_base"] = BASE_ENCODING.get(ref_base, 4)
 
     # Collect reads at position
-    reads = list(bamfile.fetch(chrom, position, position+1))
-    features['depth'] = len(reads)
+    reads = list(bamfile.fetch(chrom, position, position + 1))
+    features["depth"] = len(reads)
 
     if len(reads) == 0:
         return features
 
     # Base counts
-    base_counts = {'A': 0, 'C': 0, 'G': 0, 'T': 0}
+    base_counts = {"A": 0, "C": 0, "G": 0, "T": 0}
     qualities = []
     map_qualities = []
-    strand_counts = {'+': 0, '-': 0}
+    strand_counts = {"+": 0, "-": 0}
 
     for read in reads:
         if read.reference_start <= position < read.reference_end:
@@ -292,49 +296,46 @@ def extract_variant_features(
             map_qualities.append(read.mapping_quality)
 
             # Strand
-            strand_counts['-' if read.is_reverse else '+'] += 1
+            strand_counts["-" if read.is_reverse else "+"] += 1
 
     # Allele frequencies
     total_bases = sum(base_counts.values())
     if total_bases > 0:
         for base in base_counts:
-            features[f'af_{base}'] = base_counts[base] / total_bases
+            features[f"af_{base}"] = base_counts[base] / total_bases
 
         # Alternate allele frequency (highest non-reference)
         alt_bases = {b: c for b, c in base_counts.items() if b != ref_base}
         if alt_bases:
-            features['alt_af'] = max(alt_bases.values()) / total_bases
+            features["alt_af"] = max(alt_bases.values()) / total_bases
         else:
-            features['alt_af'] = 0.0
+            features["alt_af"] = 0.0
 
     # Quality statistics
     if qualities:
-        features['mean_base_qual'] = np.mean(qualities)
-        features['min_base_qual'] = np.min(qualities)
+        features["mean_base_qual"] = np.mean(qualities)
+        features["min_base_qual"] = np.min(qualities)
     else:
-        features['mean_base_qual'] = 0.0
-        features['min_base_qual'] = 0.0
+        features["mean_base_qual"] = 0.0
+        features["min_base_qual"] = 0.0
 
     if map_qualities:
-        features['mean_map_qual'] = np.mean(map_qualities)
+        features["mean_map_qual"] = np.mean(map_qualities)
     else:
-        features['mean_map_qual'] = 0.0
+        features["mean_map_qual"] = 0.0
 
     # Strand bias
     total_strands = sum(strand_counts.values())
     if total_strands > 0:
-        features['strand_bias'] = abs(strand_counts['+'] - strand_counts['-']) / total_strands
+        features["strand_bias"] = abs(strand_counts["+"] - strand_counts["-"]) / total_strands
     else:
-        features['strand_bias'] = 0.0
+        features["strand_bias"] = 0.0
 
     return features
 
 
 def cache_pileup_tensors(
-    sample_ids: List[str],
-    chromosome: str,
-    regions: List[Tuple[int, int]],
-    window_size: int = 221
+    sample_ids: list[str], chromosome: str, regions: list[tuple[int, int]], window_size: int = 221
 ) -> Path:
     """
     Generate and cache pileup tensors for multiple samples.
@@ -361,7 +362,7 @@ def cache_pileup_tensors(
     # Load reference genome
     reference_file = load_reference_genome(chromosome)
 
-    with h5py.File(cache_file, 'w') as h5f:
+    with h5py.File(cache_file, "w") as h5f:
         for sample_id in tqdm(sample_ids, desc="Processing samples"):
             # Load BAM file
             bam_path, _ = download_bam_file(sample_id, chromosome)
@@ -377,17 +378,11 @@ def cache_pileup_tensors(
                     ref_seq = reference_file.fetch(chromosome, pos, window_end)
 
                     # Generate pileup tensor
-                    tensor = generate_pileup_tensor(
-                        bamfile, ref_seq, chromosome, pos, window_end
-                    )
+                    tensor = generate_pileup_tensor(bamfile, ref_seq, chromosome, pos, window_end)
                     sample_tensors.append(tensor)
 
             # Save to HDF5
-            h5f.create_dataset(
-                sample_id,
-                data=np.array(sample_tensors),
-                compression='gzip'
-            )
+            h5f.create_dataset(sample_id, data=np.array(sample_tensors), compression="gzip")
 
             bamfile.close()
 
@@ -408,5 +403,5 @@ def load_cached_pileup_tensors(sample_id: str, cache_file: Path) -> np.ndarray:
     """
     import h5py
 
-    with h5py.File(cache_file, 'r') as h5f:
+    with h5py.File(cache_file, "r") as h5f:
         return h5f[sample_id][:]

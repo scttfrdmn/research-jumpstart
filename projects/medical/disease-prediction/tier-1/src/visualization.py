@@ -4,13 +4,12 @@ Visualization utilities for medical imaging.
 Includes GradCAM, ROC curves, and medical image plotting.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-from sklearn.metrics import roc_curve, auc
 import torch
 import torch.nn as nn
-from typing import Optional
+from sklearn.metrics import auc, roc_curve
 
 
 def plot_roc_curve(y_true: np.ndarray, y_pred: np.ndarray, title: str = "ROC Curve"):
@@ -26,12 +25,12 @@ def plot_roc_curve(y_true: np.ndarray, y_pred: np.ndarray, title: str = "ROC Cur
     roc_auc = auc(fpr, tpr)
 
     plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Random classifier')
+    plt.plot(fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (AUC = {roc_auc:.3f})")
+    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--", label="Random classifier")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
     plt.title(title)
     plt.legend(loc="lower right")
     plt.grid(alpha=0.3)
@@ -45,10 +44,10 @@ def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, classes: list)
     cm = confusion_matrix(y_true, y_pred)
 
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
-    plt.title('Confusion Matrix')
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=classes, yticklabels=classes)
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
+    plt.title("Confusion Matrix")
     plt.show()
 
 
@@ -139,5 +138,5 @@ def overlay_heatmap(image: np.ndarray, heatmap: np.ndarray, alpha: float = 0.4) 
     return overlay
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Medical Imaging Visualization Utilities")

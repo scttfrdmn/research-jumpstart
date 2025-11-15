@@ -9,21 +9,21 @@ This script:
 4. (Optional) Query using Athena for SQL-based analysis
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
-import json
-import boto3
-import argparse
-import pandas as pd
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import boto3
+import pandas as pd
 from botocore.exceptions import ClientError
-import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class S3ResultsQuerier:
     """Query and analyze results from S3."""
 
-    def __init__(self, bucket_name, region='us-east-1', profile=None):
+    def __init__(self, bucket_name, region="us-east-1", profile=None):
         """
         Initialize results querier.
 
@@ -44,22 +44,19 @@ class S3ResultsQuerier:
         self.region = region
 
         # Create session and S3 client
-        if profile:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
 
-        self.s3 = session.client('s3', region_name=region)
+        self.s3 = session.client("s3", region_name=region)
 
         # Verify bucket exists
         try:
             self.s3.head_bucket(Bucket=bucket_name)
             logger.info(f"✓ Connected to bucket: {bucket_name}")
-        except ClientError as e:
+        except ClientError:
             logger.error(f"✗ Cannot access bucket: {bucket_name}")
             raise
 
-    def list_results(self, prefix='results/'):
+    def list_results(self, prefix="results/"):
         """
         List all processed results in S3.
 
@@ -70,23 +67,22 @@ class S3ResultsQuerier:
             list: List of result files
         """
         try:
-            response = self.s3.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            if 'Contents' not in response:
+            if "Contents" not in response:
                 logger.info(f"No results found in {prefix}")
                 return []
 
             files = []
-            for obj in response['Contents']:
-                files.append({
-                    'key': obj['Key'],
-                    'size': obj['Size'],
-                    'modified': obj['LastModified'],
-                    'filename': os.path.basename(obj['Key'])
-                })
+            for obj in response["Contents"]:
+                files.append(
+                    {
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "modified": obj["LastModified"],
+                        "filename": os.path.basename(obj["Key"]),
+                    }
+                )
 
             logger.info(f"Found {len(files)} result files")
             for f in files:
@@ -98,7 +94,7 @@ class S3ResultsQuerier:
             logger.error(f"✗ Failed to list results: {e}")
             return []
 
-    def download_results(self, output_dir='./results', prefix='results/'):
+    def download_results(self, output_dir="./results", prefix="results/"):
         """
         Download all results from S3.
 
@@ -117,14 +113,10 @@ class S3ResultsQuerier:
 
         for result in results:
             try:
-                output_path = output_dir / result['filename']
+                output_path = output_dir / result["filename"]
                 logger.info(f"Downloading: {result['key']}")
 
-                self.s3.download_file(
-                    self.bucket_name,
-                    result['key'],
-                    str(output_path)
-                )
+                self.s3.download_file(self.bucket_name, result["key"], str(output_path))
 
                 logger.info(f"✓ Saved to: {output_path}")
                 downloaded.append(str(output_path))
@@ -146,7 +138,7 @@ class S3ResultsQuerier:
             dict: Parsed JSON data
         """
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 data = json.load(f)
             return data
         except Exception as e:
@@ -177,11 +169,11 @@ class S3ResultsQuerier:
 
         # Extract statistics
         summary = {
-            'total_files': len(data_list),
-            'timestamp': datetime.utcnow().isoformat(),
-            'files': [],
-            'temperature_statistics': {},
-            'precipitation_statistics': {}
+            "total_files": len(data_list),
+            "timestamp": datetime.utcnow().isoformat(),
+            "files": [],
+            "temperature_statistics": {},
+            "precipitation_statistics": {},
         }
 
         temp_means = []
@@ -189,46 +181,60 @@ class S3ResultsQuerier:
 
         for data in data_list:
             file_info = {
-                'file': data.get('file', 'unknown'),
-                'processed_at': data.get('timestamp', 'unknown')
+                "file": data.get("file", "unknown"),
+                "processed_at": data.get("timestamp", "unknown"),
             }
 
             # Extract temperature stats
-            if 'statistics' in data and 'temperature' in data['statistics']:
-                temp_stats = data['statistics']['temperature']
-                file_info['temperature_mean'] = temp_stats.get('mean')
-                temp_means.append(temp_stats.get('mean'))
+            if "statistics" in data and "temperature" in data["statistics"]:
+                temp_stats = data["statistics"]["temperature"]
+                file_info["temperature_mean"] = temp_stats.get("mean")
+                temp_means.append(temp_stats.get("mean"))
 
             # Extract precipitation stats
-            if 'statistics' in data and 'precipitation' in data['statistics']:
-                precip_stats = data['statistics']['precipitation']
-                file_info['precipitation_mean'] = precip_stats.get('mean')
-                precip_means.append(precip_stats.get('mean'))
+            if "statistics" in data and "precipitation" in data["statistics"]:
+                precip_stats = data["statistics"]["precipitation"]
+                file_info["precipitation_mean"] = precip_stats.get("mean")
+                precip_means.append(precip_stats.get("mean"))
 
-            summary['files'].append(file_info)
+            summary["files"].append(file_info)
 
         # Calculate aggregate statistics
         if temp_means:
-            summary['temperature_statistics'] = {
-                'mean_of_means': float(sum(temp_means) / len(temp_means)),
-                'min': float(min(temp_means)),
-                'max': float(max(temp_means)),
-                'std': float((sum((x - sum(temp_means)/len(temp_means))**2
-                             for x in temp_means) / len(temp_means))**0.5) if len(temp_means) > 1 else 0
+            summary["temperature_statistics"] = {
+                "mean_of_means": float(sum(temp_means) / len(temp_means)),
+                "min": float(min(temp_means)),
+                "max": float(max(temp_means)),
+                "std": float(
+                    (
+                        sum((x - sum(temp_means) / len(temp_means)) ** 2 for x in temp_means)
+                        / len(temp_means)
+                    )
+                    ** 0.5
+                )
+                if len(temp_means) > 1
+                else 0,
             }
 
         if precip_means:
-            summary['precipitation_statistics'] = {
-                'mean_of_means': float(sum(precip_means) / len(precip_means)),
-                'min': float(min(precip_means)),
-                'max': float(max(precip_means)),
-                'std': float((sum((x - sum(precip_means)/len(precip_means))**2
-                              for x in precip_means) / len(precip_means))**0.5) if len(precip_means) > 1 else 0
+            summary["precipitation_statistics"] = {
+                "mean_of_means": float(sum(precip_means) / len(precip_means)),
+                "min": float(min(precip_means)),
+                "max": float(max(precip_means)),
+                "std": float(
+                    (
+                        sum((x - sum(precip_means) / len(precip_means)) ** 2 for x in precip_means)
+                        / len(precip_means)
+                    )
+                    ** 0.5
+                )
+                if len(precip_means) > 1
+                else 0,
             }
 
         return summary
 
-    def export_summary(self, summary, output_file='results_summary.json'):
+    def export_summary(self, summary, output_file="results_summary.json"):
         """
         Export summary to file.
 
@@ -236,7 +242,7 @@ class S3ResultsQuerier:
             summary (dict): Summary data
             output_file (str): Output file path
         """
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(summary, f, indent=2)
 
         logger.info(f"✓ Summary exported to: {output_file}")
@@ -260,25 +266,25 @@ class S3ResultsQuerier:
 
             # Create record
             record = {
-                'file': data.get('file', 'unknown'),
-                'timestamp': data.get('timestamp', 'unknown')
+                "file": data.get("file", "unknown"),
+                "timestamp": data.get("timestamp", "unknown"),
             }
 
             # Extract temperature
-            if 'statistics' in data and 'temperature' in data['statistics']:
-                temp = data['statistics']['temperature']
-                record['temperature_mean'] = temp.get('mean')
-                record['temperature_std'] = temp.get('std')
-                record['temperature_min'] = temp.get('min')
-                record['temperature_max'] = temp.get('max')
+            if "statistics" in data and "temperature" in data["statistics"]:
+                temp = data["statistics"]["temperature"]
+                record["temperature_mean"] = temp.get("mean")
+                record["temperature_std"] = temp.get("std")
+                record["temperature_min"] = temp.get("min")
+                record["temperature_max"] = temp.get("max")
 
             # Extract precipitation
-            if 'statistics' in data and 'precipitation' in data['statistics']:
-                precip = data['statistics']['precipitation']
-                record['precipitation_mean'] = precip.get('mean')
-                record['precipitation_std'] = precip.get('std')
-                record['precipitation_min'] = precip.get('min')
-                record['precipitation_max'] = precip.get('max')
+            if "statistics" in data and "precipitation" in data["statistics"]:
+                precip = data["statistics"]["precipitation"]
+                record["precipitation_mean"] = precip.get("mean")
+                record["precipitation_std"] = precip.get("std")
+                record["precipitation_min"] = precip.get("min")
+                record["precipitation_max"] = precip.get("max")
 
             records.append(record)
 
@@ -295,36 +301,36 @@ class S3ResultsQuerier:
         Args:
             summary (dict): Summary data
         """
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("CLIMATE DATA ANALYSIS SUMMARY")
-        print("="*60)
+        print("=" * 60)
 
         print(f"\nTotal files analyzed: {summary.get('total_files', 0)}")
         print(f"Analysis timestamp: {summary.get('timestamp', 'unknown')}")
 
-        if summary.get('temperature_statistics'):
+        if summary.get("temperature_statistics"):
             print("\nTemperature Statistics:")
-            temp_stats = summary['temperature_statistics']
+            temp_stats = summary["temperature_statistics"]
             for key, value in temp_stats.items():
                 print(f"  {key}: {value:.2f}")
 
-        if summary.get('precipitation_statistics'):
+        if summary.get("precipitation_statistics"):
             print("\nPrecipitation Statistics:")
-            precip_stats = summary['precipitation_statistics']
+            precip_stats = summary["precipitation_statistics"]
             for key, value in precip_stats.items():
                 print(f"  {key}: {value:.2f}")
 
-        if summary.get('files'):
-            print(f"\nProcessed Files:")
-            for f in summary['files'][:5]:  # Show first 5
+        if summary.get("files"):
+            print("\nProcessed Files:")
+            for f in summary["files"][:5]:  # Show first 5
                 print(f"  {f.get('file', 'unknown')}")
-            if len(summary['files']) > 5:
-                print(f"  ... and {len(summary['files'])-5} more")
+            if len(summary["files"]) > 5:
+                print(f"  ... and {len(summary['files']) - 5} more")
 
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
 
 
-def query_s3_results(bucket_name, output_dir='./results', region='us-east-1'):
+def query_s3_results(bucket_name, output_dir="./results", region="us-east-1"):
     """
     Main function to query S3 results.
 
@@ -357,11 +363,11 @@ def query_s3_results(bucket_name, output_dir='./results', region='us-east-1'):
         df = querier.create_dataframe(result_files)
 
         # Export summary
-        summary_file = Path(output_dir) / 'analysis_summary.json'
+        summary_file = Path(output_dir) / "analysis_summary.json"
         querier.export_summary(summary, str(summary_file))
 
         # Export DataFrame
-        csv_file = Path(output_dir) / 'results.csv'
+        csv_file = Path(output_dir) / "results.csv"
         df.to_csv(csv_file, index=False)
         logger.info(f"✓ CSV exported to: {csv_file}")
 
@@ -377,38 +383,17 @@ def query_s3_results(bucket_name, output_dir='./results', region='us-east-1'):
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Query and analyze climate results from S3'
-    )
+    parser = argparse.ArgumentParser(description="Query and analyze climate results from S3")
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name'
+        "--output-dir", default="./results", help="Output directory for downloaded files"
     )
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--profile", help="AWS profile name")
     parser.add_argument(
-        '--output-dir',
-        default='./results',
-        help='Output directory for downloaded files'
+        "--list-only", action="store_true", help="Only list results without downloading"
     )
-    parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
-    parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--list-only',
-        action='store_true',
-        help='Only list results without downloading'
-    )
-    parser.add_argument(
-        '--prefix',
-        default='results/',
-        help='S3 prefix to search'
-    )
+    parser.add_argument("--prefix", default="results/", help="S3 prefix to search")
 
     args = parser.parse_args()
 
@@ -419,11 +404,7 @@ def main():
             files = querier.list_results(args.prefix)
             logger.info(f"\nFound {len(files)} files")
         else:
-            summary = query_s3_results(
-                args.bucket,
-                args.output_dir,
-                args.region
-            )
+            summary = query_s3_results(args.bucket, args.output_dir, args.region)
             sys.exit(0 if summary else 1)
 
     except Exception as e:
@@ -431,5 +412,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

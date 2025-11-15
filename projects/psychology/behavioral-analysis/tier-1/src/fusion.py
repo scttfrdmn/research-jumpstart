@@ -5,15 +5,16 @@ This module implements different fusion approaches to combine
 EEG, facial, and physiological modalities.
 """
 
+from typing import Optional
+
 import numpy as np
-from typing import List, Dict, Optional, Tuple
 
 
 def early_fusion(
     eeg_features: np.ndarray,
     facial_features: np.ndarray,
     physio_features: np.ndarray,
-    normalize: bool = True
+    normalize: bool = True,
 ) -> np.ndarray:
     """
     Early fusion: Concatenate features from all modalities.
@@ -32,6 +33,7 @@ def early_fusion(
     if normalize:
         # Normalize each modality to zero mean and unit variance
         from sklearn.preprocessing import StandardScaler
+
         normalized_features = []
         for feat in features:
             if feat is not None and len(feat) > 0:
@@ -50,8 +52,8 @@ def late_fusion(
     eeg_predictions: np.ndarray,
     facial_predictions: np.ndarray,
     physio_predictions: np.ndarray,
-    method: str = 'average',
-    weights: Optional[np.ndarray] = None
+    method: str = "average",
+    weights: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """
     Late fusion: Combine predictions from individual modality classifiers.
@@ -72,11 +74,11 @@ def late_fusion(
     if len(predictions) == 0:
         raise ValueError("At least one modality prediction is required")
 
-    if method == 'average':
+    if method == "average":
         # Simple average
         fused = np.mean(predictions, axis=0)
 
-    elif method == 'weighted':
+    elif method == "weighted":
         # Weighted average
         if weights is None:
             weights = np.ones(len(predictions)) / len(predictions)
@@ -88,11 +90,11 @@ def late_fusion(
         for pred, weight in zip(predictions, weights):
             fused += weight * pred
 
-    elif method == 'max':
+    elif method == "max":
         # Maximum rule
         fused = np.maximum.reduce(predictions)
 
-    elif method == 'product':
+    elif method == "product":
         # Product rule
         fused = np.prod(predictions, axis=0)
         # Renormalize
@@ -111,8 +113,8 @@ def hybrid_fusion(
     eeg_predictions: np.ndarray,
     facial_predictions: np.ndarray,
     physio_predictions: np.ndarray,
-    feature_weight: float = 0.5
-) -> Tuple[np.ndarray, np.ndarray]:
+    feature_weight: float = 0.5,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Hybrid fusion: Combine both feature-level and decision-level fusion.
 
@@ -141,7 +143,7 @@ def attention_fusion(
     eeg_features: np.ndarray,
     facial_features: np.ndarray,
     physio_features: np.ndarray,
-    attention_model=None
+    attention_model=None,
 ) -> np.ndarray:
     """
     Attention-based fusion: Learn importance weights for each modality.
@@ -178,11 +180,7 @@ def attention_fusion(
     return fused
 
 
-def ensemble_fusion(
-    models: List,
-    features: List[np.ndarray],
-    method: str = 'voting'
-) -> np.ndarray:
+def ensemble_fusion(models: list, features: list[np.ndarray], method: str = "voting") -> np.ndarray:
     """
     Ensemble fusion: Combine multiple models trained on different modalities.
 
@@ -202,21 +200,17 @@ def ensemble_fusion(
         pred = model.predict(feat)
         predictions.append(pred)
 
-    if method == 'voting':
+    if method == "voting":
         # Majority voting (for classification)
         if len(predictions[0].shape) == 1:
             # Hard predictions
             stacked = np.stack(predictions, axis=1)
-            fused = np.apply_along_axis(
-                lambda x: np.bincount(x).argmax(),
-                axis=1,
-                arr=stacked
-            )
+            fused = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=stacked)
         else:
             # Soft predictions (probabilities)
             fused = np.mean(predictions, axis=0)
 
-    elif method == 'stacking':
+    elif method == "stacking":
         # Stack predictions as features for meta-learner
         # This requires a separate meta-model (not implemented here)
         fused = np.concatenate(predictions, axis=1)
@@ -228,11 +222,8 @@ def ensemble_fusion(
 
 
 def compute_modality_importance(
-    X_train_modalities: List[np.ndarray],
-    y_train: np.ndarray,
-    base_model_class,
-    n_folds: int = 5
-) -> Dict[str, float]:
+    X_train_modalities: list[np.ndarray], y_train: np.ndarray, base_model_class, n_folds: int = 5
+) -> dict[str, float]:
     """
     Compute importance of each modality using cross-validation.
 
@@ -247,7 +238,7 @@ def compute_modality_importance(
     """
     from sklearn.model_selection import cross_val_score
 
-    modality_names = ['eeg', 'facial', 'physiological']
+    modality_names = ["eeg", "facial", "physiological"]
     importance_scores = {}
 
     for modality_name, X_modality in zip(modality_names, X_train_modalities):
@@ -265,7 +256,7 @@ def adaptive_fusion(
     eeg_features: np.ndarray,
     facial_features: np.ndarray,
     physio_features: np.ndarray,
-    modality_confidences: Dict[str, float]
+    modality_confidences: dict[str, float],
 ) -> np.ndarray:
     """
     Adaptive fusion: Weight modalities based on their confidence scores.
@@ -281,23 +272,21 @@ def adaptive_fusion(
     """
     # Normalize confidence scores
     total_confidence = sum(modality_confidences.values())
-    normalized_confidences = {
-        k: v / total_confidence for k, v in modality_confidences.items()
-    }
+    normalized_confidences = {k: v / total_confidence for k, v in modality_confidences.items()}
 
     # Apply confidence weights
     fused_features = []
 
     if eeg_features is not None:
-        weight = normalized_confidences.get('eeg', 0)
+        weight = normalized_confidences.get("eeg", 0)
         fused_features.append(eeg_features * weight)
 
     if facial_features is not None:
-        weight = normalized_confidences.get('facial', 0)
+        weight = normalized_confidences.get("facial", 0)
         fused_features.append(facial_features * weight)
 
     if physio_features is not None:
-        weight = normalized_confidences.get('physiological', 0)
+        weight = normalized_confidences.get("physiological", 0)
         fused_features.append(physio_features * weight)
 
     # Concatenate

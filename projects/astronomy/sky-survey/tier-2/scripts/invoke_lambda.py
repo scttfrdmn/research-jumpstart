@@ -5,15 +5,14 @@ Invoke Lambda function for source detection on all S3 images.
 Iterates through FITS images in S3 and invokes Lambda for each one.
 """
 
+import json
 import os
 import sys
-import json
-import time
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import boto3
-from botocore.exceptions import NoCredentialsError, ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
 from tqdm import tqdm
 
 # Add parent directory to path
@@ -22,9 +21,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def get_environment_variables():
     """Get required environment variables."""
-    bucket_raw = os.environ.get('BUCKET_RAW')
-    bucket_catalog = os.environ.get('BUCKET_CATALOG')
-    lambda_function = os.environ.get('LAMBDA_FUNCTION', 'astronomy-source-detection')
+    bucket_raw = os.environ.get("BUCKET_RAW")
+    bucket_catalog = os.environ.get("BUCKET_CATALOG")
+    lambda_function = os.environ.get("LAMBDA_FUNCTION", "astronomy-source-detection")
 
     if not bucket_raw or not bucket_catalog:
         print("Error: Environment variables not set")
@@ -41,16 +40,16 @@ def list_fits_files(s3, bucket_raw):
     fits_files = []
 
     try:
-        paginator = s3.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=bucket_raw, Prefix='images/')
+        paginator = s3.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket_raw, Prefix="images/")
 
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                key = obj['Key']
-                if key.endswith('.fits') or key.endswith('.fits.bz2'):
+            for obj in page["Contents"]:
+                key = obj["Key"]
+                if key.endswith(".fits") or key.endswith(".fits.bz2"):
                     fits_files.append(key)
 
     except Exception as e:
@@ -62,72 +61,56 @@ def list_fits_files(s3, bucket_raw):
 
 def invoke_lambda_for_image(lambda_client, function_name, s3_key, bucket_raw, bucket_catalog):
     """Invoke Lambda function for a single image."""
-    payload = {
-        'bucket': bucket_raw,
-        'bucket_catalog': bucket_catalog,
-        'key': s3_key
-    }
+    payload = {"bucket": bucket_raw, "bucket_catalog": bucket_catalog, "key": s3_key}
 
     try:
         response = lambda_client.invoke(
             FunctionName=function_name,
-            InvocationType='RequestResponse',
-            Payload=json.dumps(payload)
+            InvocationType="RequestResponse",
+            Payload=json.dumps(payload),
         )
 
         # Parse response
-        response_payload = json.loads(response['Payload'].read())
+        response_payload = json.loads(response["Payload"].read())
 
-        if response['StatusCode'] == 200:
-            body = json.loads(response_payload.get('body', '{}'))
+        if response["StatusCode"] == 200:
+            body = json.loads(response_payload.get("body", "{}"))
             return {
-                'status': 'success',
-                'key': s3_key,
-                'num_sources': body.get('num_sources', 0),
-                'output_key': body.get('output_key', '')
+                "status": "success",
+                "key": s3_key,
+                "num_sources": body.get("num_sources", 0),
+                "output_key": body.get("output_key", ""),
             }
         else:
             return {
-                'status': 'error',
-                'key': s3_key,
-                'error': response_payload.get('error', 'Unknown error')
+                "status": "error",
+                "key": s3_key,
+                "error": response_payload.get("error", "Unknown error"),
             }
 
     except Exception as e:
-        return {
-            'status': 'error',
-            'key': s3_key,
-            'error': str(e)
-        }
+        return {"status": "error", "key": s3_key, "error": str(e)}
 
 
 def invoke_lambda_async(lambda_client, function_name, s3_key, bucket_raw, bucket_catalog):
     """Invoke Lambda function asynchronously (fire and forget)."""
-    payload = {
-        'bucket': bucket_raw,
-        'bucket_catalog': bucket_catalog,
-        'key': s3_key
-    }
+    payload = {"bucket": bucket_raw, "bucket_catalog": bucket_catalog, "key": s3_key}
 
     try:
         response = lambda_client.invoke(
             FunctionName=function_name,
-            InvocationType='Event',  # Async invocation
-            Payload=json.dumps(payload)
+            InvocationType="Event",  # Async invocation
+            Payload=json.dumps(payload),
         )
 
         return {
-            'status': 'submitted',
-            'key': s3_key,
-            'request_id': response.get('LogResult', 'N/A')
+            "status": "submitted",
+            "key": s3_key,
+            "request_id": response.get("LogResult", "N/A"),
         }
 
     except Exception as e:
-        return {
-            'status': 'error',
-            'key': s3_key,
-            'error': str(e)
-        }
+        return {"status": "error", "key": s3_key, "error": str(e)}
 
 
 def main():
@@ -138,15 +121,15 @@ def main():
 
     # Get environment variables
     bucket_raw, bucket_catalog, lambda_function = get_environment_variables()
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Raw bucket: s3://{bucket_raw}")
     print(f"  Catalog bucket: s3://{bucket_catalog}")
     print(f"  Lambda function: {lambda_function}\n")
 
     # Initialize AWS clients
     try:
-        s3 = boto3.client('s3')
-        lambda_client = boto3.client('lambda')
+        s3 = boto3.client("s3")
+        lambda_client = boto3.client("lambda")
     except NoCredentialsError:
         print("Error: AWS credentials not configured")
         print("Run: aws configure")
@@ -201,7 +184,7 @@ def main():
                 lambda_function,
                 s3_key,
                 bucket_raw,
-                bucket_catalog
+                bucket_catalog,
             )
             futures[future] = s3_key
 
@@ -211,8 +194,8 @@ def main():
                 result = future.result()
                 results.append(result)
 
-                if result['status'] == 'success':
-                    total_sources += result.get('num_sources', 0)
+                if result["status"] == "success":
+                    total_sources += result.get("num_sources", 0)
                     tqdm.write(f"  ✓ {result['key']}: {result.get('num_sources', 0)} sources")
                 else:
                     errors.append(result)
@@ -225,8 +208,8 @@ def main():
     print("Invocation Summary")
     print("=" * 70)
 
-    successful = sum(1 for r in results if r['status'] == 'success')
-    failed = sum(1 for r in results if r['status'] == 'error')
+    successful = sum(1 for r in results if r["status"] == "success")
+    failed = sum(1 for r in results if r["status"] == "error")
 
     print(f"\n✓ Successful: {successful}/{len(results)}")
     if successful > 0:

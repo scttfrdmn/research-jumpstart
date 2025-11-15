@@ -5,16 +5,18 @@ Functions for artifact image classification, feature extraction,
 and typological analysis.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import List, Tuple, Dict, Optional
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 
 
-def load_artifact_images(image_dir: Path, image_size: Tuple[int, int] = (224, 224)) -> List[np.ndarray]:
+def load_artifact_images(
+    image_dir: Path, image_size: tuple[int, int] = (224, 224)
+) -> list[np.ndarray]:
     """
     Load and preprocess artifact images from directory.
 
@@ -25,18 +27,20 @@ def load_artifact_images(image_dir: Path, image_size: Tuple[int, int] = (224, 22
     Returns:
         List of preprocessed image arrays
     """
-    transform = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     images = []
-    image_paths = sorted(Path(image_dir).glob('*.jpg')) + sorted(Path(image_dir).glob('*.png'))
+    image_paths = sorted(Path(image_dir).glob("*.jpg")) + sorted(Path(image_dir).glob("*.png"))
 
     for img_path in image_paths:
         try:
-            img = Image.open(img_path).convert('RGB')
+            img = Image.open(img_path).convert("RGB")
             img_tensor = transform(img)
             images.append(img_tensor.numpy())
         except Exception as e:
@@ -68,7 +72,7 @@ def extract_artifact_features(images: np.ndarray, model) -> np.ndarray:
     return np.vstack(features)
 
 
-def classify_artifacts(images: np.ndarray, model, class_names: List[str]) -> pd.DataFrame:
+def classify_artifacts(images: np.ndarray, model, class_names: list[str]) -> pd.DataFrame:
     """
     Classify artifact images into typological categories.
 
@@ -92,17 +96,20 @@ def classify_artifacts(images: np.ndarray, model, class_names: List[str]) -> pd.
             pred_class = np.argmax(probabilities)
             pred_conf = probabilities[pred_class]
 
-            predictions.append({
-                'predicted_class': class_names[pred_class],
-                'confidence': pred_conf,
-                'probabilities': probabilities
-            })
+            predictions.append(
+                {
+                    "predicted_class": class_names[pred_class],
+                    "confidence": pred_conf,
+                    "probabilities": probabilities,
+                }
+            )
 
     return pd.DataFrame(predictions)
 
 
-def compare_artifact_assemblages(site_a_features: np.ndarray,
-                                  site_b_features: np.ndarray) -> Dict[str, float]:
+def compare_artifact_assemblages(
+    site_a_features: np.ndarray, site_b_features: np.ndarray
+) -> dict[str, float]:
     """
     Compare artifact assemblages between two sites using feature distributions.
 
@@ -124,19 +131,19 @@ def compare_artifact_assemblages(site_a_features: np.ndarray,
     # Distribution comparison (Kolmogorov-Smirnov test)
     ks_stats = []
     for i in range(site_a_features.shape[1]):
-        ks_stat, p_value = ks_2samp(site_a_features[:, i], site_b_features[:, i])
+        ks_stat, _p_value = ks_2samp(site_a_features[:, i], site_b_features[:, i])
         ks_stats.append(ks_stat)
 
     return {
-        'cosine_similarity': float(cosine_similarity),
-        'mean_ks_statistic': float(np.mean(ks_stats)),
-        'assemblage_difference': float(1 - cosine_similarity)
+        "cosine_similarity": float(cosine_similarity),
+        "mean_ks_statistic": float(np.mean(ks_stats)),
+        "assemblage_difference": float(1 - cosine_similarity),
     }
 
 
-def identify_diagnostic_artifacts(features: np.ndarray,
-                                   labels: np.ndarray,
-                                   top_n: int = 10) -> List[int]:
+def identify_diagnostic_artifacts(
+    features: np.ndarray, labels: np.ndarray, top_n: int = 10
+) -> list[int]:
     """
     Identify most diagnostic artifacts for classification.
 
@@ -165,7 +172,7 @@ def identify_diagnostic_artifacts(features: np.ndarray,
     return diagnostic_indices.tolist()
 
 
-def calculate_artifact_diversity(features: np.ndarray) -> Dict[str, float]:
+def calculate_artifact_diversity(features: np.ndarray) -> dict[str, float]:
     """
     Calculate diversity metrics for artifact assemblage.
 
@@ -175,20 +182,20 @@ def calculate_artifact_diversity(features: np.ndarray) -> Dict[str, float]:
     Returns:
         Dictionary of diversity metrics
     """
-    from sklearn.decomposition import PCA
     from scipy.spatial.distance import pdist
+    from sklearn.decomposition import PCA
 
     # PCA-based diversity (variance in principal components)
     pca = PCA(n_components=min(10, features.shape[1]))
-    pca_features = pca.fit_transform(features)
+    pca.fit_transform(features)
     pca_diversity = np.sum(pca.explained_variance_)
 
     # Pairwise distance-based diversity
-    distances = pdist(features, metric='euclidean')
+    distances = pdist(features, metric="euclidean")
     mean_distance = np.mean(distances)
 
     return {
-        'pca_diversity': float(pca_diversity),
-        'mean_pairwise_distance': float(mean_distance),
-        'assemblage_richness': int(features.shape[0])
+        "pca_diversity": float(pca_diversity),
+        "mean_pairwise_distance": float(mean_distance),
+        "assemblage_richness": int(features.shape[0]),
     }

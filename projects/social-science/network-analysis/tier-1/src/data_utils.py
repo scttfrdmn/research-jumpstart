@@ -5,16 +5,13 @@ Handles downloading, caching, and loading of Twitter, Reddit, Facebook,
 and other social network datasets.
 """
 
-import os
 import pickle
 import urllib.request
 from pathlib import Path
-from typing import Optional, Dict, Any
-import networkx as nx
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
 
+import networkx as nx
+import numpy as np
+import pandas as pd
 
 # Data directory paths
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -26,11 +23,7 @@ RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def download_social_data(
-    platform: str,
-    url: str,
-    force_download: bool = False
-) -> Path:
+def download_social_data(platform: str, url: str, force_download: bool = False) -> Path:
     """
     Download social network data from URL.
 
@@ -83,26 +76,26 @@ def load_twitter_graph(force_download: bool = False) -> nx.DiGraph:
 
     if cache_file.exists() and not force_download:
         print(f"Loading cached Twitter graph from {cache_file}...")
-        with open(cache_file, 'rb') as f:
+        with open(cache_file, "rb") as f:
             G = pickle.load(f)
-        print(f"✓ Loaded Twitter graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+        print(
+            f"✓ Loaded Twitter graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+        )
         return G
 
     # If not cached, create a synthetic graph for demonstration
     print("Creating synthetic Twitter graph...")
     print("In production, this would download from Twitter API or dataset repository")
 
-    G = _create_synthetic_social_graph(
-        n_nodes=100000,
-        avg_degree=50,
-        platform='twitter'
-    )
+    G = _create_synthetic_social_graph(n_nodes=100000, avg_degree=50, platform="twitter")
 
     # Save to cache
-    with open(cache_file, 'wb') as f:
+    with open(cache_file, "wb") as f:
         pickle.dump(G, f)
 
-    print(f"✓ Created and cached Twitter graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+    print(
+        f"✓ Created and cached Twitter graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+    )
     return G
 
 
@@ -116,26 +109,26 @@ def load_reddit_graph(force_download: bool = False) -> nx.DiGraph:
 
     if cache_file.exists() and not force_download:
         print(f"Loading cached Reddit graph from {cache_file}...")
-        with open(cache_file, 'rb') as f:
+        with open(cache_file, "rb") as f:
             G = pickle.load(f)
-        print(f"✓ Loaded Reddit graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+        print(
+            f"✓ Loaded Reddit graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+        )
         return G
 
     # If not cached, create a synthetic graph
     print("Creating synthetic Reddit graph...")
     print("In production, this would download from Reddit API or SNAP dataset")
 
-    G = _create_synthetic_social_graph(
-        n_nodes=50000,
-        avg_degree=30,
-        platform='reddit'
-    )
+    G = _create_synthetic_social_graph(n_nodes=50000, avg_degree=30, platform="reddit")
 
     # Save to cache
-    with open(cache_file, 'wb') as f:
+    with open(cache_file, "wb") as f:
         pickle.dump(G, f)
 
-    print(f"✓ Created and cached Reddit graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+    print(
+        f"✓ Created and cached Reddit graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+    )
     return G
 
 
@@ -149,9 +142,11 @@ def load_facebook_graph(force_download: bool = False) -> nx.Graph:
 
     if cache_file.exists() and not force_download:
         print(f"Loading cached Facebook graph from {cache_file}...")
-        with open(cache_file, 'rb') as f:
+        with open(cache_file, "rb") as f:
             G = pickle.load(f)
-        print(f"✓ Loaded Facebook graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+        print(
+            f"✓ Loaded Facebook graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+        )
         return G
 
     # If not cached, create a synthetic graph
@@ -162,28 +157,26 @@ def load_facebook_graph(force_download: bool = False) -> nx.Graph:
 
     # Add node attributes
     for node in G.nodes():
-        G.nodes[node]['platform'] = 'facebook'
-        G.nodes[node]['user_id'] = f"fb_user_{node}"
-        G.nodes[node]['features'] = np.random.randn(128)
+        G.nodes[node]["platform"] = "facebook"
+        G.nodes[node]["user_id"] = f"fb_user_{node}"
+        G.nodes[node]["features"] = np.random.randn(128)
 
     # Add edge attributes
     for u, v in G.edges():
-        G[u][v]['weight'] = np.random.exponential(1.0)
-        G[u][v]['edge_type'] = 'friendship'
+        G[u][v]["weight"] = np.random.exponential(1.0)
+        G[u][v]["edge_type"] = "friendship"
 
     # Save to cache
-    with open(cache_file, 'wb') as f:
+    with open(cache_file, "wb") as f:
         pickle.dump(G, f)
 
-    print(f"✓ Created and cached Facebook graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+    print(
+        f"✓ Created and cached Facebook graph: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges"
+    )
     return G
 
 
-def _create_synthetic_social_graph(
-    n_nodes: int,
-    avg_degree: int,
-    platform: str
-) -> nx.DiGraph:
+def _create_synthetic_social_graph(n_nodes: int, avg_degree: int, platform: str) -> nx.DiGraph:
     """
     Create synthetic social network graph with realistic properties.
 
@@ -198,23 +191,27 @@ def _create_synthetic_social_graph(
 
     # Add node attributes
     for node in G.nodes():
-        G.nodes[node]['platform'] = platform
-        G.nodes[node]['user_id'] = f"{platform}_user_{node}"
-        G.nodes[node]['features'] = np.random.randn(128)  # 128-dim feature vector
-        G.nodes[node]['timestamp_first'] = pd.Timestamp('2023-01-01') + pd.Timedelta(days=np.random.randint(0, 180))
-        G.nodes[node]['timestamp_last'] = pd.Timestamp('2023-06-30')
+        G.nodes[node]["platform"] = platform
+        G.nodes[node]["user_id"] = f"{platform}_user_{node}"
+        G.nodes[node]["features"] = np.random.randn(128)  # 128-dim feature vector
+        G.nodes[node]["timestamp_first"] = pd.Timestamp("2023-01-01") + pd.Timedelta(
+            days=np.random.randint(0, 180)
+        )
+        G.nodes[node]["timestamp_last"] = pd.Timestamp("2023-06-30")
 
     # Add edge attributes
     for u, v in G.edges():
-        G[u][v]['weight'] = np.random.exponential(1.0)
-        G[u][v]['edge_type'] = np.random.choice(['post', 'reply', 'mention', 'retweet'])
-        G[u][v]['timestamp'] = pd.Timestamp('2023-01-01') + pd.Timedelta(days=np.random.randint(0, 180))
-        G[u][v]['sentiment'] = np.random.normal(0, 0.5)  # Mean 0, std 0.5
+        G[u][v]["weight"] = np.random.exponential(1.0)
+        G[u][v]["edge_type"] = np.random.choice(["post", "reply", "mention", "retweet"])
+        G[u][v]["timestamp"] = pd.Timestamp("2023-01-01") + pd.Timedelta(
+            days=np.random.randint(0, 180)
+        )
+        G[u][v]["sentiment"] = np.random.normal(0, 0.5)  # Mean 0, std 0.5
 
     return G
 
 
-def load_all_graphs(force_download: bool = False) -> Dict[str, nx.Graph]:
+def load_all_graphs(force_download: bool = False) -> dict[str, nx.Graph]:
     """
     Load all platform graphs.
 
@@ -225,9 +222,9 @@ def load_all_graphs(force_download: bool = False) -> Dict[str, nx.Graph]:
     print("Loading all platform graphs...")
 
     graphs = {
-        'twitter': load_twitter_graph(force_download),
-        'reddit': load_reddit_graph(force_download),
-        'facebook': load_facebook_graph(force_download),
+        "twitter": load_twitter_graph(force_download),
+        "reddit": load_reddit_graph(force_download),
+        "facebook": load_facebook_graph(force_download),
     }
 
     total_nodes = sum(G.number_of_nodes() for G in graphs.values())

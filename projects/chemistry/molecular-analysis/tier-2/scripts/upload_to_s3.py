@@ -6,19 +6,19 @@ This script handles uploading SMILES, SDF, and MOL2 files to AWS S3
 for processing. Supports resumable uploads and progress tracking.
 """
 
+import argparse
+import logging
 import os
 import sys
-import boto3
-import argparse
 from pathlib import Path
-from tqdm import tqdm
+
+import boto3
 from botocore.exceptions import ClientError
-import logging
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class MolecularS3Uploader:
     """Upload molecular structure files to S3 with progress tracking."""
 
-    def __init__(self, bucket_name, region='us-east-1', profile=None):
+    def __init__(self, bucket_name, region="us-east-1", profile=None):
         """
         Initialize S3 uploader for molecular data.
 
@@ -39,12 +39,9 @@ class MolecularS3Uploader:
         self.region = region
 
         # Create session and S3 client
-        if profile:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
 
-        self.s3 = session.client('s3', region_name=region)
+        self.s3 = session.client("s3", region_name=region)
 
         # Verify bucket exists
         try:
@@ -74,23 +71,18 @@ class MolecularS3Uploader:
             return False
 
         file_size = file_path.stat().st_size
-        logger.info(f"Uploading: {file_path.name} ({file_size/1024:.2f}KB)")
+        logger.info(f"Uploading: {file_path.name} ({file_size / 1024:.2f}KB)")
 
         try:
             # Determine content type
             content_type = self._get_content_type(file_path.suffix)
 
             # Upload with metadata
-            extra_args = {'ContentType': content_type}
+            extra_args = {"ContentType": content_type}
             if metadata:
-                extra_args['Metadata'] = metadata
+                extra_args["Metadata"] = metadata
 
-            self.s3.upload_file(
-                str(file_path),
-                self.bucket_name,
-                s3_key,
-                ExtraArgs=extra_args
-            )
+            self.s3.upload_file(str(file_path), self.bucket_name, s3_key, ExtraArgs=extra_args)
 
             logger.info(f"Uploaded: s3://{self.bucket_name}/{s3_key}")
             return True
@@ -105,19 +97,19 @@ class MolecularS3Uploader:
     def _get_content_type(self, suffix):
         """Get content type based on file extension."""
         content_types = {
-            '.smi': 'chemical/x-daylight-smiles',
-            '.smiles': 'chemical/x-daylight-smiles',
-            '.sdf': 'chemical/x-mdl-sdfile',
-            '.mol': 'chemical/x-mdl-molfile',
-            '.mol2': 'chemical/x-mol2',
-            '.pdb': 'chemical/x-pdb',
-            '.xyz': 'chemical/x-xyz',
-            '.txt': 'text/plain',
-            '.csv': 'text/csv'
+            ".smi": "chemical/x-daylight-smiles",
+            ".smiles": "chemical/x-daylight-smiles",
+            ".sdf": "chemical/x-mdl-sdfile",
+            ".mol": "chemical/x-mdl-molfile",
+            ".mol2": "chemical/x-mol2",
+            ".pdb": "chemical/x-pdb",
+            ".xyz": "chemical/x-xyz",
+            ".txt": "text/plain",
+            ".csv": "text/csv",
         }
-        return content_types.get(suffix.lower(), 'application/octet-stream')
+        return content_types.get(suffix.lower(), "application/octet-stream")
 
-    def upload_directory(self, local_dir, s3_prefix='molecules/', organize_by_class=True):
+    def upload_directory(self, local_dir, s3_prefix="molecules/", organize_by_class=True):
         """
         Upload all molecular structure files in directory to S3.
 
@@ -136,10 +128,10 @@ class MolecularS3Uploader:
             return 0, 0
 
         # Find all molecular structure files
-        extensions = ['*.smi', '*.smiles', '*.sdf', '*.mol', '*.mol2', '*.pdb']
+        extensions = ["*.smi", "*.smiles", "*.sdf", "*.mol", "*.mol2", "*.pdb"]
         files = []
         for ext in extensions:
-            files.extend(list(local_dir.glob(f'**/{ext}')))
+            files.extend(list(local_dir.glob(f"**/{ext}")))
 
         if not files:
             logger.warning(f"No molecular structure files found in {local_dir}")
@@ -157,19 +149,19 @@ class MolecularS3Uploader:
 
                 # Extract compound class from path
                 if len(relative_path.parts) > 1:
-                    compound_class = relative_path.parts[0]
+                    relative_path.parts[0]
                 else:
-                    compound_class = 'unknown'
+                    pass
 
-                s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, '/')
+                s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, "/")
             else:
-                s3_key = f"{s3_prefix.rstrip('/')}/{file_path.name}".replace(os.sep, '/')
+                s3_key = f"{s3_prefix.rstrip('/')}/{file_path.name}".replace(os.sep, "/")
 
             # Add metadata
             metadata = {
-                'original-filename': file_path.name,
-                'file-type': file_path.suffix.lstrip('.'),
-                'upload-source': 'molecular-analysis-tier2'
+                "original-filename": file_path.name,
+                "file-type": file_path.suffix.lstrip("."),
+                "upload-source": "molecular-analysis-tier2",
             }
 
             if self.upload_file(str(file_path), s3_key, metadata):
@@ -179,35 +171,34 @@ class MolecularS3Uploader:
 
         return successful, failed
 
-    def list_uploaded_files(self, prefix='molecules/'):
+    def list_uploaded_files(self, prefix="molecules/"):
         """List all uploaded molecular structure files in S3."""
         try:
-            response = self.s3.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            if 'Contents' not in response:
+            if "Contents" not in response:
                 logger.info(f"No files found in s3://{self.bucket_name}/{prefix}")
                 return []
 
             files = []
-            for obj in response['Contents']:
-                size_kb = obj['Size'] / 1024
-                files.append({
-                    'key': obj['Key'],
-                    'size': obj['Size'],
-                    'size_kb': size_kb,
-                    'modified': obj['LastModified']
-                })
+            for obj in response["Contents"]:
+                size_kb = obj["Size"] / 1024
+                files.append(
+                    {
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "size_kb": size_kb,
+                        "modified": obj["LastModified"],
+                    }
+                )
 
             logger.info(f"\nUploaded files in {prefix}:")
             total_size = 0
             for f in files:
                 logger.info(f"  {f['key']} ({f['size_kb']:.1f}KB)")
-                total_size += f['size']
+                total_size += f["size"]
 
-            logger.info(f"Total: {len(files)} files, {total_size/1024:.1f}KB")
+            logger.info(f"Total: {len(files)} files, {total_size / 1024:.1f}KB")
             return files
 
         except ClientError as e:
@@ -228,10 +219,10 @@ class MolecularS3Uploader:
         num_molecules = 0
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
 
                     parts = line.split()
@@ -265,13 +256,13 @@ class MolecularS3Uploader:
         bracket_count = 0
 
         for char in smiles:
-            if char == '(':
+            if char == "(":
                 paren_count += 1
-            elif char == ')':
+            elif char == ")":
                 paren_count -= 1
-            elif char == '[':
+            elif char == "[":
                 bracket_count += 1
-            elif char == ']':
+            elif char == "]":
                 bracket_count -= 1
 
             if paren_count < 0 or bracket_count < 0:
@@ -280,7 +271,7 @@ class MolecularS3Uploader:
         return paren_count == 0 and bracket_count == 0
 
 
-def create_sample_molecules(output_dir='sample_data'):
+def create_sample_molecules(output_dir="sample_data"):
     """
     Create sample molecular structure files for testing.
 
@@ -291,38 +282,38 @@ def create_sample_molecules(output_dir='sample_data'):
     output_dir.mkdir(exist_ok=True)
 
     # Create subdirectories
-    (output_dir / 'drugs').mkdir(exist_ok=True)
-    (output_dir / 'natural_products').mkdir(exist_ok=True)
+    (output_dir / "drugs").mkdir(exist_ok=True)
+    (output_dir / "natural_products").mkdir(exist_ok=True)
 
     # Sample drugs
     drugs = [
-        ('aspirin', 'CC(=O)Oc1ccccc1C(=O)O'),
-        ('ibuprofen', 'CC(C)Cc1ccc(cc1)C(C)C(=O)O'),
-        ('caffeine', 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'),
-        ('acetaminophen', 'CC(=O)Nc1ccc(O)cc1'),
-        ('naproxen', 'COc1ccc2cc(ccc2c1)C(C)C(=O)O')
+        ("aspirin", "CC(=O)Oc1ccccc1C(=O)O"),
+        ("ibuprofen", "CC(C)Cc1ccc(cc1)C(C)C(=O)O"),
+        ("caffeine", "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"),
+        ("acetaminophen", "CC(=O)Nc1ccc(O)cc1"),
+        ("naproxen", "COc1ccc2cc(ccc2c1)C(C)C(=O)O"),
     ]
 
     # Sample natural products
     natural_products = [
-        ('morphine', 'CN1CC[C@]23[C@@H]4Oc5c3c(ccc5O)C[C@@H]1[C@@H]2C=C[C@@H]4O'),
-        ('quinine', 'COc1ccc2nccc([C@H](O)[C@@H]3C[C@@H]4CCN3C[C@@H]4C=C)c2c1'),
-        ('nicotine', 'CN1CCC[C@H]1c2cccnc2'),
-        ('menthol', 'CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O'),
-        ('camphor', 'CC1(C)C2CCC1(C)C(=O)C2')
+        ("morphine", "CN1CC[C@]23[C@@H]4Oc5c3c(ccc5O)C[C@@H]1[C@@H]2C=C[C@@H]4O"),
+        ("quinine", "COc1ccc2nccc([C@H](O)[C@@H]3C[C@@H]4CCN3C[C@@H]4C=C)c2c1"),
+        ("nicotine", "CN1CCC[C@H]1c2cccnc2"),
+        ("menthol", "CC(C)[C@@H]1CC[C@@H](C)C[C@H]1O"),
+        ("camphor", "CC1(C)C2CCC1(C)C(=O)C2"),
     ]
 
     # Write drugs
-    drugs_file = output_dir / 'drugs' / 'drugs.smi'
-    with open(drugs_file, 'w') as f:
+    drugs_file = output_dir / "drugs" / "drugs.smi"
+    with open(drugs_file, "w") as f:
         f.write("# Sample drug molecules\n")
         for name, smiles in drugs:
             f.write(f"{smiles} {name}\n")
     logger.info(f"Created: {drugs_file} ({len(drugs)} molecules)")
 
     # Write natural products
-    np_file = output_dir / 'natural_products' / 'natural_products.smi'
-    with open(np_file, 'w') as f:
+    np_file = output_dir / "natural_products" / "natural_products.smi"
+    with open(np_file, "w") as f:
         f.write("# Sample natural product molecules\n")
         for name, smiles in natural_products:
             f.write(f"{smiles} {name}\n")
@@ -334,51 +325,25 @@ def create_sample_molecules(output_dir='sample_data'):
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Upload molecular structures to S3'
+    parser = argparse.ArgumentParser(description="Upload molecular structures to S3")
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
+    parser.add_argument(
+        "--data-dir", default="sample_data", help="Local directory with molecular structure files"
+    )
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--profile", help="AWS profile name")
+    parser.add_argument("--file", help="Upload single file instead of directory")
+    parser.add_argument(
+        "--s3-prefix", default="molecules/", help="S3 key/prefix for uploaded files"
     )
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name'
+        "--list-only", action="store_true", help="Only list files without uploading"
     )
     parser.add_argument(
-        '--data-dir',
-        default='sample_data',
-        help='Local directory with molecular structure files'
+        "--create-samples", action="store_true", help="Create sample molecular data files"
     )
     parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
-    parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--file',
-        help='Upload single file instead of directory'
-    )
-    parser.add_argument(
-        '--s3-prefix',
-        default='molecules/',
-        help='S3 key/prefix for uploaded files'
-    )
-    parser.add_argument(
-        '--list-only',
-        action='store_true',
-        help='Only list files without uploading'
-    )
-    parser.add_argument(
-        '--create-samples',
-        action='store_true',
-        help='Create sample molecular data files'
-    )
-    parser.add_argument(
-        '--validate',
-        action='store_true',
-        help='Validate SMILES files before upload'
+        "--validate", action="store_true", help="Validate SMILES files before upload"
     )
 
     args = parser.parse_args()
@@ -397,10 +362,10 @@ def main():
             uploader.list_uploaded_files(args.s3_prefix)
         elif args.file:
             # Upload single file
-            if args.validate and args.file.endswith(('.smi', '.smiles')):
+            if args.validate and args.file.endswith((".smi", ".smiles")):
                 valid, num_mols, errors = uploader.validate_smiles_file(args.file)
                 if not valid:
-                    logger.error(f"SMILES validation failed:")
+                    logger.error("SMILES validation failed:")
                     for error in errors:
                         logger.error(f"  {error}")
                     return 1
@@ -411,10 +376,7 @@ def main():
             uploader.list_uploaded_files(args.s3_prefix)
         else:
             # Upload directory
-            successful, failed = uploader.upload_directory(
-                args.data_dir,
-                args.s3_prefix
-            )
+            successful, failed = uploader.upload_directory(args.data_dir, args.s3_prefix)
             logger.info(f"\nUpload complete: {successful} successful, {failed} failed")
             uploader.list_uploaded_files(args.s3_prefix)
 
@@ -425,5 +387,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

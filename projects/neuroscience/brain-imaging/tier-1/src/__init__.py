@@ -12,9 +12,6 @@ Modules:
 __version__ = "1.0.0"
 __author__ = "Research Jumpstart"
 
-from . import data_utils
-from . import connectivity
-from . import models
-from . import visualization
+from . import connectivity, data_utils, models, visualization
 
-__all__ = ['data_utils', 'connectivity', 'models', 'visualization']
+__all__ = ["connectivity", "data_utils", "models", "visualization"]

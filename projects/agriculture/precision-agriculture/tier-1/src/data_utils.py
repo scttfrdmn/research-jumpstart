@@ -6,13 +6,13 @@ satellite data, weather data, and soil data. Data is cached in Studio Lab's
 persistent storage to avoid re-downloading.
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import requests
-from typing import Optional, Tuple, List
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
 
+import numpy as np
+import pandas as pd
+import requests
 
 # Data directory (persistent in Studio Lab)
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -58,10 +58,7 @@ def download_file(url: str, destination: Path, force: bool = False) -> Path:
 
 
 def load_sentinel2(
-    aoi: str,
-    date_range: str,
-    bands: Optional[List[str]] = None,
-    force_download: bool = False
+    aoi: str, date_range: str, bands: Optional[list[str]] = None, force_download: bool = False
 ) -> np.ndarray:
     """
     Load Sentinel-2 imagery for area of interest.
@@ -76,7 +73,7 @@ def load_sentinel2(
         Array of shape (n_dates, height, width, n_bands)
     """
     if bands is None:
-        bands = ['B4', 'B8', 'B11']  # Red, NIR, SWIR
+        bands = ["B4", "B8", "B11"]  # Red, NIR, SWIR
 
     cache_key = f"s2_{aoi}_{date_range.replace('/', '_')}"
     cache_file = PROCESSED_DATA_DIR / "features" / f"{cache_key}.npy"
@@ -88,16 +85,16 @@ def load_sentinel2(
     print(f"Downloading Sentinel-2 imagery for {aoi}...")
     print(f"  Date range: {date_range}")
     print(f"  Bands: {bands}")
-    print(f"  This may take 15-20 minutes...")
+    print("  This may take 15-20 minutes...")
 
     # In production, download from AWS S3: s3://sentinel-s2-l2a/
     # For demo, create synthetic data
     print("  (Creating synthetic data for demo)")
 
     # Parse date range
-    start_date, end_date = date_range.split('/')
-    start = datetime.strptime(start_date, '%Y-%m-%d')
-    end = datetime.strptime(end_date, '%Y-%m-%d')
+    start_date, end_date = date_range.split("/")
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
 
     # Generate dates (5-day revisit)
     dates = []
@@ -123,12 +120,12 @@ def load_sentinel2(
         vegetation_signal = np.sin(growth_phase * np.pi)
 
         # NIR increases, Red decreases for healthy vegetation
-        if 'B4' in bands:  # Red
-            red_idx = bands.index('B4')
-            data[i, :, :, red_idx] *= (0.5 - 0.3 * vegetation_signal)
-        if 'B8' in bands:  # NIR
-            nir_idx = bands.index('B8')
-            data[i, :, :, nir_idx] *= (0.3 + 0.4 * vegetation_signal)
+        if "B4" in bands:  # Red
+            red_idx = bands.index("B4")
+            data[i, :, :, red_idx] *= 0.5 - 0.3 * vegetation_signal
+        if "B8" in bands:  # NIR
+            nir_idx = bands.index("B8")
+            data[i, :, :, nir_idx] *= 0.3 + 0.4 * vegetation_signal
 
     # Cache
     np.save(cache_file, data)
@@ -137,11 +134,7 @@ def load_sentinel2(
     return data
 
 
-def load_landsat8(
-    aoi: str,
-    date_range: str,
-    force_download: bool = False
-) -> np.ndarray:
+def load_landsat8(aoi: str, date_range: str, force_download: bool = False) -> np.ndarray:
     """
     Load Landsat-8 imagery for validation.
 
@@ -161,7 +154,7 @@ def load_landsat8(
         return np.load(cache_file)
 
     print(f"Downloading Landsat-8 imagery for {aoi}...")
-    print(f"  (Creating synthetic data for demo)")
+    print("  (Creating synthetic data for demo)")
 
     # Generate synthetic data (30m resolution, 16-day revisit)
     n_dates = 12  # ~6 months
@@ -173,11 +166,7 @@ def load_landsat8(
     return data
 
 
-def load_modis(
-    aoi: str,
-    date_range: str,
-    force_download: bool = False
-) -> pd.DataFrame:
+def load_modis(aoi: str, date_range: str, force_download: bool = False) -> pd.DataFrame:
     """
     Load MODIS vegetation indices.
 
@@ -193,21 +182,23 @@ def load_modis(
 
     if cache_file.exists() and not force_download:
         print(f"Loading MODIS from cache: {aoi}")
-        return pd.read_csv(cache_file, parse_dates=['date'])
+        return pd.read_csv(cache_file, parse_dates=["date"])
 
     print(f"Downloading MODIS data for {aoi}...")
 
     # Parse dates
-    start_date, end_date = date_range.split('/')
-    dates = pd.date_range(start=start_date, end=end_date, freq='16D')
+    start_date, end_date = date_range.split("/")
+    dates = pd.date_range(start=start_date, end=end_date, freq="16D")
 
     # Generate synthetic MODIS data
-    df = pd.DataFrame({
-        'date': dates,
-        'ndvi': np.random.uniform(0.3, 0.8, len(dates)),
-        'evi': np.random.uniform(0.2, 0.6, len(dates)),
-        'quality': np.random.choice(['good', 'marginal'], len(dates))
-    })
+    df = pd.DataFrame(
+        {
+            "date": dates,
+            "ndvi": np.random.uniform(0.3, 0.8, len(dates)),
+            "evi": np.random.uniform(0.2, 0.6, len(dates)),
+            "quality": np.random.choice(["good", "marginal"], len(dates)),
+        }
+    )
 
     df.to_csv(cache_file, index=False)
     print(f"Cached MODIS data ({len(df)} records)")
@@ -215,11 +206,7 @@ def load_modis(
     return df
 
 
-def load_weather_data(
-    aoi: str,
-    date_range: str,
-    force_download: bool = False
-) -> pd.DataFrame:
+def load_weather_data(aoi: str, date_range: str, force_download: bool = False) -> pd.DataFrame:
     """
     Load weather data (temperature, precipitation, GDD).
 
@@ -235,23 +222,25 @@ def load_weather_data(
 
     if cache_file.exists() and not force_download:
         print(f"Loading weather data from cache: {aoi}")
-        return pd.read_csv(cache_file, parse_dates=['date'])
+        return pd.read_csv(cache_file, parse_dates=["date"])
 
     print(f"Downloading weather data for {aoi}...")
 
     # Parse dates
-    start_date, end_date = date_range.split('/')
-    dates = pd.date_range(start=start_date, end=end_date, freq='D')
+    start_date, end_date = date_range.split("/")
+    dates = pd.date_range(start=start_date, end=end_date, freq="D")
 
     # Generate synthetic weather data
     temp_base = 20  # Celsius
-    df = pd.DataFrame({
-        'date': dates,
-        'temp_min': temp_base + np.random.normal(0, 3, len(dates)),
-        'temp_max': temp_base + 10 + np.random.normal(0, 3, len(dates)),
-        'precip': np.random.exponential(2, len(dates)),
-        'gdd': np.maximum(0, (temp_base + 5 - 10) * np.random.uniform(0.8, 1.2, len(dates)))
-    })
+    df = pd.DataFrame(
+        {
+            "date": dates,
+            "temp_min": temp_base + np.random.normal(0, 3, len(dates)),
+            "temp_max": temp_base + 10 + np.random.normal(0, 3, len(dates)),
+            "precip": np.random.exponential(2, len(dates)),
+            "gdd": np.maximum(0, (temp_base + 5 - 10) * np.random.uniform(0.8, 1.2, len(dates))),
+        }
+    )
 
     df.to_csv(cache_file, index=False)
     print(f"Cached weather data ({len(df)} records)")
@@ -275,6 +264,7 @@ def load_soil_data(aoi: str, force_download: bool = False) -> dict:
     if cache_file.exists() and not force_download:
         print(f"Loading soil data from cache: {aoi}")
         import json
+
         with open(cache_file) as f:
             return json.load(f)
 
@@ -282,25 +272,23 @@ def load_soil_data(aoi: str, force_download: bool = False) -> dict:
 
     # Generate synthetic soil data
     import json
+
     soil_data = {
-        'texture': 'loam',
-        'organic_matter': 2.5,  # %
-        'ph': 6.5,
-        'awc': 0.15,  # Available water capacity (cm/cm)
-        'bulk_density': 1.3,  # g/cm3
+        "texture": "loam",
+        "organic_matter": 2.5,  # %
+        "ph": 6.5,
+        "awc": 0.15,  # Available water capacity (cm/cm)
+        "bulk_density": 1.3,  # g/cm3
     }
 
-    with open(cache_file, 'w') as f:
+    with open(cache_file, "w") as f:
         json.dump(soil_data, f)
 
-    print(f"Cached soil data")
+    print("Cached soil data")
     return soil_data
 
 
-def merge_all_data(
-    aoi: str,
-    date_range: str
-) -> Tuple[np.ndarray, pd.DataFrame]:
+def merge_all_data(aoi: str, date_range: str) -> tuple[np.ndarray, pd.DataFrame]:
     """
     Load and merge all data sources for ML pipeline.
 
@@ -322,11 +310,11 @@ def merge_all_data(
     soil = load_soil_data(aoi)
 
     # Merge tabular data
-    tabular = weather.merge(modis, on='date', how='left')
+    tabular = weather.merge(modis, on="date", how="left")
 
     # Add soil properties (constant across time)
     for key, value in soil.items():
-        tabular[f'soil_{key}'] = value
+        tabular[f"soil_{key}"] = value
 
     print(f"Data merged: {s2.shape} satellite, {len(tabular)} tabular records")
 

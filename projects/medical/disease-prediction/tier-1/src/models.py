@@ -7,10 +7,10 @@ Includes:
 - U-Net for MRI segmentation
 """
 
+
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from typing import Tuple
 
 
 class ChestXrayClassifier(nn.Module):
@@ -26,17 +26,14 @@ class ChestXrayClassifier(nn.Module):
             num_classes: Number of disease classes
             pretrained: Use ImageNet pre-trained weights
         """
-        super(ChestXrayClassifier, self).__init__()
+        super().__init__()
 
         # Load pre-trained ResNet-50
         self.resnet = models.resnet50(pretrained=pretrained)
 
         # Replace final fully connected layer
         num_features = self.resnet.fc.in_features
-        self.resnet.fc = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(num_features, num_classes)
-        )
+        self.resnet.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(num_features, num_classes))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -62,7 +59,7 @@ class CTNoduleDetector(nn.Module):
             in_channels: Number of input channels (1 for CT)
             num_classes: Number of output classes (benign/malignant)
         """
-        super(CTNoduleDetector, self).__init__()
+        super().__init__()
 
         # 3D convolutional layers
         self.conv1 = nn.Conv3d(in_channels, 64, kernel_size=7, stride=2, padding=3)
@@ -81,11 +78,7 @@ class CTNoduleDetector(nn.Module):
         self.fc = nn.Linear(512, num_classes)
 
     def _make_layer(
-        self,
-        in_channels: int,
-        out_channels: int,
-        num_blocks: int,
-        stride: int = 1
+        self, in_channels: int, out_channels: int, num_blocks: int, stride: int = 1
     ) -> nn.Sequential:
         """Create a residual layer."""
         layers = []
@@ -128,16 +121,12 @@ class ResBlock3D(nn.Module):
     """3D Residual Block for CTNoduleDetector."""
 
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super(ResBlock3D, self).__init__()
+        super().__init__()
 
-        self.conv1 = nn.Conv3d(
-            in_channels, out_channels, kernel_size=3, stride=stride, padding=1
-        )
+        self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
         self.bn1 = nn.BatchNorm3d(out_channels)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv3d(
-            out_channels, out_channels, kernel_size=3, padding=1
-        )
+        self.conv2 = nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm3d(out_channels)
 
         # Shortcut connection
@@ -145,7 +134,7 @@ class ResBlock3D(nn.Module):
         if stride != 1 or in_channels != out_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv3d(in_channels, out_channels, kernel_size=1, stride=stride),
-                nn.BatchNorm3d(out_channels)
+                nn.BatchNorm3d(out_channels),
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -177,7 +166,7 @@ class MRISegmenter(nn.Module):
             in_channels: Number of MRI modalities (4 for BraTS)
             num_classes: Number of segmentation classes
         """
-        super(MRISegmenter, self).__init__()
+        super().__init__()
 
         # Encoder
         self.enc1 = self._conv_block(in_channels, 32)
@@ -207,7 +196,7 @@ class MRISegmenter(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm3d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def _upconv_block(self, in_channels: int, out_channels: int) -> nn.Sequential:
@@ -215,7 +204,7 @@ class MRISegmenter(nn.Module):
         return nn.Sequential(
             nn.ConvTranspose3d(in_channels, out_channels, kernel_size=2, stride=2),
             nn.BatchNorm3d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -254,7 +243,7 @@ class MRISegmenter(nn.Module):
         return out
 
 
-def count_parameters(model: nn.Module) -> Tuple[int, int]:
+def count_parameters(model: nn.Module) -> tuple[int, int]:
     """
     Count total and trainable parameters in a model.
 
@@ -269,7 +258,7 @@ def count_parameters(model: nn.Module) -> Tuple[int, int]:
     return total_params, trainable_params
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test model instantiation
     print("Medical Imaging Model Architectures")
     print("=" * 50)
@@ -277,29 +266,29 @@ if __name__ == '__main__':
     # X-ray classifier
     xray_model = ChestXrayClassifier(num_classes=14)
     total, trainable = count_parameters(xray_model)
-    print(f"\\nChestXrayClassifier (ResNet-50):")
+    print("\\nChestXrayClassifier (ResNet-50):")
     print(f"  Total parameters: {total:,}")
     print(f"  Trainable parameters: {trainable:,}")
-    print(f"  Input: (B, 3, 224, 224)")
-    print(f"  Output: (B, 14)")
+    print("  Input: (B, 3, 224, 224)")
+    print("  Output: (B, 14)")
 
     # CT detector
     ct_model = CTNoduleDetector(in_channels=1, num_classes=2)
     total, trainable = count_parameters(ct_model)
-    print(f"\\nCTNoduleDetector (3D ResNet-18):")
+    print("\\nCTNoduleDetector (3D ResNet-18):")
     print(f"  Total parameters: {total:,}")
     print(f"  Trainable parameters: {trainable:,}")
-    print(f"  Input: (B, 1, 64, 64, 64)")
-    print(f"  Output: (B, 2)")
+    print("  Input: (B, 1, 64, 64, 64)")
+    print("  Output: (B, 2)")
 
     # MRI segmenter
     mri_model = MRISegmenter(in_channels=4, num_classes=4)
     total, trainable = count_parameters(mri_model)
-    print(f"\\nMRISegmenter (3D U-Net):")
+    print("\\nMRISegmenter (3D U-Net):")
     print(f"  Total parameters: {total:,}")
     print(f"  Trainable parameters: {trainable:,}")
-    print(f"  Input: (B, 4, 240, 240, 155)")
-    print(f"  Output: (B, 4, 240, 240, 155)")
+    print("  Input: (B, 4, 240, 240, 155)")
+    print("  Output: (B, 4, 240, 240, 155)")
 
     print("\\n" + "=" * 50)
     print("Models ready for training!")

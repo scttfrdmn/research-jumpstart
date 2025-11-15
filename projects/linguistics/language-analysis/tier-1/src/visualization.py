@@ -5,19 +5,17 @@ This module provides plotting functions for dialect space visualization,
 confusion matrices, feature importance, and cross-linguistic comparisons.
 """
 
+from pathlib import Path
+from typing import Optional
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
 
 
 def plot_dialect_space(
-    features: np.ndarray,
-    labels: np.ndarray,
-    method: str = 'pca',
-    save_path: Optional[Path] = None
+    features: np.ndarray, labels: np.ndarray, method: str = "pca", save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
     Visualize dialect space using dimensionality reduction.
@@ -35,18 +33,18 @@ def plot_dialect_space(
     from sklearn.manifold import TSNE
 
     # Reduce to 2D
-    if method == 'pca':
+    if method == "pca":
         reducer = PCA(n_components=2)
         reduced = reducer.fit_transform(features)
-        title = 'Dialect Space (PCA)'
-    elif method == 'tsne':
+        title = "Dialect Space (PCA)"
+    elif method == "tsne":
         reducer = TSNE(n_components=2, random_state=42)
         reduced = reducer.fit_transform(features)
-        title = 'Dialect Space (t-SNE)'
+        title = "Dialect Space (t-SNE)"
     else:
         # Placeholder for UMAP
         reduced = np.random.randn(len(features), 2)
-        title = f'Dialect Space ({method.upper()})'
+        title = f"Dialect Space ({method.upper()})"
 
     # Create plot
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -57,24 +55,19 @@ def plot_dialect_space(
     for i, dialect in enumerate(unique_labels):
         mask = labels == dialect
         ax.scatter(
-            reduced[mask, 0],
-            reduced[mask, 1],
-            c=[colors[i]],
-            label=dialect,
-            alpha=0.6,
-            s=50
+            reduced[mask, 0], reduced[mask, 1], c=[colors[i]], label=dialect, alpha=0.6, s=50
         )
 
-    ax.set_xlabel(f'{method.upper()} Component 1')
-    ax.set_ylabel(f'{method.upper()} Component 2')
+    ax.set_xlabel(f"{method.upper()} Component 1")
+    ax.set_ylabel(f"{method.upper()} Component 2")
     ax.set_title(title)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
@@ -83,9 +76,9 @@ def plot_dialect_space(
 def plot_confusion_matrix(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    dialect_names: Optional[List[str]] = None,
+    dialect_names: Optional[list[str]] = None,
     normalize: bool = True,
-    save_path: Optional[Path] = None
+    save_path: Optional[Path] = None,
 ) -> plt.Figure:
     """
     Plot confusion matrix for dialect classification.
@@ -106,7 +99,7 @@ def plot_confusion_matrix(
     cm = confusion_matrix(y_true, y_pred)
 
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
     # Create plot
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -114,30 +107,28 @@ def plot_confusion_matrix(
     sns.heatmap(
         cm,
         annot=True,
-        fmt='.2f' if normalize else 'd',
-        cmap='Blues',
-        xticklabels=dialect_names if dialect_names else 'auto',
-        yticklabels=dialect_names if dialect_names else 'auto',
-        ax=ax
+        fmt=".2f" if normalize else "d",
+        cmap="Blues",
+        xticklabels=dialect_names if dialect_names else "auto",
+        yticklabels=dialect_names if dialect_names else "auto",
+        ax=ax,
     )
 
-    ax.set_xlabel('Predicted Dialect')
-    ax.set_ylabel('True Dialect')
-    ax.set_title('Dialect Classification Confusion Matrix')
+    ax.set_xlabel("Predicted Dialect")
+    ax.set_ylabel("True Dialect")
+    ax.set_title("Dialect Classification Confusion Matrix")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
 
 
 def create_feature_importance_plot(
-    importance_df: pd.DataFrame,
-    top_k: int = 20,
-    save_path: Optional[Path] = None
+    importance_df: pd.DataFrame, top_k: int = 20, save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
     Plot feature importance for dialect classification.
@@ -152,28 +143,26 @@ def create_feature_importance_plot(
     """
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    data = importance_df.head(top_k).sort_values('importance')
+    data = importance_df.head(top_k).sort_values("importance")
 
-    ax.barh(range(len(data)), data['importance'], color='steelblue')
+    ax.barh(range(len(data)), data["importance"], color="steelblue")
     ax.set_yticks(range(len(data)))
-    ax.set_yticklabels(data['feature'])
-    ax.set_xlabel('Importance Score')
-    ax.set_title(f'Top {top_k} Most Important Features for Dialect Classification')
-    ax.grid(True, axis='x', alpha=0.3)
+    ax.set_yticklabels(data["feature"])
+    ax.set_xlabel("Importance Score")
+    ax.set_title(f"Top {top_k} Most Important Features for Dialect Classification")
+    ax.grid(True, axis="x", alpha=0.3)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
 
 
 def plot_cross_linguistic_comparison(
-    results_df: pd.DataFrame,
-    metric: str = 'accuracy',
-    save_path: Optional[Path] = None
+    results_df: pd.DataFrame, metric: str = "accuracy", save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
     Compare performance across languages.
@@ -190,28 +179,27 @@ def plot_cross_linguistic_comparison(
 
     results_df = results_df.sort_values(metric, ascending=True)
 
-    ax.barh(results_df['language'], results_df[metric], color='coral')
-    ax.set_xlabel(metric.replace('_', ' ').title())
-    ax.set_ylabel('Language')
-    ax.set_title(f'Dialect Classification {metric.replace("_", " ").title()} by Language')
-    ax.grid(True, axis='x', alpha=0.3)
+    ax.barh(results_df["language"], results_df[metric], color="coral")
+    ax.set_xlabel(metric.replace("_", " ").title())
+    ax.set_ylabel("Language")
+    ax.set_title(f"Dialect Classification {metric.replace('_', ' ').title()} by Language")
+    ax.grid(True, axis="x", alpha=0.3)
 
     # Add value labels
-    for i, (lang, value) in enumerate(zip(results_df['language'], results_df[metric])):
-        ax.text(value + 0.01, i, f'{value:.3f}', va='center')
+    for i, (_lang, value) in enumerate(zip(results_df["language"], results_df[metric])):
+        ax.text(value + 0.01, i, f"{value:.3f}", va="center")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
 
 
 def plot_dialect_distance_heatmap(
-    distance_df: pd.DataFrame,
-    save_path: Optional[Path] = None
+    distance_df: pd.DataFrame, save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
     Plot heatmap of pairwise dialect distances.
@@ -226,31 +214,24 @@ def plot_dialect_distance_heatmap(
     fig, ax = plt.subplots(figsize=(12, 10))
 
     sns.heatmap(
-        distance_df,
-        annot=True,
-        fmt='.2f',
-        cmap='YlOrRd',
-        ax=ax,
-        cbar_kws={'label': 'Distance'}
+        distance_df, annot=True, fmt=".2f", cmap="YlOrRd", ax=ax, cbar_kws={"label": "Distance"}
     )
 
-    ax.set_title('Pairwise Dialect Distances')
-    ax.set_xlabel('Dialect')
-    ax.set_ylabel('Dialect')
+    ax.set_title("Pairwise Dialect Distances")
+    ax.set_xlabel("Dialect")
+    ax.set_ylabel("Dialect")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
 
 
 def create_ablation_study_plot(
-    ablation_df: pd.DataFrame,
-    metric: str = 'accuracy',
-    save_path: Optional[Path] = None
+    ablation_df: pd.DataFrame, metric: str = "accuracy", save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
     Visualize ablation study results.
@@ -267,31 +248,29 @@ def create_ablation_study_plot(
 
     data = ablation_df.sort_values(metric, ascending=True)
 
-    colors = ['green' if 'full' in cfg else 'red' for cfg in data['configuration']]
+    colors = ["green" if "full" in cfg else "red" for cfg in data["configuration"]]
 
-    ax.barh(data['configuration'], data[metric], color=colors, alpha=0.7)
-    ax.set_xlabel(metric.replace('_', ' ').title())
-    ax.set_ylabel('Configuration')
-    ax.set_title(f'Ablation Study: Impact on {metric.replace("_", " ").title()}')
-    ax.grid(True, axis='x', alpha=0.3)
+    ax.barh(data["configuration"], data[metric], color=colors, alpha=0.7)
+    ax.set_xlabel(metric.replace("_", " ").title())
+    ax.set_ylabel("Configuration")
+    ax.set_title(f"Ablation Study: Impact on {metric.replace('_', ' ').title()}")
+    ax.grid(True, axis="x", alpha=0.3)
 
     # Add value labels
-    for i, (cfg, value) in enumerate(zip(data['configuration'], data[metric])):
-        ax.text(value + 0.005, i, f'{value:.3f}', va='center')
+    for i, (_cfg, value) in enumerate(zip(data["configuration"], data[metric])):
+        ax.text(value + 0.005, i, f"{value:.3f}", va="center")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     return fig
 
 
 def create_interactive_dashboard(
-    features: np.ndarray,
-    labels: np.ndarray,
-    save_path: Optional[Path] = None
+    features: np.ndarray, labels: np.ndarray, save_path: Optional[Path] = None
 ) -> None:
     """
     Create interactive Plotly dashboard for dialect exploration.
@@ -314,24 +293,22 @@ def create_interactive_dashboard(
     unique_labels = np.unique(labels)
     for dialect in unique_labels:
         mask = labels == dialect
-        fig.add_trace(go.Scatter3d(
-            x=reduced[mask, 0],
-            y=reduced[mask, 1],
-            z=reduced[mask, 2],
-            mode='markers',
-            name=str(dialect),
-            marker=dict(size=5, opacity=0.7)
-        ))
+        fig.add_trace(
+            go.Scatter3d(
+                x=reduced[mask, 0],
+                y=reduced[mask, 1],
+                z=reduced[mask, 2],
+                mode="markers",
+                name=str(dialect),
+                marker={"size": 5, "opacity": 0.7},
+            )
+        )
 
     fig.update_layout(
-        title='Interactive 3D Dialect Space',
-        scene=dict(
-            xaxis_title='PC1',
-            yaxis_title='PC2',
-            zaxis_title='PC3'
-        ),
+        title="Interactive 3D Dialect Space",
+        scene={"xaxis_title": "PC1", "yaxis_title": "PC2", "zaxis_title": "PC3"},
         width=1000,
-        height=800
+        height=800,
     )
 
     if save_path:

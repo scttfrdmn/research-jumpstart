@@ -6,18 +6,17 @@ from FRED, World Bank, OECD, and other public sources. Data is cached in
 Studio Lab's persistent storage to avoid re-downloading.
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import requests
-from typing import Optional, List, Dict
 import time
 from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
 
 try:
     import pandas_datareader as pdr
-    from fredapi import Fred
     import wbdata
+    from fredapi import Fred
 except ImportError:
     print("⚠️  Some data APIs not installed. Run: pip install -r requirements.txt")
 
@@ -33,9 +32,9 @@ PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 def load_fred_data(
     series_id: str,
-    start_date: str = '1990-01-01',
+    start_date: str = "1990-01-01",
     end_date: Optional[str] = None,
-    force_download: bool = False
+    force_download: bool = False,
 ) -> pd.DataFrame:
     """
     Load data from FRED (Federal Reserve Economic Data).
@@ -58,10 +57,10 @@ def load_fred_data(
     print(f"Downloading {series_id} from FRED...")
 
     if end_date is None:
-        end_date = datetime.now().strftime('%Y-%m-%d')
+        end_date = datetime.now().strftime("%Y-%m-%d")
 
     try:
-        data = pdr.DataReader(series_id, 'fred', start_date, end_date)
+        data = pdr.DataReader(series_id, "fred", start_date, end_date)
         data.to_csv(cache_file)
         print(f"✓ Cached {series_id} ({len(data)} observations)")
         return data
@@ -71,10 +70,10 @@ def load_fred_data(
 
 
 def load_multi_country_indicators(
-    countries: List[str],
-    indicators: Dict[str, str],
-    start_date: str = '1990-01-01',
-    force_download: bool = False
+    countries: list[str],
+    indicators: dict[str, str],
+    start_date: str = "1990-01-01",
+    force_download: bool = False,
 ) -> pd.DataFrame:
     """
     Load multiple economic indicators for multiple countries.
@@ -120,7 +119,7 @@ def load_multi_country_indicators(
 
     # Combine into multi-level DataFrame
     panel = pd.concat(all_data, axis=1)
-    panel.columns.names = ['Country', 'Indicator']
+    panel.columns.names = ["Country", "Indicator"]
 
     # Save cache
     panel.to_csv(cache_file)
@@ -130,10 +129,10 @@ def load_multi_country_indicators(
 
 
 def load_world_bank_data(
-    countries: List[str],
-    indicators: Dict[str, str],
+    countries: list[str],
+    indicators: dict[str, str],
     start_year: int = 1990,
-    force_download: bool = False
+    force_download: bool = False,
 ) -> pd.DataFrame:
     """
     Load data from World Bank API.
@@ -161,7 +160,9 @@ def load_world_bank_data(
 
         for ind_name, ind_code in indicators.items():
             print(f"  Downloading {ind_name}...")
-            data = wbdata.get_dataframe({ind_code: ind_name}, country=countries, data_date=data_date)
+            data = wbdata.get_dataframe(
+                {ind_code: ind_name}, country=countries, data_date=data_date
+            )
             all_data[ind_name] = data
             time.sleep(0.2)  # Rate limiting
 
@@ -177,9 +178,7 @@ def load_world_bank_data(
 
 
 def preprocess_panel_data(
-    panel: pd.DataFrame,
-    freq: str = 'Q',
-    fill_method: str = 'interpolate'
+    panel: pd.DataFrame, freq: str = "Q", fill_method: str = "interpolate"
 ) -> pd.DataFrame:
     """
     Preprocess panel data: resample, fill missing values, align dates.
@@ -198,11 +197,11 @@ def preprocess_panel_data(
     panel_resampled = panel.resample(freq).mean()
 
     # Fill missing values
-    if fill_method == 'interpolate':
-        panel_filled = panel_resampled.interpolate(method='linear', limit=4)
-    elif fill_method == 'ffill':
+    if fill_method == "interpolate":
+        panel_filled = panel_resampled.interpolate(method="linear", limit=4)
+    elif fill_method == "ffill":
         panel_filled = panel_resampled.ffill(limit=4)
-    elif fill_method == 'bfill':
+    elif fill_method == "bfill":
         panel_filled = panel_resampled.bfill(limit=4)
     else:
         panel_filled = panel_resampled
@@ -220,10 +219,7 @@ def preprocess_panel_data(
     return panel_clean
 
 
-def calculate_growth_rates(
-    data: pd.DataFrame,
-    periods: int = 4
-) -> pd.DataFrame:
+def calculate_growth_rates(data: pd.DataFrame, periods: int = 4) -> pd.DataFrame:
     """
     Calculate year-over-year growth rates.
 
@@ -238,10 +234,7 @@ def calculate_growth_rates(
     return growth
 
 
-def create_lags(
-    data: pd.DataFrame,
-    lags: int = 4
-) -> pd.DataFrame:
+def create_lags(data: pd.DataFrame, lags: int = 4) -> pd.DataFrame:
     """
     Create lagged features for time series modeling.
 
@@ -261,9 +254,7 @@ def create_lags(
     return lagged
 
 
-def align_panel_data(
-    panels: List[pd.DataFrame]
-) -> pd.DataFrame:
+def align_panel_data(panels: list[pd.DataFrame]) -> pd.DataFrame:
     """
     Align multiple panel DataFrames on common date index.
 

@@ -5,9 +5,10 @@ Functions for calculating vegetation indices, phenology metrics,
 and temporal features.
 """
 
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-from typing import Tuple, Dict, Optional
 from scipy.signal import savgol_filter
 
 
@@ -34,7 +35,7 @@ def calculate_evi(
     G: float = 2.5,
     C1: float = 6.0,
     C2: float = 7.5,
-    L: float = 1.0
+    L: float = 1.0,
 ) -> np.ndarray:
     """
     Calculate Enhanced Vegetation Index.
@@ -55,11 +56,7 @@ def calculate_evi(
     return G * ((nir - red) / (nir + C1 * red - C2 * blue + L + 1e-8))
 
 
-def calculate_savi(
-    red: np.ndarray,
-    nir: np.ndarray,
-    L: float = 0.5
-) -> np.ndarray:
+def calculate_savi(red: np.ndarray, nir: np.ndarray, L: float = 0.5) -> np.ndarray:
     """
     Calculate Soil Adjusted Vegetation Index.
 
@@ -103,10 +100,8 @@ def calculate_lai(ndvi: np.ndarray) -> np.ndarray:
 
 
 def extract_phenology_metrics(
-    ndvi_timeseries: np.ndarray,
-    dates: pd.DatetimeIndex,
-    smooth: bool = True
-) -> Dict[str, float]:
+    ndvi_timeseries: np.ndarray, dates: pd.DatetimeIndex, smooth: bool = True
+) -> dict[str, float]:
     """
     Extract crop phenology metrics from NDVI time series.
 
@@ -138,10 +133,7 @@ def extract_phenology_metrics(
     # Green-up: first time NDVI crosses 50% of peak
     threshold_greenup = 0.5 * peak_ndvi
     greenup_idx = np.where(ndvi_smooth >= threshold_greenup)[0]
-    if len(greenup_idx) > 0:
-        greenup_date = dates[greenup_idx[0]]
-    else:
-        greenup_date = dates[0]
+    greenup_date = dates[greenup_idx[0]] if len(greenup_idx) > 0 else dates[0]
 
     # Senescence: after peak, first time NDVI drops below 80% of peak
     threshold_senescence = 0.8 * peak_ndvi
@@ -161,19 +153,18 @@ def extract_phenology_metrics(
     integrated_ndvi = np.trapz(ndvi_smooth, dx=1)
 
     return {
-        'greenup_date': greenup_date,
-        'peak_date': peak_date,
-        'senescence_date': senescence_date,
-        'peak_ndvi': peak_ndvi,
-        'growing_season_length': growing_season_length,
-        'time_to_peak': time_to_peak,
-        'integrated_ndvi': integrated_ndvi,
+        "greenup_date": greenup_date,
+        "peak_date": peak_date,
+        "senescence_date": senescence_date,
+        "peak_ndvi": peak_ndvi,
+        "growing_season_length": growing_season_length,
+        "time_to_peak": time_to_peak,
+        "integrated_ndvi": integrated_ndvi,
     }
 
 
 def create_temporal_features(
-    timeseries_data: pd.DataFrame,
-    window_sizes: list = [7, 14, 30]
+    timeseries_data: pd.DataFrame, window_sizes: Optional[list] = None
 ) -> pd.DataFrame:
     """
     Create temporal features from time series data.
@@ -191,6 +182,8 @@ def create_temporal_features(
     Returns:
         DataFrame with additional temporal features
     """
+    if window_sizes is None:
+        window_sizes = [7, 14, 30]
     result = timeseries_data.copy()
 
     # Numeric columns only
@@ -199,27 +192,24 @@ def create_temporal_features(
     for col in numeric_cols:
         # Moving averages
         for window in window_sizes:
-            result[f'{col}_ma_{window}'] = result[col].rolling(window=window).mean()
+            result[f"{col}_ma_{window}"] = result[col].rolling(window=window).mean()
 
         # Rate of change
-        result[f'{col}_rate'] = result[col].diff()
-        result[f'{col}_rate_pct'] = result[col].pct_change()
+        result[f"{col}_rate"] = result[col].diff()
+        result[f"{col}_rate_pct"] = result[col].pct_change()
 
         # Cumulative sum
-        result[f'{col}_cumsum'] = result[col].cumsum()
+        result[f"{col}_cumsum"] = result[col].cumsum()
 
         # Lagged values
         for lag in [1, 7, 14]:
-            result[f'{col}_lag_{lag}'] = result[col].shift(lag)
+            result[f"{col}_lag_{lag}"] = result[col].shift(lag)
 
     return result
 
 
 def calculate_growing_degree_days(
-    temp_min: np.ndarray,
-    temp_max: np.ndarray,
-    base_temp: float = 10.0,
-    upper_limit: float = 30.0
+    temp_min: np.ndarray, temp_max: np.ndarray, base_temp: float = 10.0, upper_limit: float = 30.0
 ) -> np.ndarray:
     """
     Calculate Growing Degree Days (GDD).
@@ -248,10 +238,7 @@ def calculate_growing_degree_days(
     return gdd
 
 
-def create_spatial_features(
-    image: np.ndarray,
-    window_size: int = 3
-) -> np.ndarray:
+def create_spatial_features(image: np.ndarray, window_size: int = 3) -> np.ndarray:
     """
     Create spatial context features from image.
 
@@ -289,7 +276,7 @@ def create_spatial_features(
     return feature_stack
 
 
-def normalize_features(features: np.ndarray) -> Tuple[np.ndarray, dict]:
+def normalize_features(features: np.ndarray) -> tuple[np.ndarray, dict]:
     """
     Normalize features to zero mean and unit variance.
 
@@ -307,9 +294,6 @@ def normalize_features(features: np.ndarray) -> Tuple[np.ndarray, dict]:
 
     normalized = (features - mean) / std
 
-    params = {
-        'mean': mean,
-        'std': std
-    }
+    params = {"mean": mean, "std": std}
 
     return normalized, params

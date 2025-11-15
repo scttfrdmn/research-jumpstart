@@ -5,15 +5,15 @@ Functions for processing ground-penetrating radar (GPR) and
 magnetometry data to detect subsurface archaeological features.
 """
 
+from pathlib import Path
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import Tuple, Dict, List, Optional
-from scipy import signal, ndimage
-from skimage import filters
+from scipy import ndimage, signal
 
 
-def load_gpr_data(gpr_file: Path) -> Tuple[np.ndarray, Dict]:
+def load_gpr_data(gpr_file: Path) -> tuple[np.ndarray, dict]:
     """
     Load ground-penetrating radar data.
 
@@ -25,19 +25,19 @@ def load_gpr_data(gpr_file: Path) -> Tuple[np.ndarray, Dict]:
     """
     # Placeholder - actual implementation would depend on GPR data format
     # Common formats: SEG-Y, DZT (GSSI), DT1 (Sensors & Software)
-    data = np.load(gpr_file) if gpr_file.suffix == '.npy' else None
+    data = np.load(gpr_file) if gpr_file.suffix == ".npy" else None
     metadata = {
-        'time_window': 100,  # nanoseconds
-        'samples_per_trace': 512,
-        'traces': 1000,
-        'frequency': 400  # MHz
+        "time_window": 100,  # nanoseconds
+        "samples_per_trace": 512,
+        "traces": 1000,
+        "frequency": 400,  # MHz
     }
     return data, metadata
 
 
-def process_gpr_profile(gpr_data: np.ndarray,
-                        background_removal: bool = True,
-                        gain: Optional[np.ndarray] = None) -> np.ndarray:
+def process_gpr_profile(
+    gpr_data: np.ndarray, background_removal: bool = True, gain: Optional[np.ndarray] = None
+) -> np.ndarray:
     """
     Process GPR profile with standard preprocessing steps.
 
@@ -69,15 +69,15 @@ def process_gpr_profile(gpr_data: np.ndarray,
     processed = processed * gain[:, np.newaxis]
 
     # Bandpass filter
-    sos = signal.butter(4, [0.1, 0.4], btype='bandpass', output='sos')
+    sos = signal.butter(4, [0.1, 0.4], btype="bandpass", output="sos")
     processed = signal.sosfiltfilt(sos, processed, axis=0)
 
     return processed
 
 
-def detect_gpr_anomalies(gpr_data: np.ndarray,
-                         threshold: float = 2.0,
-                         min_size: int = 5) -> np.ndarray:
+def detect_gpr_anomalies(
+    gpr_data: np.ndarray, threshold: float = 2.0, min_size: int = 5
+) -> np.ndarray:
     """
     Detect anomalies in GPR data that may indicate subsurface features.
 
@@ -108,7 +108,7 @@ def detect_gpr_anomalies(gpr_data: np.ndarray,
     return anomalies
 
 
-def load_magnetometry_data(mag_file: Path) -> Tuple[np.ndarray, Dict]:
+def load_magnetometry_data(mag_file: Path) -> tuple[np.ndarray, dict]:
     """
     Load magnetometry survey data.
 
@@ -119,18 +119,18 @@ def load_magnetometry_data(mag_file: Path) -> Tuple[np.ndarray, Dict]:
         Tuple of (magnetic field array, metadata dict)
     """
     # Placeholder - actual implementation would depend on data format
-    data = np.load(mag_file) if mag_file.suffix == '.npy' else None
+    data = np.load(mag_file) if mag_file.suffix == ".npy" else None
     metadata = {
-        'units': 'nT',  # nanoTesla
-        'grid_spacing': 0.5,  # meters
-        'sensor_type': 'fluxgate'
+        "units": "nT",  # nanoTesla
+        "grid_spacing": 0.5,  # meters
+        "sensor_type": "fluxgate",
     }
     return data, metadata
 
 
-def process_magnetometry(mag_data: np.ndarray,
-                        despike: bool = True,
-                        detrend: bool = True) -> np.ndarray:
+def process_magnetometry(
+    mag_data: np.ndarray, despike: bool = True, detrend: bool = True
+) -> np.ndarray:
     """
     Process magnetometry data with standard preprocessing.
 
@@ -153,22 +153,18 @@ def process_magnetometry(mag_data: np.ndarray,
 
     # Detrend - remove linear background
     if detrend:
-        y_indices, x_indices = np.mgrid[0:processed.shape[0], 0:processed.shape[1]]
-        A = np.column_stack([
-            np.ones(processed.size),
-            x_indices.ravel(),
-            y_indices.ravel()
-        ])
+        y_indices, x_indices = np.mgrid[0 : processed.shape[0], 0 : processed.shape[1]]
+        A = np.column_stack([np.ones(processed.size), x_indices.ravel(), y_indices.ravel()])
         coeffs, _, _, _ = np.linalg.lstsq(A, processed.ravel(), rcond=None)
-        trend = (coeffs[0] + coeffs[1] * x_indices + coeffs[2] * y_indices)
+        trend = coeffs[0] + coeffs[1] * x_indices + coeffs[2] * y_indices
         processed = processed - trend
 
     return processed
 
 
-def detect_magnetic_anomalies(mag_data: np.ndarray,
-                              threshold: float = 2.0,
-                              min_size: int = 4) -> Dict[str, np.ndarray]:
+def detect_magnetic_anomalies(
+    mag_data: np.ndarray, threshold: float = 2.0, min_size: int = 4
+) -> dict[str, np.ndarray]:
     """
     Detect positive and negative magnetic anomalies.
 
@@ -196,15 +192,12 @@ def detect_magnetic_anomalies(mag_data: np.ndarray,
         mask_size = sizes >= min_size
         anomalies = mask_size[labeled]
 
-    return {
-        'positive': positive_anomalies,
-        'negative': negative_anomalies
-    }
+    return {"positive": positive_anomalies, "negative": negative_anomalies}
 
 
-def extract_anomaly_features(data: np.ndarray,
-                             anomaly_mask: np.ndarray,
-                             grid_spacing: float) -> pd.DataFrame:
+def extract_anomaly_features(
+    data: np.ndarray, anomaly_mask: np.ndarray, grid_spacing: float
+) -> pd.DataFrame:
     """
     Extract features of detected anomalies.
 
@@ -228,23 +221,25 @@ def extract_anomaly_features(data: np.ndarray,
         centroid_y = np.mean(y_coords) * grid_spacing
         centroid_x = np.mean(x_coords) * grid_spacing
 
-        features.append({
-            'anomaly_id': i,
-            'area_m2': np.sum(anomaly_pixels) * grid_spacing**2,
-            'max_amplitude': np.max(np.abs(anomaly_values)),
-            'mean_amplitude': np.mean(anomaly_values),
-            'centroid_x': centroid_x,
-            'centroid_y': centroid_y,
-            'aspect_ratio': (np.max(y_coords) - np.min(y_coords) + 1) /
-                          (np.max(x_coords) - np.min(x_coords) + 1)
-        })
+        features.append(
+            {
+                "anomaly_id": i,
+                "area_m2": np.sum(anomaly_pixels) * grid_spacing**2,
+                "max_amplitude": np.max(np.abs(anomaly_values)),
+                "mean_amplitude": np.mean(anomaly_values),
+                "centroid_x": centroid_x,
+                "centroid_y": centroid_y,
+                "aspect_ratio": (np.max(y_coords) - np.min(y_coords) + 1)
+                / (np.max(x_coords) - np.min(x_coords) + 1),
+            }
+        )
 
     return pd.DataFrame(features)
 
 
-def integrate_geophysical_data(gpr_anomalies: np.ndarray,
-                               mag_anomalies: np.ndarray,
-                               grid_spacing: float) -> pd.DataFrame:
+def integrate_geophysical_data(
+    gpr_anomalies: np.ndarray, mag_anomalies: np.ndarray, grid_spacing: float
+) -> pd.DataFrame:
     """
     Integrate GPR and magnetometry data to identify high-confidence features.
 
@@ -270,39 +265,45 @@ def integrate_geophysical_data(gpr_anomalies: np.ndarray,
     for i in range(1, n_coincident + 1):
         mask = labeled_coincident == i
         y_coords, x_coords = np.where(mask)
-        features.append({
-            'feature_id': f'COIN_{i}',
-            'centroid_x': np.mean(x_coords) * grid_spacing,
-            'centroid_y': np.mean(y_coords) * grid_spacing,
-            'area_m2': np.sum(mask) * grid_spacing**2,
-            'confidence': 'high',
-            'detection_methods': 'GPR+Magnetometry'
-        })
+        features.append(
+            {
+                "feature_id": f"COIN_{i}",
+                "centroid_x": np.mean(x_coords) * grid_spacing,
+                "centroid_y": np.mean(y_coords) * grid_spacing,
+                "area_m2": np.sum(mask) * grid_spacing**2,
+                "confidence": "high",
+                "detection_methods": "GPR+Magnetometry",
+            }
+        )
 
     # GPR-only features (medium confidence)
     for i in range(1, n_gpr + 1):
         mask = labeled_gpr_only == i
         y_coords, x_coords = np.where(mask)
-        features.append({
-            'feature_id': f'GPR_{i}',
-            'centroid_x': np.mean(x_coords) * grid_spacing,
-            'centroid_y': np.mean(y_coords) * grid_spacing,
-            'area_m2': np.sum(mask) * grid_spacing**2,
-            'confidence': 'medium',
-            'detection_methods': 'GPR only'
-        })
+        features.append(
+            {
+                "feature_id": f"GPR_{i}",
+                "centroid_x": np.mean(x_coords) * grid_spacing,
+                "centroid_y": np.mean(y_coords) * grid_spacing,
+                "area_m2": np.sum(mask) * grid_spacing**2,
+                "confidence": "medium",
+                "detection_methods": "GPR only",
+            }
+        )
 
     # Magnetometry-only features (medium confidence)
     for i in range(1, n_mag + 1):
         mask = labeled_mag_only == i
         y_coords, x_coords = np.where(mask)
-        features.append({
-            'feature_id': f'MAG_{i}',
-            'centroid_x': np.mean(x_coords) * grid_spacing,
-            'centroid_y': np.mean(y_coords) * grid_spacing,
-            'area_m2': np.sum(mask) * grid_spacing**2,
-            'confidence': 'medium',
-            'detection_methods': 'Magnetometry only'
-        })
+        features.append(
+            {
+                "feature_id": f"MAG_{i}",
+                "centroid_x": np.mean(x_coords) * grid_spacing,
+                "centroid_y": np.mean(y_coords) * grid_spacing,
+                "area_m2": np.sum(mask) * grid_spacing**2,
+                "confidence": "medium",
+                "detection_methods": "Magnetometry only",
+            }
+        )
 
     return pd.DataFrame(features)

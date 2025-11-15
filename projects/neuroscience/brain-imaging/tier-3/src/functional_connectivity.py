@@ -4,15 +4,16 @@ Functional connectivity analysis module.
 Implements resting-state and task-based fMRI connectivity analysis.
 """
 
-from typing import List, Optional, Dict, Tuple
+import logging
+from typing import Optional
+
+import networkx as nx
+import nibabel as nib
 import numpy as np
 import pandas as pd
-import nibabel as nib
-from nilearn import datasets, input_data, plotting, connectome
+from nilearn import connectome, datasets, plotting
 from nilearn.maskers import NiftiLabelsMasker
-import networkx as nx
 from scipy import stats
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,28 +26,29 @@ class ConnectivityAnalyzer:
         """Initialize connectivity analyzer."""
         self.atlases = self._load_atlases()
 
-    def _load_atlases(self) -> Dict:
+    def _load_atlases(self) -> dict:
         """Load commonly used brain atlases."""
         atlases = {}
 
         try:
             # Schaefer 2018 atlas (400 regions)
-            atlases['schaefer2018_400'] = datasets.fetch_atlas_schaefer_2018(
-                n_rois=400,
-                yeo_networks=7
+            atlases["schaefer2018_400"] = datasets.fetch_atlas_schaefer_2018(
+                n_rois=400, yeo_networks=7
             )
         except Exception as e:
             logger.warning(f"Could not load Schaefer atlas: {e}")
 
         try:
             # AAL atlas
-            atlases['aal'] = datasets.fetch_atlas_aal()
+            atlases["aal"] = datasets.fetch_atlas_aal()
         except Exception as e:
             logger.warning(f"Could not load AAL atlas: {e}")
 
         try:
             # Harvard-Oxford cortical atlas
-            atlases['harvard_oxford'] = datasets.fetch_atlas_harvard_oxford('cort-maxprob-thr25-2mm')
+            atlases["harvard_oxford"] = datasets.fetch_atlas_harvard_oxford(
+                "cort-maxprob-thr25-2mm"
+            )
         except Exception as e:
             logger.warning(f"Could not load Harvard-Oxford atlas: {e}")
 
@@ -55,13 +57,13 @@ class ConnectivityAnalyzer:
     def extract_time_series(
         self,
         fmri_file: str,
-        atlas: str = 'schaefer2018_400',
+        atlas: str = "schaefer2018_400",
         confounds: Optional[str] = None,
         standardize: bool = True,
         detrend: bool = True,
         low_pass: Optional[float] = 0.1,
         high_pass: Optional[float] = 0.01,
-        t_r: float = 2.0
+        t_r: float = 2.0,
     ) -> np.ndarray:
         """
         Extract regional time series from fMRI data.
@@ -89,25 +91,30 @@ class ConnectivityAnalyzer:
 
         # Create masker
         masker = NiftiLabelsMasker(
-            labels_img=atlas_data['maps'],
+            labels_img=atlas_data["maps"],
             standardize=standardize,
             detrend=detrend,
             low_pass=low_pass,
             high_pass=high_pass,
             t_r=t_r,
-            memory='nilearn_cache',
-            verbose=1
+            memory="nilearn_cache",
+            verbose=1,
         )
 
         # Load confounds if provided
         confounds_data = None
         if confounds:
-            confounds_df = pd.read_csv(confounds, sep='\t')
+            confounds_df = pd.read_csv(confounds, sep="\t")
             # Use common confounds
             confound_cols = [
-                'trans_x', 'trans_y', 'trans_z',
-                'rot_x', 'rot_y', 'rot_z',
-                'csf', 'white_matter'
+                "trans_x",
+                "trans_y",
+                "trans_z",
+                "rot_x",
+                "rot_y",
+                "rot_z",
+                "csf",
+                "white_matter",
             ]
             available_cols = [c for c in confound_cols if c in confounds_df.columns]
             if available_cols:
@@ -116,16 +123,15 @@ class ConnectivityAnalyzer:
         # Extract time series
         time_series = masker.fit_transform(fmri_file, confounds=confounds_data)
 
-        logger.info(f"Extracted time series: {time_series.shape[0]} timepoints, "
-                   f"{time_series.shape[1]} regions")
+        logger.info(
+            f"Extracted time series: {time_series.shape[0]} timepoints, "
+            f"{time_series.shape[1]} regions"
+        )
 
         return time_series
 
     def compute_connectivity(
-        self,
-        time_series: np.ndarray,
-        method: str = 'correlation',
-        fisher_z: bool = True
+        self, time_series: np.ndarray, method: str = "correlation", fisher_z: bool = True
     ) -> np.ndarray:
         """
         Compute functional connectivity matrix.
@@ -140,16 +146,16 @@ class ConnectivityAnalyzer:
         """
         logger.info(f"Computing {method} connectivity...")
 
-        if method == 'correlation':
+        if method == "correlation":
             conn_matrix = np.corrcoef(time_series.T)
             if fisher_z:
                 # Fisher z-transformation
                 conn_matrix = np.arctanh(conn_matrix)
-        elif method == 'partial_correlation':
-            conn_measure = connectome.ConnectivityMeasure(kind='partial correlation')
+        elif method == "partial_correlation":
+            conn_measure = connectome.ConnectivityMeasure(kind="partial correlation")
             conn_matrix = conn_measure.fit_transform([time_series])[0]
-        elif method == 'precision':
-            conn_measure = connectome.ConnectivityMeasure(kind='precision')
+        elif method == "precision":
+            conn_measure = connectome.ConnectivityMeasure(kind="precision")
             conn_matrix = conn_measure.fit_transform([time_series])[0]
         else:
             raise ValueError(f"Unknown method: {method}")
@@ -162,8 +168,8 @@ class ConnectivityAnalyzer:
     def detect_networks(
         self,
         connectivity_matrix: np.ndarray,
-        algorithm: str = 'louvain',
-        threshold: Optional[float] = None
+        algorithm: str = "louvain",
+        threshold: Optional[float] = None,
     ) -> np.ndarray:
         """
         Detect brain networks using community detection.
@@ -189,17 +195,17 @@ class ConnectivityAnalyzer:
         G = nx.from_numpy_array(np.abs(conn_matrix))
 
         # Community detection
-        if algorithm == 'louvain':
+        if algorithm == "louvain":
             import community as community_louvain
+
             communities = community_louvain.best_partition(G)
             assignments = np.array([communities[i] for i in range(len(communities))])
-        elif algorithm == 'spectral':
+        elif algorithm == "spectral":
             from sklearn.cluster import SpectralClustering
+
             n_clusters = 7  # Default to 7 Yeo networks
             clustering = SpectralClustering(
-                n_clusters=n_clusters,
-                affinity='precomputed',
-                assign_labels='kmeans'
+                n_clusters=n_clusters, affinity="precomputed", assign_labels="kmeans"
             )
             assignments = clustering.fit_predict(np.abs(conn_matrix))
         else:
@@ -210,10 +216,8 @@ class ConnectivityAnalyzer:
         return assignments
 
     def compute_graph_metrics(
-        self,
-        connectivity_matrix: np.ndarray,
-        threshold: float = 0.3
-    ) -> Dict[str, float]:
+        self, connectivity_matrix: np.ndarray, threshold: float = 0.3
+    ) -> dict[str, float]:
         """
         Compute graph theory metrics.
 
@@ -239,24 +243,25 @@ class ConnectivityAnalyzer:
 
         # Global metrics
         if nx.is_connected(G):
-            metrics['global_efficiency'] = nx.global_efficiency(G)
-            metrics['average_shortest_path'] = nx.average_shortest_path_length(G)
+            metrics["global_efficiency"] = nx.global_efficiency(G)
+            metrics["average_shortest_path"] = nx.average_shortest_path_length(G)
         else:
             # For disconnected graphs, compute on largest component
             largest_cc = max(nx.connected_components(G), key=len)
             G_cc = G.subgraph(largest_cc)
-            metrics['global_efficiency'] = nx.global_efficiency(G_cc)
-            metrics['average_shortest_path'] = nx.average_shortest_path_length(G_cc)
+            metrics["global_efficiency"] = nx.global_efficiency(G_cc)
+            metrics["average_shortest_path"] = nx.average_shortest_path_length(G_cc)
 
-        metrics['local_efficiency'] = nx.local_efficiency(G)
-        metrics['clustering_coefficient'] = nx.average_clustering(G)
-        metrics['transitivity'] = nx.transitivity(G)
+        metrics["local_efficiency"] = nx.local_efficiency(G)
+        metrics["clustering_coefficient"] = nx.average_clustering(G)
+        metrics["transitivity"] = nx.transitivity(G)
 
         # Modularity (requires community detection)
         try:
             import community as community_louvain
+
             communities = community_louvain.best_partition(G)
-            metrics['modularity'] = community_louvain.modularity(communities, G)
+            metrics["modularity"] = community_louvain.modularity(communities, G)
         except ImportError:
             logger.warning("python-louvain not installed, skipping modularity")
 
@@ -277,21 +282,17 @@ class ConnectivityAnalyzer:
             gamma = clustering_real / clustering_random
             lambda_val = path_real / path_random
             if lambda_val > 0:
-                metrics['small_worldness'] = gamma / lambda_val
+                metrics["small_worldness"] = gamma / lambda_val
             else:
-                metrics['small_worldness'] = np.nan
+                metrics["small_worldness"] = np.nan
         else:
-            metrics['small_worldness'] = np.nan
+            metrics["small_worldness"] = np.nan
 
         logger.info(f"Computed {len(metrics)} graph metrics")
 
         return metrics
 
-    def identify_hubs(
-        self,
-        connectivity_matrix: np.ndarray,
-        threshold: float = 0.9
-    ) -> List[int]:
+    def identify_hubs(self, connectivity_matrix: np.ndarray, threshold: float = 0.9) -> list[int]:
         """
         Identify hub regions based on node degree.
 
@@ -316,9 +317,9 @@ class ConnectivityAnalyzer:
     def plot_connectivity_matrix(
         self,
         connectivity_matrix: np.ndarray,
-        labels: Optional[List[str]] = None,
-        title: str = 'Functional Connectivity',
-        save_path: Optional[str] = None
+        labels: Optional[list[str]] = None,
+        title: str = "Functional Connectivity",
+        save_path: Optional[str] = None,
     ):
         """
         Plot connectivity matrix.
@@ -332,17 +333,17 @@ class ConnectivityAnalyzer:
         import matplotlib.pyplot as plt
         import seaborn as sns
 
-        fig, ax = plt.subplots(figsize=(12, 10))
+        _fig, ax = plt.subplots(figsize=(12, 10))
 
         # Plot matrix
         sns.heatmap(
             connectivity_matrix,
-            cmap='RdBu_r',
+            cmap="RdBu_r",
             center=0,
             square=True,
             linewidths=0,
-            cbar_kws={'label': 'Correlation (Fisher z)'},
-            ax=ax
+            cbar_kws={"label": "Correlation (Fisher z)"},
+            ax=ax,
         )
 
         ax.set_title(title, fontsize=16)
@@ -354,16 +355,13 @@ class ConnectivityAnalyzer:
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.savefig(save_path, dpi=300, bbox_inches="tight")
             logger.info(f"Saved plot to {save_path}")
         else:
             plt.show()
 
     def plot_brain_networks(
-        self,
-        networks: np.ndarray,
-        atlas: str = 'schaefer2018_400',
-        save_path: Optional[str] = None
+        self, networks: np.ndarray, atlas: str = "schaefer2018_400", save_path: Optional[str] = None
     ):
         """
         Plot brain networks on glass brain.
@@ -376,17 +374,10 @@ class ConnectivityAnalyzer:
         atlas_data = self.atlases[atlas]
 
         # Create network image
-        network_img = nib.Nifti1Image(
-            networks,
-            affine=atlas_data['maps'].affine
-        )
+        network_img = nib.Nifti1Image(networks, affine=atlas_data["maps"].affine)
 
         # Plot
-        display = plotting.plot_roi(
-            network_img,
-            title='Brain Networks',
-            cmap='tab10'
-        )
+        display = plotting.plot_roi(network_img, title="Brain Networks", cmap="tab10")
 
         if save_path:
             display.savefig(save_path)
@@ -396,11 +387,11 @@ class ConnectivityAnalyzer:
 
     def group_comparison(
         self,
-        connectivity_matrices_group1: List[np.ndarray],
-        connectivity_matrices_group2: List[np.ndarray],
+        connectivity_matrices_group1: list[np.ndarray],
+        connectivity_matrices_group2: list[np.ndarray],
         alpha: float = 0.05,
-        correction: str = 'fdr'
-    ) -> Dict:
+        correction: str = "fdr",
+    ) -> dict:
         """
         Compare connectivity between two groups.
 
@@ -413,8 +404,10 @@ class ConnectivityAnalyzer:
         Returns:
             Dictionary with statistics
         """
-        logger.info(f"Comparing groups: {len(connectivity_matrices_group1)} vs "
-                   f"{len(connectivity_matrices_group2)} subjects...")
+        logger.info(
+            f"Comparing groups: {len(connectivity_matrices_group1)} vs "
+            f"{len(connectivity_matrices_group2)} subjects..."
+        )
 
         # Stack matrices
         group1 = np.array(connectivity_matrices_group1)
@@ -426,19 +419,17 @@ class ConnectivityAnalyzer:
         p_values = np.zeros((n_regions, n_regions))
 
         for i in range(n_regions):
-            for j in range(i+1, n_regions):
-                t_stat, p_val = stats.ttest_ind(
-                    group1[:, i, j],
-                    group2[:, i, j]
-                )
+            for j in range(i + 1, n_regions):
+                t_stat, p_val = stats.ttest_ind(group1[:, i, j], group2[:, i, j])
                 t_stats[i, j] = t_stat
                 t_stats[j, i] = t_stat
                 p_values[i, j] = p_val
                 p_values[j, i] = p_val
 
         # Multiple comparison correction
-        if correction == 'fdr':
+        if correction == "fdr":
             from statsmodels.stats.multitest import fdrcorrection
+
             # Get upper triangle
             triu_indices = np.triu_indices(n_regions, k=1)
             p_flat = p_values[triu_indices]
@@ -447,7 +438,7 @@ class ConnectivityAnalyzer:
             p_corrected = np.zeros_like(p_values)
             p_corrected[triu_indices] = p_corrected_flat
             p_corrected = p_corrected + p_corrected.T
-        elif correction == 'bonferroni':
+        elif correction == "bonferroni":
             n_tests = (n_regions * (n_regions - 1)) // 2
             p_corrected = p_values * n_tests
         else:
@@ -457,11 +448,11 @@ class ConnectivityAnalyzer:
         significant = p_corrected < alpha
 
         results = {
-            't_statistics': t_stats,
-            'p_values': p_values,
-            'p_corrected': p_corrected,
-            'significant_edges': significant,
-            'n_significant': np.sum(np.triu(significant, k=1))
+            "t_statistics": t_stats,
+            "p_values": p_values,
+            "p_corrected": p_corrected,
+            "significant_edges": significant,
+            "n_significant": np.sum(np.triu(significant, k=1)),
         }
 
         logger.info(f"Found {results['n_significant']} significant edges")
@@ -475,15 +466,16 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Functional connectivity analysis')
-    parser.add_argument('--fmri', type=str, required=True,
-                       help='Path to fMRI file')
-    parser.add_argument('--atlas', type=str, default='schaefer2018_400',
-                       help='Atlas name')
-    parser.add_argument('--confounds', type=str,
-                       help='Path to confounds file')
-    parser.add_argument('--output', type=str, default='connectivity_matrix.npy',
-                       help='Output file for connectivity matrix')
+    parser = argparse.ArgumentParser(description="Functional connectivity analysis")
+    parser.add_argument("--fmri", type=str, required=True, help="Path to fMRI file")
+    parser.add_argument("--atlas", type=str, default="schaefer2018_400", help="Atlas name")
+    parser.add_argument("--confounds", type=str, help="Path to confounds file")
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="connectivity_matrix.npy",
+        help="Output file for connectivity matrix",
+    )
     args = parser.parse_args()
 
     # Initialize analyzer
@@ -491,9 +483,7 @@ def main():
 
     # Extract time series
     time_series = analyzer.extract_time_series(
-        args.fmri,
-        atlas=args.atlas,
-        confounds=args.confounds
+        args.fmri, atlas=args.atlas, confounds=args.confounds
     )
 
     # Compute connectivity
@@ -515,11 +505,9 @@ def main():
 
     # Plot
     analyzer.plot_connectivity_matrix(
-        conn_matrix,
-        title='Functional Connectivity',
-        save_path='connectivity_matrix.png'
+        conn_matrix, title="Functional Connectivity", save_path="connectivity_matrix.png"
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

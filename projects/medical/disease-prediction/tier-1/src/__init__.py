@@ -13,21 +13,9 @@ Modules:
     visualization: Plotting and GradCAM interpretability
 """
 
-__version__ = '1.0.0'
-__author__ = 'Research Jumpstart'
+__version__ = "1.0.0"
+__author__ = "Research Jumpstart"
 
-from . import data_utils
-from . import preprocessing
-from . import models
-from . import ensemble
-from . import evaluation
-from . import visualization
+from . import data_utils, ensemble, evaluation, models, preprocessing, visualization
 
-__all__ = [
-    'data_utils',
-    'preprocessing',
-    'models',
-    'ensemble',
-    'evaluation',
-    'visualization'
-]
+__all__ = ["data_utils", "ensemble", "evaluation", "models", "preprocessing", "visualization"]

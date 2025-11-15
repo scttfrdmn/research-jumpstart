@@ -25,33 +25,34 @@ Deploy to AWS Lambda:
 """
 
 import json
-import boto3
 import logging
 import os
 import traceback
 from datetime import datetime
-from io import StringIO
 from decimal import Decimal
+from io import StringIO
+
+import boto3
 
 # Initialize clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
-sns_client = boto3.client('sns')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
+sns_client = boto3.client("sns")
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Environment variables
-BUCKET_NAME = os.environ.get('BUCKET_NAME', 'environmental-data')
-DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE', 'EnvironmentalReadings')
-SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', '')
+BUCKET_NAME = os.environ.get("BUCKET_NAME", "environmental-data")
+DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "EnvironmentalReadings")
+SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 
 # Alert thresholds
-ALERT_THRESHOLD_PM25 = float(os.environ.get('ALERT_THRESHOLD_PM25', '35.4'))
-ALERT_THRESHOLD_AQI = int(os.environ.get('ALERT_THRESHOLD_AQI', '101'))
-ALERT_THRESHOLD_PH_MIN = float(os.environ.get('ALERT_THRESHOLD_PH_MIN', '6.5'))
-ALERT_THRESHOLD_PH_MAX = float(os.environ.get('ALERT_THRESHOLD_PH_MAX', '8.5'))
-ALERT_THRESHOLD_DO_MIN = float(os.environ.get('ALERT_THRESHOLD_DO_MIN', '5.0'))
+ALERT_THRESHOLD_PM25 = float(os.environ.get("ALERT_THRESHOLD_PM25", "35.4"))
+ALERT_THRESHOLD_AQI = int(os.environ.get("ALERT_THRESHOLD_AQI", "101"))
+ALERT_THRESHOLD_PH_MIN = float(os.environ.get("ALERT_THRESHOLD_PH_MIN", "6.5"))
+ALERT_THRESHOLD_PH_MAX = float(os.environ.get("ALERT_THRESHOLD_PH_MAX", "8.5"))
+ALERT_THRESHOLD_DO_MIN = float(os.environ.get("ALERT_THRESHOLD_DO_MIN", "5.0"))
 
 
 def lambda_handler(event, context):
@@ -70,27 +71,27 @@ def lambda_handler(event, context):
         start_time = datetime.utcnow()
 
         # Parse S3 event
-        if 'Records' in event:
-            record = event['Records'][0]
-            s3_bucket = record['s3']['bucket']['name']
-            s3_key = record['s3']['object']['key']
+        if "Records" in event:
+            record = event["Records"][0]
+            s3_bucket = record["s3"]["bucket"]["name"]
+            s3_key = record["s3"]["object"]["key"]
         else:
             # Direct invocation
-            s3_bucket = event.get('bucket', BUCKET_NAME)
-            s3_key = event.get('key', 'raw/test_data.csv')
+            s3_bucket = event.get("bucket", BUCKET_NAME)
+            s3_key = event.get("key", "raw/test_data.csv")
 
         logger.info(f"Processing file: s3://{s3_bucket}/{s3_key}")
 
         # Download and parse data
         try:
             obj = s3_client.get_object(Bucket=s3_bucket, Key=s3_key)
-            file_content = obj['Body'].read().decode('utf-8')
+            file_content = obj["Body"].read().decode("utf-8")
             logger.info(f"Downloaded {len(file_content)} bytes")
 
             # Parse CSV or JSON
-            if s3_key.endswith('.csv'):
+            if s3_key.endswith(".csv"):
                 data = parse_csv(file_content)
-            elif s3_key.endswith('.json'):
+            elif s3_key.endswith(".json"):
                 data = parse_json(file_content)
             else:
                 return error_response(f"Unsupported file format: {s3_key}")
@@ -98,7 +99,7 @@ def lambda_handler(event, context):
             logger.info(f"Parsed {len(data)} sensor readings")
 
         except Exception as e:
-            return error_response(f"Failed to download/parse file: {str(e)}")
+            return error_response(f"Failed to download/parse file: {e!s}")
 
         # Process each sensor reading
         results = []
@@ -110,7 +111,7 @@ def lambda_handler(event, context):
                 results.append(processed)
 
                 # Check for alerts
-                if processed['alert_status'] != 'none':
+                if processed["alert_status"] != "none":
                     alerts.append(processed)
 
             except Exception as e:
@@ -138,22 +139,24 @@ def lambda_handler(event, context):
 
         # Return success
         response = {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Processing completed successfully',
-                'input_file': s3_key,
-                'readings_processed': len(results),
-                'alerts_triggered': len(alerts),
-                'processing_time_ms': processing_time_ms,
-                'timestamp': end_time.isoformat()
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Processing completed successfully",
+                    "input_file": s3_key,
+                    "readings_processed": len(results),
+                    "alerts_triggered": len(alerts),
+                    "processing_time_ms": processing_time_ms,
+                    "timestamp": end_time.isoformat(),
+                }
+            ),
         }
 
         logger.info(f"Success: {response['body']}")
         return response
 
     except Exception as e:
-        error_msg = f"Unhandled error: {str(e)}"
+        error_msg = f"Unhandled error: {e!s}"
         logger.error(error_msg)
         logger.error(traceback.format_exc())
         return error_response(error_msg)
@@ -162,6 +165,7 @@ def lambda_handler(event, context):
 def parse_csv(content):
     """Parse CSV content into list of dictionaries."""
     import csv
+
     reader = csv.DictReader(StringIO(content))
     return list(reader)
 
@@ -184,13 +188,13 @@ def process_sensor_reading(reading):
     Returns:
         dict: Processed reading with calculated metrics
     """
-    sensor_type = reading.get('sensor_type', 'unknown')
+    sensor_type = reading.get("sensor_type", "unknown")
 
-    if sensor_type == 'air':
+    if sensor_type == "air":
         return process_air_quality(reading)
-    elif sensor_type == 'water':
+    elif sensor_type == "water":
         return process_water_quality(reading)
-    elif sensor_type == 'weather':
+    elif sensor_type == "weather":
         return process_weather_data(reading)
     else:
         return process_generic_sensor(reading)
@@ -207,12 +211,12 @@ def process_air_quality(reading):
         dict: Processed reading with AQI and alert status
     """
     # Extract parameters
-    pm25 = float(reading.get('pm25', 0))
-    pm10 = float(reading.get('pm10', 0))
-    co2 = float(reading.get('co2', 0))
-    no2 = float(reading.get('no2', 0))
-    o3 = float(reading.get('o3', 0))
-    co = float(reading.get('co', 0))
+    pm25 = float(reading.get("pm25", 0))
+    pm10 = float(reading.get("pm10", 0))
+    co2 = float(reading.get("co2", 0))
+    no2 = float(reading.get("no2", 0))
+    o3 = float(reading.get("o3", 0))
+    co = float(reading.get("co", 0))
 
     # Calculate AQI for each pollutant
     aqi_pm25 = calculate_aqi_pm25(pm25)
@@ -228,53 +232,53 @@ def process_air_quality(reading):
     aqi_category = get_aqi_category(aqi)
 
     # Check alert conditions
-    alert_status = 'none'
-    alert_message = ''
+    alert_status = "none"
+    alert_message = ""
 
     if pm25 > ALERT_THRESHOLD_PM25:
-        alert_status = 'warning' if pm25 < 55.4 else 'critical'
-        alert_message = f'PM2.5 level high: {pm25:.1f} μg/m³ (threshold: {ALERT_THRESHOLD_PM25})'
+        alert_status = "warning" if pm25 < 55.4 else "critical"
+        alert_message = f"PM2.5 level high: {pm25:.1f} μg/m³ (threshold: {ALERT_THRESHOLD_PM25})"
     elif aqi >= ALERT_THRESHOLD_AQI:
         if aqi >= 151:
-            alert_status = 'critical'
-            alert_message = f'AQI unhealthy: {aqi} ({aqi_category})'
+            alert_status = "critical"
+            alert_message = f"AQI unhealthy: {aqi} ({aqi_category})"
         else:
-            alert_status = 'warning'
-            alert_message = f'AQI elevated: {aqi} ({aqi_category})'
+            alert_status = "warning"
+            alert_message = f"AQI elevated: {aqi} ({aqi_category})"
 
     # Build result
     result = {
-        'location_id': reading.get('location_id', 'unknown'),
-        'timestamp': reading.get('timestamp', datetime.utcnow().isoformat() + 'Z'),
-        'reading_id': f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
-        'sensor_type': 'air',
-        'parameters': {
-            'pm25': pm25,
-            'pm10': pm10,
-            'co2': co2,
-            'no2': no2,
-            'o3': o3,
-            'co': co,
-            'temperature': float(reading.get('temperature', 0)),
-            'humidity': float(reading.get('humidity', 0))
+        "location_id": reading.get("location_id", "unknown"),
+        "timestamp": reading.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+        "reading_id": f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
+        "sensor_type": "air",
+        "parameters": {
+            "pm25": pm25,
+            "pm10": pm10,
+            "co2": co2,
+            "no2": no2,
+            "o3": o3,
+            "co": co,
+            "temperature": float(reading.get("temperature", 0)),
+            "humidity": float(reading.get("humidity", 0)),
         },
-        'calculated_metrics': {
-            'aqi': aqi,
-            'aqi_category': aqi_category,
-            'aqi_pm25': aqi_pm25,
-            'aqi_pm10': aqi_pm10,
-            'aqi_o3': aqi_o3,
-            'dominant_pollutant': get_dominant_pollutant(
+        "calculated_metrics": {
+            "aqi": aqi,
+            "aqi_category": aqi_category,
+            "aqi_pm25": aqi_pm25,
+            "aqi_pm10": aqi_pm10,
+            "aqi_o3": aqi_o3,
+            "dominant_pollutant": get_dominant_pollutant(
                 aqi_pm25, aqi_pm10, aqi_o3, aqi_no2, aqi_co
-            )
+            ),
         },
-        'alert_status': alert_status,
-        'alert_message': alert_message,
-        'coordinates': {
-            'latitude': float(reading.get('latitude', 0)),
-            'longitude': float(reading.get('longitude', 0))
+        "alert_status": alert_status,
+        "alert_message": alert_message,
+        "coordinates": {
+            "latitude": float(reading.get("latitude", 0)),
+            "longitude": float(reading.get("longitude", 0)),
         },
-        'data_quality_score': 95  # Simplified
+        "data_quality_score": 95,  # Simplified
     }
 
     return result
@@ -297,7 +301,7 @@ def calculate_aqi_pm25(pm25):
         (35.5, 55.4, 101, 150),
         (55.5, 150.4, 151, 200),
         (150.5, 250.4, 201, 300),
-        (250.5, 500.4, 301, 500)
+        (250.5, 500.4, 301, 500),
     ]
 
     return calculate_aqi_from_breakpoints(pm25, breakpoints)
@@ -311,7 +315,7 @@ def calculate_aqi_pm10(pm10):
         (155, 254, 101, 150),
         (255, 354, 151, 200),
         (355, 424, 201, 300),
-        (425, 604, 301, 500)
+        (425, 604, 301, 500),
     ]
     return calculate_aqi_from_breakpoints(pm10, breakpoints)
 
@@ -323,7 +327,7 @@ def calculate_aqi_o3(o3):
         (55, 70, 51, 100),
         (71, 85, 101, 150),
         (86, 105, 151, 200),
-        (106, 200, 201, 300)
+        (106, 200, 201, 300),
     ]
     return calculate_aqi_from_breakpoints(o3, breakpoints)
 
@@ -335,7 +339,7 @@ def calculate_aqi_no2(no2):
         (54, 100, 51, 100),
         (101, 360, 101, 150),
         (361, 649, 151, 200),
-        (650, 1249, 201, 300)
+        (650, 1249, 201, 300),
     ]
     return calculate_aqi_from_breakpoints(no2, breakpoints)
 
@@ -347,7 +351,7 @@ def calculate_aqi_co(co):
         (4.5, 9.4, 51, 100),
         (9.5, 12.4, 101, 150),
         (12.5, 15.4, 151, 200),
-        (15.5, 30.4, 201, 300)
+        (15.5, 30.4, 201, 300),
     ]
     return calculate_aqi_from_breakpoints(co, breakpoints)
 
@@ -367,7 +371,7 @@ def calculate_aqi_from_breakpoints(concentration, breakpoints):
         if c_low <= concentration <= c_high:
             # Linear interpolation
             aqi = ((i_high - i_low) / (c_high - c_low)) * (concentration - c_low) + i_low
-            return int(round(aqi))
+            return round(aqi)
 
     # If concentration exceeds all breakpoints, return maximum
     return 500
@@ -376,28 +380,22 @@ def calculate_aqi_from_breakpoints(concentration, breakpoints):
 def get_aqi_category(aqi):
     """Get AQI category from AQI value."""
     if aqi <= 50:
-        return 'Good'
+        return "Good"
     elif aqi <= 100:
-        return 'Moderate'
+        return "Moderate"
     elif aqi <= 150:
-        return 'Unhealthy for Sensitive Groups'
+        return "Unhealthy for Sensitive Groups"
     elif aqi <= 200:
-        return 'Unhealthy'
+        return "Unhealthy"
     elif aqi <= 300:
-        return 'Very Unhealthy'
+        return "Very Unhealthy"
     else:
-        return 'Hazardous'
+        return "Hazardous"
 
 
 def get_dominant_pollutant(aqi_pm25, aqi_pm10, aqi_o3, aqi_no2, aqi_co):
     """Determine which pollutant is driving the AQI."""
-    pollutants = {
-        'PM2.5': aqi_pm25,
-        'PM10': aqi_pm10,
-        'O3': aqi_o3,
-        'NO2': aqi_no2,
-        'CO': aqi_co
-    }
+    pollutants = {"PM2.5": aqi_pm25, "PM10": aqi_pm10, "O3": aqi_o3, "NO2": aqi_no2, "CO": aqi_co}
     return max(pollutants, key=pollutants.get)
 
 
@@ -412,12 +410,12 @@ def process_water_quality(reading):
         dict: Processed reading with WQI and alert status
     """
     # Extract parameters
-    ph = float(reading.get('ph', 7.0))
-    do = float(reading.get('dissolved_oxygen', 8.0))  # mg/L
-    turbidity = float(reading.get('turbidity', 5.0))  # NTU
-    conductivity = float(reading.get('conductivity', 300.0))  # μS/cm
-    temperature = float(reading.get('temperature', 20.0))
-    tds = float(reading.get('tds', conductivity * 0.64))
+    ph = float(reading.get("ph", 7.0))
+    do = float(reading.get("dissolved_oxygen", 8.0))  # mg/L
+    turbidity = float(reading.get("turbidity", 5.0))  # NTU
+    conductivity = float(reading.get("conductivity", 300.0))  # μS/cm
+    temperature = float(reading.get("temperature", 20.0))
+    tds = float(reading.get("tds", conductivity * 0.64))
 
     # Calculate Water Quality Index (simplified)
     wqi = calculate_wqi(ph, do, turbidity, tds)
@@ -426,44 +424,41 @@ def process_water_quality(reading):
     wqi_category = get_wqi_category(wqi)
 
     # Check alert conditions
-    alert_status = 'none'
-    alert_message = ''
+    alert_status = "none"
+    alert_message = ""
 
     if ph < ALERT_THRESHOLD_PH_MIN or ph > ALERT_THRESHOLD_PH_MAX:
-        alert_status = 'warning' if 6.0 <= ph <= 9.0 else 'critical'
-        alert_message = f'pH out of range: {ph:.2f} (acceptable: {ALERT_THRESHOLD_PH_MIN}-{ALERT_THRESHOLD_PH_MAX})'
+        alert_status = "warning" if 6.0 <= ph <= 9.0 else "critical"
+        alert_message = f"pH out of range: {ph:.2f} (acceptable: {ALERT_THRESHOLD_PH_MIN}-{ALERT_THRESHOLD_PH_MAX})"
     elif do < ALERT_THRESHOLD_DO_MIN:
-        alert_status = 'critical' if do < 4.0 else 'warning'
-        alert_message = f'Low dissolved oxygen: {do:.2f} mg/L (threshold: {ALERT_THRESHOLD_DO_MIN})'
+        alert_status = "critical" if do < 4.0 else "warning"
+        alert_message = f"Low dissolved oxygen: {do:.2f} mg/L (threshold: {ALERT_THRESHOLD_DO_MIN})"
     elif wqi > 75:
-        alert_status = 'warning' if wqi < 100 else 'critical'
-        alert_message = f'Poor water quality: WQI {wqi} ({wqi_category})'
+        alert_status = "warning" if wqi < 100 else "critical"
+        alert_message = f"Poor water quality: WQI {wqi} ({wqi_category})"
 
     # Build result
     result = {
-        'location_id': reading.get('location_id', 'unknown'),
-        'timestamp': reading.get('timestamp', datetime.utcnow().isoformat() + 'Z'),
-        'reading_id': f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
-        'sensor_type': 'water',
-        'parameters': {
-            'ph': ph,
-            'dissolved_oxygen': do,
-            'turbidity': turbidity,
-            'conductivity': conductivity,
-            'temperature': temperature,
-            'tds': tds
+        "location_id": reading.get("location_id", "unknown"),
+        "timestamp": reading.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+        "reading_id": f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
+        "sensor_type": "water",
+        "parameters": {
+            "ph": ph,
+            "dissolved_oxygen": do,
+            "turbidity": turbidity,
+            "conductivity": conductivity,
+            "temperature": temperature,
+            "tds": tds,
         },
-        'calculated_metrics': {
-            'wqi': wqi,
-            'wqi_category': wqi_category
+        "calculated_metrics": {"wqi": wqi, "wqi_category": wqi_category},
+        "alert_status": alert_status,
+        "alert_message": alert_message,
+        "coordinates": {
+            "latitude": float(reading.get("latitude", 0)),
+            "longitude": float(reading.get("longitude", 0)),
         },
-        'alert_status': alert_status,
-        'alert_message': alert_message,
-        'coordinates': {
-            'latitude': float(reading.get('latitude', 0)),
-            'longitude': float(reading.get('longitude', 0))
-        },
-        'data_quality_score': 95
+        "data_quality_score": 95,
     }
 
     return result
@@ -496,47 +491,47 @@ def calculate_wqi(ph, do, turbidity, tds):
     tds_si = min(50, tds / 10)
 
     # Weighted average (weights sum to 1.0)
-    wqi = (ph_si * 0.25 + do_si * 0.35 + turbidity_si * 0.20 + tds_si * 0.20)
+    wqi = ph_si * 0.25 + do_si * 0.35 + turbidity_si * 0.20 + tds_si * 0.20
 
-    return int(round(wqi))
+    return round(wqi)
 
 
 def get_wqi_category(wqi):
     """Get WQI category from WQI value."""
     if wqi <= 25:
-        return 'Excellent'
+        return "Excellent"
     elif wqi <= 50:
-        return 'Good'
+        return "Good"
     elif wqi <= 75:
-        return 'Fair'
+        return "Fair"
     elif wqi <= 100:
-        return 'Poor'
+        return "Poor"
     else:
-        return 'Very Poor'
+        return "Very Poor"
 
 
 def process_weather_data(reading):
     """Process weather sensor reading."""
     result = {
-        'location_id': reading.get('location_id', 'unknown'),
-        'timestamp': reading.get('timestamp', datetime.utcnow().isoformat() + 'Z'),
-        'reading_id': f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
-        'sensor_type': 'weather',
-        'parameters': {
-            'temperature': float(reading.get('temperature', 0)),
-            'humidity': float(reading.get('humidity', 0)),
-            'pressure': float(reading.get('pressure', 1013)),
-            'wind_speed': float(reading.get('wind_speed', 0)),
-            'precipitation': float(reading.get('precipitation', 0))
+        "location_id": reading.get("location_id", "unknown"),
+        "timestamp": reading.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+        "reading_id": f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
+        "sensor_type": "weather",
+        "parameters": {
+            "temperature": float(reading.get("temperature", 0)),
+            "humidity": float(reading.get("humidity", 0)),
+            "pressure": float(reading.get("pressure", 1013)),
+            "wind_speed": float(reading.get("wind_speed", 0)),
+            "precipitation": float(reading.get("precipitation", 0)),
         },
-        'calculated_metrics': {},
-        'alert_status': 'none',
-        'alert_message': '',
-        'coordinates': {
-            'latitude': float(reading.get('latitude', 0)),
-            'longitude': float(reading.get('longitude', 0))
+        "calculated_metrics": {},
+        "alert_status": "none",
+        "alert_message": "",
+        "coordinates": {
+            "latitude": float(reading.get("latitude", 0)),
+            "longitude": float(reading.get("longitude", 0)),
         },
-        'data_quality_score': 95
+        "data_quality_score": 95,
     }
     return result
 
@@ -544,19 +539,19 @@ def process_weather_data(reading):
 def process_generic_sensor(reading):
     """Process generic sensor reading."""
     result = {
-        'location_id': reading.get('location_id', 'unknown'),
-        'timestamp': reading.get('timestamp', datetime.utcnow().isoformat() + 'Z'),
-        'reading_id': f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
-        'sensor_type': reading.get('sensor_type', 'unknown'),
-        'parameters': reading,
-        'calculated_metrics': {},
-        'alert_status': 'none',
-        'alert_message': '',
-        'coordinates': {
-            'latitude': float(reading.get('latitude', 0)),
-            'longitude': float(reading.get('longitude', 0))
+        "location_id": reading.get("location_id", "unknown"),
+        "timestamp": reading.get("timestamp", datetime.utcnow().isoformat() + "Z"),
+        "reading_id": f"{reading.get('location_id', 'unknown')}_{reading.get('timestamp', '')}",
+        "sensor_type": reading.get("sensor_type", "unknown"),
+        "parameters": reading,
+        "calculated_metrics": {},
+        "alert_status": "none",
+        "alert_message": "",
+        "coordinates": {
+            "latitude": float(reading.get("latitude", 0)),
+            "longitude": float(reading.get("longitude", 0)),
         },
-        'data_quality_score': 90
+        "data_quality_score": 90,
     }
     return result
 
@@ -605,29 +600,21 @@ def send_alerts(alerts):
         return
 
     # Group alerts by severity
-    critical_alerts = [a for a in alerts if a['alert_status'] == 'critical']
-    warning_alerts = [a for a in alerts if a['alert_status'] == 'warning']
+    critical_alerts = [a for a in alerts if a["alert_status"] == "critical"]
+    warning_alerts = [a for a in alerts if a["alert_status"] == "warning"]
 
     # Send critical alerts
     if critical_alerts:
         subject = f"CRITICAL: Environmental Alert - {len(critical_alerts)} critical readings"
-        message = format_alert_message(critical_alerts, 'CRITICAL')
-        sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject=subject,
-            Message=message
-        )
+        message = format_alert_message(critical_alerts, "CRITICAL")
+        sns_client.publish(TopicArn=SNS_TOPIC_ARN, Subject=subject, Message=message)
         logger.info(f"Sent critical alert for {len(critical_alerts)} readings")
 
     # Send warning alerts (if no critical)
     elif warning_alerts:
         subject = f"WARNING: Environmental Alert - {len(warning_alerts)} warnings"
-        message = format_alert_message(warning_alerts, 'WARNING')
-        sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject=subject,
-            Message=message
-        )
+        message = format_alert_message(warning_alerts, "WARNING")
+        sns_client.publish(TopicArn=SNS_TOPIC_ARN, Subject=subject, Message=message)
         logger.info(f"Sent warning alert for {len(warning_alerts)} readings")
 
 
@@ -653,37 +640,36 @@ def format_alert_message(alerts, severity):
 def error_response(error_msg, filename=None):
     """Generate error response."""
     response = {
-        'statusCode': 500,
-        'body': json.dumps({
-            'message': 'Processing failed',
-            'error': error_msg,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+        "statusCode": 500,
+        "body": json.dumps(
+            {
+                "message": "Processing failed",
+                "error": error_msg,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        ),
     }
 
     if filename:
-        response['body'] = json.dumps({
-            'file': filename,
-            **json.loads(response['body'])
-        })
+        response["body"] = json.dumps({"file": filename, **json.loads(response["body"])})
 
     return response
 
 
 # Local testing
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Set environment variables for testing
-    os.environ['BUCKET_NAME'] = 'environmental-data-test'
-    os.environ['DYNAMODB_TABLE'] = 'EnvironmentalReadings'
-    os.environ['SNS_TOPIC_ARN'] = 'arn:aws:sns:us-east-1:123456789012:environmental-alerts'
+    os.environ["BUCKET_NAME"] = "environmental-data-test"
+    os.environ["DYNAMODB_TABLE"] = "EnvironmentalReadings"
+    os.environ["SNS_TOPIC_ARN"] = "arn:aws:sns:us-east-1:123456789012:environmental-alerts"
 
     # Create test event
     test_event = {
-        'Records': [
+        "Records": [
             {
-                's3': {
-                    'bucket': {'name': 'environmental-data-test'},
-                    'object': {'key': 'raw/test_data.csv'}
+                "s3": {
+                    "bucket": {"name": "environmental-data-test"},
+                    "object": {"key": "raw/test_data.csv"},
                 }
             }
         ]

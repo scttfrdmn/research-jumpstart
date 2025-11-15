@@ -2,8 +2,8 @@
 Cross-lingual style analysis functions
 """
 
+
 import numpy as np
-from typing import Dict, List
 
 
 def cross_lingual_style_vector(text: str, model, tokenizer) -> np.ndarray:
@@ -23,9 +23,7 @@ def cross_lingual_style_vector(text: str, model, tokenizer) -> np.ndarray:
 
 
 def compare_styles_across_languages(
-    texts_by_language: Dict[str, List[str]],
-    model,
-    tokenizer
+    texts_by_language: dict[str, list[str]], model, tokenizer
 ) -> np.ndarray:
     """
     Compare writing styles across multiple languages.
@@ -42,7 +40,7 @@ def compare_styles_across_languages(
     pass
 
 
-def extract_stylometric_features(text: str, language: str) -> Dict[str, float]:
+def extract_stylometric_features(text: str, language: str) -> dict[str, float]:
     """
     Extract language-specific stylometric features.
 

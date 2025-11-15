@@ -6,19 +6,18 @@ This script queries the DynamoDB table for molecular properties,
 filters by criteria, and exports results to CSV/JSON.
 """
 
-import boto3
 import argparse
-import pandas as pd
 import json
 import logging
-from pathlib import Path
 from decimal import Decimal
-from datetime import datetime
+from pathlib import Path
+
+import boto3
+import pandas as pd
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 class MolecularPropertyQuery:
     """Query and analyze molecular properties from DynamoDB."""
 
-    def __init__(self, table_name='MolecularProperties', region='us-east-1', profile=None):
+    def __init__(self, table_name="MolecularProperties", region="us-east-1", profile=None):
         """
         Initialize DynamoDB query client.
 
@@ -44,7 +43,7 @@ class MolecularPropertyQuery:
         else:
             session = boto3.Session(region_name=region)
 
-        self.dynamodb = session.resource('dynamodb')
+        self.dynamodb = session.resource("dynamodb")
         self.table = self.dynamodb.Table(table_name)
 
         logger.info(f"Connected to table: {table_name}")
@@ -64,17 +63,17 @@ class MolecularPropertyQuery:
         items = []
         scan_kwargs = {}
         if limit:
-            scan_kwargs['Limit'] = limit
+            scan_kwargs["Limit"] = limit
 
         try:
             response = self.table.scan(**scan_kwargs)
-            items.extend(response['Items'])
+            items.extend(response["Items"])
 
             # Handle pagination
-            while 'LastEvaluatedKey' in response and (not limit or len(items) < limit):
-                scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+            while "LastEvaluatedKey" in response and (not limit or len(items) < limit):
+                scan_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
                 response = self.table.scan(**scan_kwargs)
-                items.extend(response['Items'])
+                items.extend(response["Items"])
 
                 if limit and len(items) >= limit:
                     items = items[:limit]
@@ -102,19 +101,19 @@ class MolecularPropertyQuery:
         items = []
         try:
             response = self.table.scan(
-                FilterExpression='compound_class = :class',
-                ExpressionAttributeValues={':class': compound_class}
+                FilterExpression="compound_class = :class",
+                ExpressionAttributeValues={":class": compound_class},
             )
-            items = response['Items']
+            items = response["Items"]
 
             # Handle pagination
-            while 'LastEvaluatedKey' in response:
+            while "LastEvaluatedKey" in response:
                 response = self.table.scan(
-                    FilterExpression='compound_class = :class',
-                    ExpressionAttributeValues={':class': compound_class},
-                    ExclusiveStartKey=response['LastEvaluatedKey']
+                    FilterExpression="compound_class = :class",
+                    ExpressionAttributeValues={":class": compound_class},
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
                 )
-                items.extend(response['Items'])
+                items.extend(response["Items"])
 
             logger.info(f"Retrieved {len(items)} items")
             return items
@@ -142,15 +141,15 @@ class MolecularPropertyQuery:
 
         for item in items:
             # Check molecular weight
-            if mw_max and float(item.get('molecular_weight', 9999)) > mw_max:
+            if mw_max and float(item.get("molecular_weight", 9999)) > mw_max:
                 continue
 
             # Check LogP
-            if logp_max and float(item.get('logp', 9999)) > logp_max:
+            if logp_max and float(item.get("logp", 9999)) > logp_max:
                 continue
 
             # Check Lipinski compliance
-            if lipinski_only and not item.get('lipinski_compliant', False):
+            if lipinski_only and not item.get("lipinski_compliant", False):
                 continue
 
             filtered.append(item)
@@ -168,7 +167,7 @@ class MolecularPropertyQuery:
         logger.info("Finding drug-like molecules (Lipinski compliant)...")
 
         items = self.scan_all()
-        drug_like = [item for item in items if item.get('lipinski_compliant', False)]
+        drug_like = [item for item in items if item.get("lipinski_compliant", False)]
 
         logger.info(f"Found {len(drug_like)} drug-like molecules")
         return drug_like
@@ -194,28 +193,28 @@ class MolecularPropertyQuery:
         df = self.to_dataframe(items)
 
         stats = {
-            'total_molecules': len(df),
-            'lipinski_compliant': int(df['lipinski_compliant'].sum()),
-            'lipinski_percentage': float(df['lipinski_compliant'].sum() / len(df) * 100),
-            'molecular_weight': {
-                'mean': float(df['molecular_weight'].mean()),
-                'std': float(df['molecular_weight'].std()),
-                'min': float(df['molecular_weight'].min()),
-                'max': float(df['molecular_weight'].max())
+            "total_molecules": len(df),
+            "lipinski_compliant": int(df["lipinski_compliant"].sum()),
+            "lipinski_percentage": float(df["lipinski_compliant"].sum() / len(df) * 100),
+            "molecular_weight": {
+                "mean": float(df["molecular_weight"].mean()),
+                "std": float(df["molecular_weight"].std()),
+                "min": float(df["molecular_weight"].min()),
+                "max": float(df["molecular_weight"].max()),
             },
-            'logp': {
-                'mean': float(df['logp'].mean()),
-                'std': float(df['logp'].std()),
-                'min': float(df['logp'].min()),
-                'max': float(df['logp'].max())
+            "logp": {
+                "mean": float(df["logp"].mean()),
+                "std": float(df["logp"].std()),
+                "min": float(df["logp"].min()),
+                "max": float(df["logp"].max()),
             },
-            'tpsa': {
-                'mean': float(df['tpsa'].mean()),
-                'std': float(df['tpsa'].std()),
-                'min': float(df['tpsa'].min()),
-                'max': float(df['tpsa'].max())
+            "tpsa": {
+                "mean": float(df["tpsa"].mean()),
+                "std": float(df["tpsa"].std()),
+                "min": float(df["tpsa"].min()),
+                "max": float(df["tpsa"].max()),
             },
-            'compound_classes': df['compound_class'].value_counts().to_dict()
+            "compound_classes": df["compound_class"].value_counts().to_dict(),
         }
 
         return stats
@@ -244,10 +243,18 @@ class MolecularPropertyQuery:
         df = pd.DataFrame(cleaned_items)
 
         # Ensure numeric columns
-        numeric_cols = ['molecular_weight', 'logp', 'tpsa', 'hbd', 'hba', 'rotatable_bonds', 'aromatic_rings']
+        numeric_cols = [
+            "molecular_weight",
+            "logp",
+            "tpsa",
+            "hbd",
+            "hba",
+            "rotatable_bonds",
+            "aromatic_rings",
+        ]
         for col in numeric_cols:
             if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
         return df
 
@@ -282,7 +289,7 @@ class MolecularPropertyQuery:
                     cleaned[key] = value
             cleaned_items.append(cleaned)
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(cleaned_items, f, indent=2)
 
         logger.info(f"Exported {len(items)} molecules to {output_file}")
@@ -300,27 +307,27 @@ class MolecularPropertyQuery:
 
         df = self.to_dataframe(items)
 
-        print(f"\n{'='*70}")
-        print(f"Molecular Property Summary")
-        print(f"{'='*70}")
+        print(f"\n{'=' * 70}")
+        print("Molecular Property Summary")
+        print(f"{'=' * 70}")
         print(f"\nTotal molecules: {len(df)}")
 
         # Lipinski compliance
-        lipinski_count = df['lipinski_compliant'].sum()
+        lipinski_count = df["lipinski_compliant"].sum()
         lipinski_pct = (lipinski_count / len(df)) * 100
         print(f"Lipinski compliant: {lipinski_count} ({lipinski_pct:.1f}%)")
 
         # Compound classes
-        print(f"\nCompound classes:")
-        for class_name, count in df['compound_class'].value_counts().items():
+        print("\nCompound classes:")
+        for class_name, count in df["compound_class"].value_counts().items():
             print(f"  {class_name}: {count}")
 
         # Property statistics
-        print(f"\nProperty Statistics:")
+        print("\nProperty Statistics:")
         print(f"{'Property':<20} {'Mean':<10} {'Std':<10} {'Min':<10} {'Max':<10}")
-        print(f"{'-'*70}")
+        print(f"{'-' * 70}")
 
-        for prop in ['molecular_weight', 'logp', 'tpsa']:
+        for prop in ["molecular_weight", "logp", "tpsa"]:
             if prop in df.columns:
                 mean = df[prop].mean()
                 std = df[prop].std()
@@ -328,78 +335,34 @@ class MolecularPropertyQuery:
                 max_val = df[prop].max()
                 print(f"{prop:<20} {mean:<10.2f} {std:<10.2f} {min_val:<10.2f} {max_val:<10.2f}")
 
-        print(f"\n{'='*70}\n")
+        print(f"\n{'=' * 70}\n")
 
         # Top 10 molecules by molecular weight
         print("Top 10 molecules by molecular weight:")
-        top_mw = df.nlargest(10, 'molecular_weight')[['name', 'molecular_weight', 'logp', 'lipinski_compliant']]
+        top_mw = df.nlargest(10, "molecular_weight")[
+            ["name", "molecular_weight", "logp", "lipinski_compliant"]
+        ]
         print(top_mw.to_string(index=False))
         print()
 
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Query molecular properties from DynamoDB'
-    )
+    parser = argparse.ArgumentParser(description="Query molecular properties from DynamoDB")
+    parser.add_argument("--table", default="MolecularProperties", help="DynamoDB table name")
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--profile", help="AWS profile name")
+    parser.add_argument("--compound-class", help="Filter by compound class")
+    parser.add_argument("--mw-max", type=float, help="Maximum molecular weight")
+    parser.add_argument("--logp-max", type=float, help="Maximum LogP")
     parser.add_argument(
-        '--table',
-        default='MolecularProperties',
-        help='DynamoDB table name'
+        "--lipinski-only", action="store_true", help="Only Lipinski-compliant molecules"
     )
-    parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
-    parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--compound-class',
-        help='Filter by compound class'
-    )
-    parser.add_argument(
-        '--mw-max',
-        type=float,
-        help='Maximum molecular weight'
-    )
-    parser.add_argument(
-        '--logp-max',
-        type=float,
-        help='Maximum LogP'
-    )
-    parser.add_argument(
-        '--lipinski-only',
-        action='store_true',
-        help='Only Lipinski-compliant molecules'
-    )
-    parser.add_argument(
-        '--drug-like',
-        action='store_true',
-        help='Find drug-like molecules'
-    )
-    parser.add_argument(
-        '--output',
-        help='Output file (CSV or JSON)'
-    )
-    parser.add_argument(
-        '--format',
-        choices=['csv', 'json'],
-        default='csv',
-        help='Output format'
-    )
-    parser.add_argument(
-        '--stats',
-        action='store_true',
-        help='Display statistics only'
-    )
-    parser.add_argument(
-        '--limit',
-        type=int,
-        help='Maximum number of results'
-    )
+    parser.add_argument("--drug-like", action="store_true", help="Find drug-like molecules")
+    parser.add_argument("--output", help="Output file (CSV or JSON)")
+    parser.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format")
+    parser.add_argument("--stats", action="store_true", help="Display statistics only")
+    parser.add_argument("--limit", type=int, help="Maximum number of results")
 
     args = parser.parse_args()
 
@@ -414,9 +377,7 @@ def main():
             items = query.find_drug_like()
         elif args.mw_max or args.logp_max or args.lipinski_only:
             items = query.filter_by_properties(
-                mw_max=args.mw_max,
-                logp_max=args.logp_max,
-                lipinski_only=args.lipinski_only
+                mw_max=args.mw_max, logp_max=args.logp_max, lipinski_only=args.lipinski_only
             )
         else:
             items = query.scan_all(limit=args.limit)
@@ -434,7 +395,7 @@ def main():
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if args.format == 'csv':
+            if args.format == "csv":
                 query.export_csv(items, args.output)
             else:
                 query.export_json(items, args.output)
@@ -442,11 +403,12 @@ def main():
     except Exception as e:
         logger.error(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

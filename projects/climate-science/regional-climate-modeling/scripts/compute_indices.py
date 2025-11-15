@@ -13,7 +13,6 @@ Usage:
 """
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 
@@ -48,11 +47,11 @@ class TemperatureIndices:
                 ref_data = tasmax.sel(
                     time=slice(str(reference_period[0]), str(reference_period[1]))
                 )
-                threshold = ref_data.quantile(threshold_percentile / 100, dim='time')
+                threshold = ref_data.quantile(threshold_percentile / 100, dim="time")
             else:
-                threshold = tasmax.quantile(threshold_percentile / 100, dim='time')
+                threshold = tasmax.quantile(threshold_percentile / 100, dim="time")
 
-            return ((tasmax > threshold).sum(dim='time') / len(tasmax.time) * 100)
+            return (tasmax > threshold).sum(dim="time") / len(tasmax.time) * 100
         else:
             threshold = np.percentile(tasmax, threshold_percentile)
             return (np.sum(tasmax > threshold) / len(tasmax)) * 100
@@ -69,11 +68,11 @@ class TemperatureIndices:
                 ref_data = tasmin.sel(
                     time=slice(str(reference_period[0]), str(reference_period[1]))
                 )
-                threshold = ref_data.quantile(threshold_percentile / 100, dim='time')
+                threshold = ref_data.quantile(threshold_percentile / 100, dim="time")
             else:
-                threshold = tasmin.quantile(threshold_percentile / 100, dim='time')
+                threshold = tasmin.quantile(threshold_percentile / 100, dim="time")
 
-            return ((tasmin < threshold).sum(dim='time') / len(tasmin.time) * 100)
+            return (tasmin < threshold).sum(dim="time") / len(tasmin.time) * 100
         else:
             threshold = np.percentile(tasmin, threshold_percentile)
             return (np.sum(tasmin < threshold) / len(tasmin)) * 100
@@ -156,7 +155,7 @@ class TemperatureIndices:
         Annual count of days with Tmax > threshold (default: 25°C).
         """
         if isinstance(tasmax, xr.DataArray):
-            return (tasmax > threshold).sum(dim='time')
+            return (tasmax > threshold).sum(dim="time")
         else:
             return np.sum(tasmax > threshold)
 
@@ -168,7 +167,7 @@ class TemperatureIndices:
         Annual count of days with Tmin < threshold (default: 0°C).
         """
         if isinstance(tasmin, xr.DataArray):
-            return (tasmin < threshold).sum(dim='time')
+            return (tasmin < threshold).sum(dim="time")
         else:
             return np.sum(tasmin < threshold)
 
@@ -180,7 +179,7 @@ class TemperatureIndices:
         Annual count of days with Tmin > threshold (default: 20°C).
         """
         if isinstance(tasmin, xr.DataArray):
-            return (tasmin > threshold).sum(dim='time')
+            return (tasmin > threshold).sum(dim="time")
         else:
             return np.sum(tasmin > threshold)
 
@@ -251,7 +250,7 @@ class PrecipitationIndices:
             Maximum daily precipitation
         """
         if isinstance(pr, xr.DataArray):
-            return pr.max(dim='time')
+            return pr.max(dim="time")
         else:
             return np.max(pr)
 
@@ -265,13 +264,13 @@ class PrecipitationIndices:
         if isinstance(pr, xr.DataArray):
             # Use rolling window
             rolling = pr.rolling(time=5).sum()
-            return rolling.max(dim='time')
+            return rolling.max(dim="time")
         else:
             if len(pr) < 5:
                 return np.sum(pr)
             max_sum = 0
             for i in range(len(pr) - 4):
-                window_sum = np.sum(pr[i:i+5])
+                window_sum = np.sum(pr[i : i + 5])
                 if window_sum > max_sum:
                     max_sum = window_sum
             return max_sum
@@ -311,7 +310,7 @@ class PrecipitationIndices:
             Precipitation threshold (default: 10 mm)
         """
         if isinstance(pr, xr.DataArray):
-            return (pr >= threshold).sum(dim='time')
+            return (pr >= threshold).sum(dim="time")
         else:
             return np.sum(pr >= threshold)
 
@@ -334,15 +333,13 @@ class PrecipitationIndices:
         """
         if isinstance(pr, xr.DataArray):
             if reference_period:
-                ref_data = pr.sel(
-                    time=slice(str(reference_period[0]), str(reference_period[1]))
-                )
+                ref_data = pr.sel(time=slice(str(reference_period[0]), str(reference_period[1])))
                 wet_days = ref_data.where(ref_data >= 1.0, drop=True)
             else:
                 wet_days = pr.where(pr >= 1.0, drop=True)
 
             threshold = wet_days.quantile(threshold_percentile / 100)
-            return pr.where(pr > threshold, 0).sum(dim='time')
+            return pr.where(pr > threshold, 0).sum(dim="time")
         else:
             wet_days = pr[pr >= 1.0]
             if len(wet_days) == 0:
@@ -404,7 +401,7 @@ class PrecipitationIndices:
         Sum of precipitation on days with precipitation >= threshold.
         """
         if isinstance(pr, xr.DataArray):
-            return pr.where(pr >= threshold, 0).sum(dim='time')
+            return pr.where(pr >= threshold, 0).sum(dim="time")
         else:
             return np.sum(pr[pr >= threshold])
 
@@ -436,34 +433,34 @@ def compute_all_indices(tasmax=None, tasmin=None, pr=None, reference_period=None
 
     # Temperature indices
     if tasmax is not None:
-        indices['TX90p'] = temp_idx.tx90p(tasmax, reference_period)
-        indices['SU'] = temp_idx.su(tasmax)
-        indices['WSDI'] = temp_idx.wsdi(tasmax)
+        indices["TX90p"] = temp_idx.tx90p(tasmax, reference_period)
+        indices["SU"] = temp_idx.su(tasmax)
+        indices["WSDI"] = temp_idx.wsdi(tasmax)
         if len(tasmax) >= 365:
-            indices['GSL'] = temp_idx.gsl(tasmax)
+            indices["GSL"] = temp_idx.gsl(tasmax)
 
     if tasmin is not None:
-        indices['TN10p'] = temp_idx.tn10p(tasmin, reference_period)
-        indices['FD'] = temp_idx.fd(tasmin)
-        indices['TR'] = temp_idx.tr(tasmin)
-        indices['CSDI'] = temp_idx.csdi(tasmin)
+        indices["TN10p"] = temp_idx.tn10p(tasmin, reference_period)
+        indices["FD"] = temp_idx.fd(tasmin)
+        indices["TR"] = temp_idx.tr(tasmin)
+        indices["CSDI"] = temp_idx.csdi(tasmin)
 
     # Precipitation indices
     if pr is not None:
-        indices['Rx1day'] = precip_idx.rx1day(pr)
-        indices['Rx5day'] = precip_idx.rx5day(pr)
-        indices['SDII'] = precip_idx.sdii(pr)
-        indices['R10mm'] = precip_idx.r10mm(pr)
-        indices['R20mm'] = precip_idx.r20mm(pr)
-        indices['R95p'] = precip_idx.r95p(pr, reference_period)
-        indices['CDD'] = precip_idx.cdd(pr)
-        indices['CWD'] = precip_idx.cwd(pr)
-        indices['PRCPTOT'] = precip_idx.prcptot(pr)
+        indices["Rx1day"] = precip_idx.rx1day(pr)
+        indices["Rx5day"] = precip_idx.rx5day(pr)
+        indices["SDII"] = precip_idx.sdii(pr)
+        indices["R10mm"] = precip_idx.r10mm(pr)
+        indices["R20mm"] = precip_idx.r20mm(pr)
+        indices["R95p"] = precip_idx.r95p(pr, reference_period)
+        indices["CDD"] = precip_idx.cdd(pr)
+        indices["CWD"] = precip_idx.cwd(pr)
+        indices["PRCPTOT"] = precip_idx.prcptot(pr)
 
     return indices
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Climate Extreme Indices Calculator")
     print("=" * 50)
@@ -473,8 +470,7 @@ if __name__ == '__main__':
     n_days = 365
 
     # Temperature data
-    tasmax = 15 + 10 * np.sin(2 * np.pi * np.arange(n_days) / 365) + \
-             np.random.normal(0, 2, n_days)
+    tasmax = 15 + 10 * np.sin(2 * np.pi * np.arange(n_days) / 365) + np.random.normal(0, 2, n_days)
     tasmin = tasmax - 5
 
     # Precipitation data (realistic: many zeros, occasional heavy rain)

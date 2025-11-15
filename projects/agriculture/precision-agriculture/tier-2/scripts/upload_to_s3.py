@@ -12,18 +12,16 @@ Usage:
 """
 
 import argparse
-import boto3
-import os
 import sys
 from pathlib import Path
-from datetime import datetime
-import json
+
+import boto3
 
 # AWS S3 client
-s3_client = boto3.client('s3')
+s3_client = boto3.client("s3")
 
 
-def upload_file_to_s3(bucket_name, file_path, field_id=None, prefix='raw/'):
+def upload_file_to_s3(bucket_name, file_path, field_id=None, prefix="raw/"):
     """
     Upload a single file to S3.
 
@@ -64,11 +62,11 @@ def upload_file_to_s3(bucket_name, file_path, field_id=None, prefix='raw/'):
             str(file_path),
             bucket_name,
             s3_key,
-            ExtraArgs={'ContentType': 'image/tiff'},
-            Callback=UploadProgressCallback(file_path)
+            ExtraArgs={"ContentType": "image/tiff"},
+            Callback=UploadProgressCallback(file_path),
         )
 
-        print(f"  ✓ Upload successful")
+        print("  ✓ Upload successful")
         return s3_key
 
     except Exception as e:
@@ -76,7 +74,7 @@ def upload_file_to_s3(bucket_name, file_path, field_id=None, prefix='raw/'):
         return None
 
 
-def upload_directory_to_s3(bucket_name, directory, file_pattern='*.tif', prefix='raw/'):
+def upload_directory_to_s3(bucket_name, directory, file_pattern="*.tif", prefix="raw/"):
     """
     Upload all matching files from a directory to S3.
 
@@ -110,34 +108,36 @@ def upload_directory_to_s3(bucket_name, directory, file_pattern='*.tif', prefix=
         # Extract field_id from filename if possible
         # Expected format: field_XXX_YYYYMMDD.tif
         field_id = None
-        parts = file_path.stem.split('_')
+        parts = file_path.stem.split("_")
         if len(parts) >= 2:
-            field_id = '_'.join(parts[:2])
+            field_id = "_".join(parts[:2])
 
         s3_key = upload_file_to_s3(bucket_name, file_path, field_id, prefix)
 
         if s3_key:
-            uploaded.append({
-                'file': file_path.name,
-                's3_key': s3_key,
-                'size_mb': file_path.stat().st_size / (1024 * 1024)
-            })
+            uploaded.append(
+                {
+                    "file": file_path.name,
+                    "s3_key": s3_key,
+                    "size_mb": file_path.stat().st_size / (1024 * 1024),
+                }
+            )
         else:
             failed.append(file_path.name)
 
     # Summary
     print("\n" + "=" * 60)
-    print(f"Upload Summary")
+    print("Upload Summary")
     print("=" * 60)
     print(f"Successful: {len(uploaded)}/{len(files)}")
     print(f"Failed: {len(failed)}/{len(files)}")
 
     if uploaded:
-        total_size = sum(item['size_mb'] for item in uploaded)
+        total_size = sum(item["size_mb"] for item in uploaded)
         print(f"Total uploaded: {total_size:.2f}MB")
 
     if failed:
-        print(f"\nFailed files:")
+        print("\nFailed files:")
         for filename in failed:
             print(f"  - {filename}")
 
@@ -157,19 +157,18 @@ class UploadProgressCallback:
         percent = (self.uploaded / self.file_size) * 100
         bar_length = 30
         filled = int(bar_length * self.uploaded / self.file_size)
-        bar = '█' * filled + '░' * (bar_length - filled)
-        print(f"  [{bar}] {percent:.1f}%", end='\r')
+        bar = "█" * filled + "░" * (bar_length - filled)
+        print(f"  [{bar}] {percent:.1f}%", end="\r")
 
 
 def create_sample_data(directory):
     """Create sample GeoTIFF file for testing."""
-    import numpy as np
 
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
 
     # Create simple sample data
-    sample_file = dir_path / 'field_001_20240615.tif'
+    sample_file = dir_path / "field_001_20240615.tif"
 
     if sample_file.exists():
         print(f"Sample file already exists: {sample_file}")
@@ -178,10 +177,10 @@ def create_sample_data(directory):
     print(f"Creating sample file: {sample_file}")
 
     # Create sample geotiff data (simplified for testing)
-    with open(sample_file, 'wb') as f:
+    with open(sample_file, "wb") as f:
         # Write a minimal GeoTIFF header + test data
         # For production, use rasterio to create proper GeoTIFFs
-        f.write(b'Sample GeoTIFF data for testing')
+        f.write(b"Sample GeoTIFF data for testing")
 
     print(f"  ✓ Sample file created ({sample_file.stat().st_size} bytes)")
     return sample_file
@@ -198,20 +197,20 @@ def verify_bucket_access(bucket_name):
         return False
 
 
-def list_bucket_contents(bucket_name, prefix='raw/'):
+def list_bucket_contents(bucket_name, prefix="raw/"):
     """List contents of bucket prefix."""
     try:
         response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
 
-        if 'Contents' not in response:
+        if "Contents" not in response:
             print(f"No objects in {prefix}")
             return []
 
-        objects = response['Contents']
+        objects = response["Contents"]
         print(f"\nObjects in s3://{bucket_name}/{prefix}:")
         for obj in objects:
-            size_mb = obj['Size'] / (1024 * 1024)
-            modified = obj['LastModified'].strftime('%Y-%m-%d %H:%M:%S')
+            size_mb = obj["Size"] / (1024 * 1024)
+            modified = obj["LastModified"].strftime("%Y-%m-%d %H:%M:%S")
             print(f"  - {obj['Key']:<50} {size_mb:>10.2f}MB  {modified}")
 
         return objects
@@ -224,9 +223,9 @@ def list_bucket_contents(bucket_name, prefix='raw/'):
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
-        description='Upload Sentinel-2 imagery to S3 for NDVI processing',
+        description="Upload Sentinel-2 imagery to S3 for NDVI processing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   # Upload single file
   python upload_to_s3.py --bucket satellite-imagery-12345 --file image.tif
@@ -239,45 +238,24 @@ Examples:
 
   # List uploaded files
   python upload_to_s3.py --bucket satellite-imagery-12345 --list
-        '''
+        """,
     )
 
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name (e.g., satellite-imagery-12345)'
+        "--bucket", required=True, help="S3 bucket name (e.g., satellite-imagery-12345)"
+    )
+    parser.add_argument("--file", help="Single file to upload")
+    parser.add_argument("--input", help="Directory containing files to upload")
+    parser.add_argument("--field-id", help="Field identifier for metadata (e.g., field_001)")
+    parser.add_argument(
+        "--sample", action="store_true", help="Create sample GeoTIFF file for testing"
+    )
+    parser.add_argument("--list", action="store_true", help="List files in bucket")
+    parser.add_argument(
+        "--pattern", default="*.tif", help="File pattern for directory upload (default: *.tif)"
     )
     parser.add_argument(
-        '--file',
-        help='Single file to upload'
-    )
-    parser.add_argument(
-        '--input',
-        help='Directory containing files to upload'
-    )
-    parser.add_argument(
-        '--field-id',
-        help='Field identifier for metadata (e.g., field_001)'
-    )
-    parser.add_argument(
-        '--sample',
-        action='store_true',
-        help='Create sample GeoTIFF file for testing'
-    )
-    parser.add_argument(
-        '--list',
-        action='store_true',
-        help='List files in bucket'
-    )
-    parser.add_argument(
-        '--pattern',
-        default='*.tif',
-        help='File pattern for directory upload (default: *.tif)'
-    )
-    parser.add_argument(
-        '--prefix',
-        default='raw/',
-        help='S3 prefix/folder for uploads (default: raw/)'
+        "--prefix", default="raw/", help="S3 prefix/folder for uploads (default: raw/)"
     )
 
     args = parser.parse_args()
@@ -295,9 +273,9 @@ Examples:
 
     elif args.sample:
         # Create and upload sample data
-        sample_file = create_sample_data('./sample_data')
+        sample_file = create_sample_data("./sample_data")
         if sample_file:
-            upload_file_to_s3(args.bucket, sample_file, 'field_001', args.prefix)
+            upload_file_to_s3(args.bucket, sample_file, "field_001", args.prefix)
             print(f"\n✓ Sample data uploaded to s3://{args.bucket}/{args.prefix}")
 
     elif args.file:
@@ -316,5 +294,5 @@ Examples:
     print("Upload complete!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

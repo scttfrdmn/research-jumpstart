@@ -6,13 +6,13 @@ from various sources. Data is stored in persistent SageMaker Studio Lab
 storage for instant access in future sessions.
 """
 
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import pandas as pd
+from typing import Optional
+
 import numpy as np
-from tqdm import tqdm
+import pandas as pd
 import requests
+from tqdm import tqdm
 
 
 def get_data_path(create_if_missing: bool = True) -> Path:
@@ -25,11 +25,11 @@ def get_data_path(create_if_missing: bool = True) -> Path:
     Returns:
         Path to data directory
     """
-    data_dir = Path(__file__).parent.parent / 'data'
+    data_dir = Path(__file__).parent.parent / "data"
     if create_if_missing:
         data_dir.mkdir(parents=True, exist_ok=True)
-        (data_dir / 'raw').mkdir(exist_ok=True)
-        (data_dir / 'processed').mkdir(exist_ok=True)
+        (data_dir / "raw").mkdir(exist_ok=True)
+        (data_dir / "processed").mkdir(exist_ok=True)
     return data_dir
 
 
@@ -45,20 +45,17 @@ def download_file(url: str, destination: Path, chunk_size: int = 8192) -> None:
     response = requests.get(url, stream=True)
     response.raise_for_status()
 
-    total_size = int(response.headers.get('content-length', 0))
+    total_size = int(response.headers.get("content-length", 0))
 
-    with open(destination, 'wb') as f:
-        with tqdm(total=total_size, unit='B', unit_scale=True) as pbar:
+    with open(destination, "wb") as f:
+        with tqdm(total=total_size, unit="B", unit_scale=True) as pbar:
             for chunk in response.iter_content(chunk_size=chunk_size):
                 if chunk:
                     f.write(chunk)
                     pbar.update(len(chunk))
 
 
-def download_corpus(
-    language: str,
-    force_download: bool = False
-) -> Path:
+def download_corpus(language: str, force_download: bool = False) -> Path:
     """
     Download dialect corpus for specified language.
 
@@ -70,7 +67,7 @@ def download_corpus(
         Path to downloaded corpus directory
     """
     data_dir = get_data_path()
-    corpus_dir = data_dir / 'raw' / f'{language}_dialects'
+    corpus_dir = data_dir / "raw" / f"{language}_dialects"
 
     if corpus_dir.exists() and not force_download:
         print(f"✓ {language.capitalize()} corpus already cached")
@@ -87,10 +84,8 @@ def download_corpus(
 
 
 def load_dialect_corpus(
-    language: str,
-    split: Optional[str] = None,
-    force_download: bool = False
-) -> Dict[str, pd.DataFrame]:
+    language: str, split: Optional[str] = None, force_download: bool = False
+) -> dict[str, pd.DataFrame]:
     """
     Load dialect corpus for specified language.
 
@@ -102,11 +97,11 @@ def load_dialect_corpus(
     Returns:
         Dictionary with 'audio_paths', 'transcriptions', 'dialects'
     """
-    corpus_dir = download_corpus(language, force_download)
+    download_corpus(language, force_download)
 
     # Load cached processed data if available
     data_dir = get_data_path()
-    processed_file = data_dir / 'processed' / f'{language}_processed.pkl'
+    processed_file = data_dir / "processed" / f"{language}_processed.pkl"
 
     if processed_file.exists() and not force_download:
         print(f"✓ Loading cached {language} data")
@@ -116,12 +111,7 @@ def load_dialect_corpus(
     # In real implementation, would parse audio files and annotations
     print(f"Processing {language} corpus...")
 
-    data = {
-        'audio_paths': [],
-        'transcriptions': [],
-        'dialects': [],
-        'language': language
-    }
+    data = {"audio_paths": [], "transcriptions": [], "dialects": [], "language": language}
 
     # Save processed data for future use
     processed_file.parent.mkdir(parents=True, exist_ok=True)
@@ -130,10 +120,7 @@ def load_dialect_corpus(
     return data
 
 
-def load_multiple_languages(
-    languages: List[str],
-    force_download: bool = False
-) -> Dict[str, Dict]:
+def load_multiple_languages(languages: list[str], force_download: bool = False) -> dict[str, dict]:
     """
     Load dialect corpora for multiple languages.
 
@@ -150,7 +137,7 @@ def load_multiple_languages(
     return corpora
 
 
-def get_dialect_statistics(corpus_data: Dict) -> pd.DataFrame:
+def get_dialect_statistics(corpus_data: dict) -> pd.DataFrame:
     """
     Calculate statistics about dialect distribution in corpus.
 
@@ -160,24 +147,24 @@ def get_dialect_statistics(corpus_data: Dict) -> pd.DataFrame:
     Returns:
         DataFrame with dialect statistics
     """
-    if not corpus_data.get('dialects'):
+    if not corpus_data.get("dialects"):
         return pd.DataFrame()
 
-    df = pd.DataFrame({'dialect': corpus_data['dialects']})
-    stats = df['dialect'].value_counts().reset_index()
-    stats.columns = ['dialect', 'count']
-    stats['percentage'] = 100 * stats['count'] / stats['count'].sum()
+    df = pd.DataFrame({"dialect": corpus_data["dialects"]})
+    stats = df["dialect"].value_counts().reset_index()
+    stats.columns = ["dialect", "count"]
+    stats["percentage"] = 100 * stats["count"] / stats["count"].sum()
 
     return stats
 
 
 def create_train_val_test_split(
-    corpus_data: Dict,
+    corpus_data: dict,
     train_ratio: float = 0.7,
     val_ratio: float = 0.15,
     test_ratio: float = 0.15,
-    random_seed: int = 42
-) -> Tuple[Dict, Dict, Dict]:
+    random_seed: int = 42,
+) -> tuple[dict, dict, dict]:
     """
     Split corpus into train/validation/test sets.
 
@@ -193,7 +180,7 @@ def create_train_val_test_split(
     """
     np.random.seed(random_seed)
 
-    n = len(corpus_data['dialects'])
+    n = len(corpus_data["dialects"])
     indices = np.random.permutation(n)
 
     train_end = int(n * train_ratio)
@@ -205,9 +192,9 @@ def create_train_val_test_split(
 
     def split_data(idx):
         return {
-            'audio_paths': [corpus_data['audio_paths'][i] for i in idx],
-            'transcriptions': [corpus_data['transcriptions'][i] for i in idx],
-            'dialects': [corpus_data['dialects'][i] for i in idx],
+            "audio_paths": [corpus_data["audio_paths"][i] for i in idx],
+            "transcriptions": [corpus_data["transcriptions"][i] for i in idx],
+            "dialects": [corpus_data["dialects"][i] for i in idx],
         }
 
     return split_data(train_idx), split_data(val_idx), split_data(test_idx)

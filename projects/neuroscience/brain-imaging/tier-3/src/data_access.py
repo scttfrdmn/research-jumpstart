@@ -4,14 +4,14 @@ Data access module for neuroimaging datasets.
 Provides classes for loading data from OpenNeuro, HCP, and other public repositories.
 """
 
-import os
-from typing import List, Optional, Dict
+import logging
 from pathlib import Path
-import pandas as pd
-import nibabel as nib
+from typing import Optional
+
 import boto3
 import botocore
-import logging
+import nibabel as nib
+import pandas as pd
 from bids import BIDSLayout
 
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class OpenNeuroLoader:
     """Load neuroimaging data from OpenNeuro S3 bucket."""
 
-    def __init__(self, bucket_name: Optional[str] = None, local_cache: str = './data'):
+    def __init__(self, bucket_name: Optional[str] = None, local_cache: str = "./data"):
         """
         Initialize OpenNeuro data loader.
 
@@ -29,15 +29,15 @@ class OpenNeuroLoader:
             bucket_name: Target S3 bucket for caching (if None, downloads to local only)
             local_cache: Local directory for caching data
         """
-        self.source_bucket = 'openneuro.org'
+        self.source_bucket = "openneuro.org"
         self.bucket_name = bucket_name
         self.local_cache = Path(local_cache)
         self.local_cache.mkdir(parents=True, exist_ok=True)
 
-        self.s3_client = boto3.client('s3')
-        self.s3_resource = boto3.resource('s3')
+        self.s3_client = boto3.client("s3")
+        self.s3_resource = boto3.resource("s3")
 
-    def list_datasets(self, prefix: str = 'ds') -> List[str]:
+    def list_datasets(self, prefix: str = "ds") -> list[str]:
         """
         List available datasets on OpenNeuro.
 
@@ -49,24 +49,20 @@ class OpenNeuroLoader:
         """
         logger.info("Listing OpenNeuro datasets...")
 
-        paginator = self.s3_client.get_paginator('list_objects_v2')
-        pages = paginator.paginate(
-            Bucket=self.source_bucket,
-            Delimiter='/',
-            Prefix=prefix
-        )
+        paginator = self.s3_client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=self.source_bucket, Delimiter="/", Prefix=prefix)
 
         datasets = []
         for page in pages:
-            if 'CommonPrefixes' in page:
-                for prefix_obj in page['CommonPrefixes']:
-                    dataset_id = prefix_obj['Prefix'].rstrip('/')
+            if "CommonPrefixes" in page:
+                for prefix_obj in page["CommonPrefixes"]:
+                    dataset_id = prefix_obj["Prefix"].rstrip("/")
                     datasets.append(dataset_id)
 
         logger.info(f"Found {len(datasets)} datasets")
         return sorted(datasets)
 
-    def get_dataset_info(self, dataset: str) -> Dict:
+    def get_dataset_info(self, dataset: str) -> dict:
         """
         Get dataset description and metadata.
 
@@ -82,10 +78,10 @@ class OpenNeuroLoader:
         try:
             obj = self.s3_client.get_object(
                 Bucket=self.source_bucket,
-                Key=f'{dataset}/dataset_description.json',
-                RequestPayer='requester'
+                Key=f"{dataset}/dataset_description.json",
+                RequestPayer="requester",
             )
-            description = json.loads(obj['Body'].read())
+            description = json.loads(obj["Body"].read())
         except botocore.exceptions.ClientError:
             description = {}
 
@@ -93,21 +89,17 @@ class OpenNeuroLoader:
         try:
             obj = self.s3_client.get_object(
                 Bucket=self.source_bucket,
-                Key=f'{dataset}/participants.tsv',
-                RequestPayer='requester'
+                Key=f"{dataset}/participants.tsv",
+                RequestPayer="requester",
             )
-            participants = pd.read_csv(obj['Body'], sep='\t')
-            description['n_subjects'] = len(participants)
+            participants = pd.read_csv(obj["Body"], sep="\t")
+            description["n_subjects"] = len(participants)
         except botocore.exceptions.ClientError:
             participants = None
 
-        return {
-            'dataset_id': dataset,
-            'description': description,
-            'participants': participants
-        }
+        return {"dataset_id": dataset, "description": description, "participants": participants}
 
-    def list_subjects(self, dataset: str) -> List[str]:
+    def list_subjects(self, dataset: str) -> list[str]:
         """
         List subjects in a dataset.
 
@@ -119,32 +111,27 @@ class OpenNeuroLoader:
         """
         logger.info(f"Listing subjects in {dataset}...")
 
-        paginator = self.s3_client.get_paginator('list_objects_v2')
+        paginator = self.s3_client.get_paginator("list_objects_v2")
         pages = paginator.paginate(
             Bucket=self.source_bucket,
-            Prefix=f'{dataset}/sub-',
-            Delimiter='/',
-            RequestPayer='requester'
+            Prefix=f"{dataset}/sub-",
+            Delimiter="/",
+            RequestPayer="requester",
         )
 
         subjects = []
         for page in pages:
-            if 'CommonPrefixes' in page:
-                for prefix_obj in page['CommonPrefixes']:
-                    subject_path = prefix_obj['Prefix']
+            if "CommonPrefixes" in page:
+                for prefix_obj in page["CommonPrefixes"]:
+                    subject_path = prefix_obj["Prefix"]
                     # Extract subject ID (e.g., 'sub-10159' from 'ds000030/sub-10159/')
-                    subject_id = subject_path.split('/')[-2]
+                    subject_id = subject_path.split("/")[-2]
                     subjects.append(subject_id)
 
         logger.info(f"Found {len(subjects)} subjects")
         return sorted(subjects)
 
-    def download_file(
-        self,
-        dataset: str,
-        s3_key: str,
-        local_path: Optional[Path] = None
-    ) -> Path:
+    def download_file(self, dataset: str, s3_key: str, local_path: Optional[Path] = None) -> Path:
         """
         Download a file from OpenNeuro.
 
@@ -167,14 +154,14 @@ class OpenNeuroLoader:
             return local_path
 
         # Download from OpenNeuro
-        full_key = f'{dataset}/{s3_key}'
+        full_key = f"{dataset}/{s3_key}"
         logger.info(f"Downloading {full_key}...")
 
         self.s3_client.download_file(
             Bucket=self.source_bucket,
             Key=full_key,
             Filename=str(local_path),
-            ExtraArgs={'RequestPayer': 'requester'}
+            ExtraArgs={"RequestPayer": "requester"},
         )
 
         logger.info(f"Downloaded to {local_path}")
@@ -182,20 +169,15 @@ class OpenNeuroLoader:
         # Upload to user's bucket if specified
         if self.bucket_name:
             self.s3_client.upload_file(
-                Filename=str(local_path),
-                Bucket=self.bucket_name,
-                Key=full_key
+                Filename=str(local_path), Bucket=self.bucket_name, Key=full_key
             )
             logger.info(f"Uploaded to s3://{self.bucket_name}/{full_key}")
 
         return local_path
 
     def download_subject(
-        self,
-        dataset: str,
-        subject: str,
-        modalities: Optional[List[str]] = None
-    ) -> Dict[str, Path]:
+        self, dataset: str, subject: str, modalities: Optional[list[str]] = None
+    ) -> dict[str, Path]:
         """
         Download all files for a subject.
 
@@ -211,23 +193,21 @@ class OpenNeuroLoader:
         logger.info(f"Downloading {subject} from {dataset}...")
 
         # List all files for this subject
-        prefix = f'{dataset}/{subject}/'
-        paginator = self.s3_client.get_paginator('list_objects_v2')
+        prefix = f"{dataset}/{subject}/"
+        paginator = self.s3_client.get_paginator("list_objects_v2")
         pages = paginator.paginate(
-            Bucket=self.source_bucket,
-            Prefix=prefix,
-            RequestPayer='requester'
+            Bucket=self.source_bucket, Prefix=prefix, RequestPayer="requester"
         )
 
         files = {}
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                key = obj['Key']
+            for obj in page["Contents"]:
+                key = obj["Key"]
                 # Get modality from path
-                parts = key.split('/')
+                parts = key.split("/")
                 if len(parts) < 3:
                     continue
 
@@ -238,7 +218,7 @@ class OpenNeuroLoader:
                     continue
 
                 # Download file
-                relative_key = '/'.join(parts[1:])  # Remove dataset prefix
+                relative_key = "/".join(parts[1:])  # Remove dataset prefix
                 local_path = self.download_file(dataset, relative_key)
 
                 # Store in dictionary
@@ -252,7 +232,7 @@ class OpenNeuroLoader:
         self,
         dataset: str,
         max_subjects: Optional[int] = None,
-        modalities: Optional[List[str]] = None
+        modalities: Optional[list[str]] = None,
     ):
         """
         Sync entire dataset (or subset) to local cache and S3.
@@ -309,11 +289,11 @@ class HCPLoader:
         Args:
             bucket_name: S3 bucket for caching
         """
-        self.source_bucket = 'hcp-openaccess'
+        self.source_bucket = "hcp-openaccess"
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3")
 
-    def list_subjects(self) -> List[str]:
+    def list_subjects(self) -> list[str]:
         """
         List available HCP subjects.
 
@@ -322,20 +302,17 @@ class HCPLoader:
         """
         logger.info("Listing HCP subjects...")
 
-        paginator = self.s3_client.get_paginator('list_objects_v2')
+        paginator = self.s3_client.get_paginator("list_objects_v2")
         pages = paginator.paginate(
-            Bucket=self.source_bucket,
-            Prefix='HCP_1200/',
-            Delimiter='/',
-            RequestPayer='requester'
+            Bucket=self.source_bucket, Prefix="HCP_1200/", Delimiter="/", RequestPayer="requester"
         )
 
         subjects = []
         for page in pages:
-            if 'CommonPrefixes' in page:
-                for prefix_obj in page['CommonPrefixes']:
-                    subject_path = prefix_obj['Prefix']
-                    subject_id = subject_path.split('/')[-2]
+            if "CommonPrefixes" in page:
+                for prefix_obj in page["CommonPrefixes"]:
+                    subject_path = prefix_obj["Prefix"]
+                    subject_id = subject_path.split("/")[-2]
                     # HCP subject IDs are 6-digit numbers
                     if subject_id.isdigit() and len(subject_id) == 6:
                         subjects.append(subject_id)
@@ -344,10 +321,8 @@ class HCPLoader:
         return sorted(subjects)
 
     def download_structural(
-        self,
-        subject: str,
-        local_path: Optional[Path] = None
-    ) -> Dict[str, Path]:
+        self, subject: str, local_path: Optional[Path] = None
+    ) -> dict[str, Path]:
         """
         Download structural scans for an HCP subject.
 
@@ -359,16 +334,16 @@ class HCPLoader:
             Dictionary of downloaded files
         """
         files = {
-            'T1w': f'HCP_1200/{subject}/T1w/T1w_acpc_dc_restore.nii.gz',
-            'T2w': f'HCP_1200/{subject}/T1w/T2w_acpc_dc_restore.nii.gz',
+            "T1w": f"HCP_1200/{subject}/T1w/T1w_acpc_dc_restore.nii.gz",
+            "T2w": f"HCP_1200/{subject}/T1w/T2w_acpc_dc_restore.nii.gz",
         }
 
         downloaded = {}
         for name, s3_key in files.items():
             if local_path:
-                local_file = local_path / f'{subject}_{name}.nii.gz'
+                local_file = local_path / f"{subject}_{name}.nii.gz"
             else:
-                local_file = Path(f'./data/HCP/{subject}_{name}.nii.gz')
+                local_file = Path(f"./data/HCP/{subject}_{name}.nii.gz")
 
             local_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -377,7 +352,7 @@ class HCPLoader:
                 Bucket=self.source_bucket,
                 Key=s3_key,
                 Filename=str(local_file),
-                ExtraArgs={'RequestPayer': 'requester'}
+                ExtraArgs={"RequestPayer": "requester"},
             )
 
             downloaded[name] = local_file
@@ -391,15 +366,11 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Download neuroimaging data')
-    parser.add_argument('--dataset', type=str, default='ds000030',
-                       help='Dataset ID')
-    parser.add_argument('--subject', type=str,
-                       help='Subject ID')
-    parser.add_argument('--list-datasets', action='store_true',
-                       help='List available datasets')
-    parser.add_argument('--list-subjects', action='store_true',
-                       help='List subjects in dataset')
+    parser = argparse.ArgumentParser(description="Download neuroimaging data")
+    parser.add_argument("--dataset", type=str, default="ds000030", help="Dataset ID")
+    parser.add_argument("--subject", type=str, help="Subject ID")
+    parser.add_argument("--list-datasets", action="store_true", help="List available datasets")
+    parser.add_argument("--list-subjects", action="store_true", help="List subjects in dataset")
     args = parser.parse_args()
 
     loader = OpenNeuroLoader()
@@ -417,15 +388,11 @@ def main():
             print(f"  {subj}")
 
     elif args.subject:
-        files = loader.download_subject(
-            args.dataset,
-            args.subject,
-            modalities=['anat']
-        )
+        files = loader.download_subject(args.dataset, args.subject, modalities=["anat"])
         print(f"Downloaded {len(files)} files:")
         for filename, path in files.items():
             print(f"  {filename}: {path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

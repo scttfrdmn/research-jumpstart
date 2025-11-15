@@ -14,25 +14,25 @@ Environment Variables:
     AWS_REGION: AWS region (default: us-east-1)
 """
 
-import os
-import json
 import argparse
-from datetime import datetime
-from typing import List, Dict, Any, Optional
+import json
+import os
 from decimal import Decimal
+from typing import Any, Optional
+
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
-from botocore.exceptions import ClientError
 import pandas as pd
+from boto3.dynamodb.conditions import Attr
+from botocore.exceptions import ClientError
 
 
 def get_aws_clients():
     """Create and return AWS clients."""
-    region = os.environ.get('AWS_REGION', 'us-east-1')
-    dynamodb = boto3.resource('dynamodb', region_name=region)
-    s3_client = boto3.client('s3', region_name=region)
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    dynamodb = boto3.resource("dynamodb", region_name=region)
+    s3_client = boto3.client("s3", region_name=region)
 
-    table_name = os.environ.get('AWS_DYNAMODB_TABLE', 'QuantumResults')
+    table_name = os.environ.get("AWS_DYNAMODB_TABLE", "QuantumResults")
     table = dynamodb.Table(table_name)
 
     return table, s3_client
@@ -49,7 +49,7 @@ def decimal_to_float(obj):
     return obj
 
 
-def scan_all_results(table) -> List[Dict[str, Any]]:
+def scan_all_results(table) -> list[dict[str, Any]]:
     """
     Scan all results from DynamoDB table.
 
@@ -63,12 +63,12 @@ def scan_all_results(table) -> List[Dict[str, Any]]:
 
     try:
         response = table.scan()
-        items = response.get('Items', [])
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
-            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            items.extend(response.get('Items', []))
+        while "LastEvaluatedKey" in response:
+            response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+            items.extend(response.get("Items", []))
 
         print(f"✅ Found {len(items)} results")
         return items
@@ -78,7 +78,7 @@ def scan_all_results(table) -> List[Dict[str, Any]]:
         return []
 
 
-def query_by_algorithm(table, algorithm_type: str) -> List[Dict[str, Any]]:
+def query_by_algorithm(table, algorithm_type: str) -> list[dict[str, Any]]:
     """
     Query results by algorithm type using a scan with filter.
 
@@ -92,18 +92,16 @@ def query_by_algorithm(table, algorithm_type: str) -> List[Dict[str, Any]]:
     print(f"🔍 Querying circuits of type: {algorithm_type}")
 
     try:
-        response = table.scan(
-            FilterExpression=Attr('AlgorithmType').eq(algorithm_type)
-        )
-        items = response.get('Items', [])
+        response = table.scan(FilterExpression=Attr("AlgorithmType").eq(algorithm_type))
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
+        while "LastEvaluatedKey" in response:
             response = table.scan(
-                FilterExpression=Attr('AlgorithmType').eq(algorithm_type),
-                ExclusiveStartKey=response['LastEvaluatedKey']
+                FilterExpression=Attr("AlgorithmType").eq(algorithm_type),
+                ExclusiveStartKey=response["LastEvaluatedKey"],
             )
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
         print(f"✅ Found {len(items)} {algorithm_type} circuits")
         return items
@@ -113,7 +111,7 @@ def query_by_algorithm(table, algorithm_type: str) -> List[Dict[str, Any]]:
         return []
 
 
-def query_by_qubit_count(table, min_qubits: int, max_qubits: int) -> List[Dict[str, Any]]:
+def query_by_qubit_count(table, min_qubits: int, max_qubits: int) -> list[dict[str, Any]]:
     """
     Query results by qubit count range.
 
@@ -128,18 +126,16 @@ def query_by_qubit_count(table, min_qubits: int, max_qubits: int) -> List[Dict[s
     print(f"🔍 Querying circuits with {min_qubits}-{max_qubits} qubits")
 
     try:
-        response = table.scan(
-            FilterExpression=Attr('NumQubits').between(min_qubits, max_qubits)
-        )
-        items = response.get('Items', [])
+        response = table.scan(FilterExpression=Attr("NumQubits").between(min_qubits, max_qubits))
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
+        while "LastEvaluatedKey" in response:
             response = table.scan(
-                FilterExpression=Attr('NumQubits').between(min_qubits, max_qubits),
-                ExclusiveStartKey=response['LastEvaluatedKey']
+                FilterExpression=Attr("NumQubits").between(min_qubits, max_qubits),
+                ExclusiveStartKey=response["LastEvaluatedKey"],
             )
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
         print(f"✅ Found {len(items)} circuits")
         return items
@@ -149,7 +145,7 @@ def query_by_qubit_count(table, min_qubits: int, max_qubits: int) -> List[Dict[s
         return []
 
 
-def query_high_fidelity(table, min_fidelity: float = 0.95) -> List[Dict[str, Any]]:
+def query_high_fidelity(table, min_fidelity: float = 0.95) -> list[dict[str, Any]]:
     """
     Query results with high fidelity.
 
@@ -163,18 +159,16 @@ def query_high_fidelity(table, min_fidelity: float = 0.95) -> List[Dict[str, Any
     print(f"🔍 Querying circuits with fidelity ≥ {min_fidelity}")
 
     try:
-        response = table.scan(
-            FilterExpression=Attr('Fidelity').gte(Decimal(str(min_fidelity)))
-        )
-        items = response.get('Items', [])
+        response = table.scan(FilterExpression=Attr("Fidelity").gte(Decimal(str(min_fidelity))))
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
+        while "LastEvaluatedKey" in response:
             response = table.scan(
-                FilterExpression=Attr('Fidelity').gte(Decimal(str(min_fidelity))),
-                ExclusiveStartKey=response['LastEvaluatedKey']
+                FilterExpression=Attr("Fidelity").gte(Decimal(str(min_fidelity))),
+                ExclusiveStartKey=response["LastEvaluatedKey"],
             )
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
         print(f"✅ Found {len(items)} high-fidelity circuits")
         return items
@@ -184,7 +178,7 @@ def query_high_fidelity(table, min_fidelity: float = 0.95) -> List[Dict[str, Any
         return []
 
 
-def format_results_table(items: List[Dict[str, Any]]) -> pd.DataFrame:
+def format_results_table(items: list[dict[str, Any]]) -> pd.DataFrame:
     """
     Format results as a pandas DataFrame for display.
 
@@ -201,30 +195,32 @@ def format_results_table(items: List[Dict[str, Any]]) -> pd.DataFrame:
     data = []
     for item in items:
         item = decimal_to_float(item)
-        data.append({
-            'Circuit ID': item.get('CircuitID', 'N/A'),
-            'Algorithm': item.get('AlgorithmType', 'N/A'),
-            'Qubits': item.get('NumQubits', 0),
-            'Gates': item.get('NumGates', 0),
-            'Fidelity': f"{item.get('Fidelity', 0):.3f}",
-            'Entanglement': f"{item.get('Entanglement', 0):.3f}",
-            'Exec Time (ms)': item.get('ExecutionTimeMs', 0),
-            'Timestamp': item.get('Timestamp', 'N/A')[:19]  # Truncate timestamp
-        })
+        data.append(
+            {
+                "Circuit ID": item.get("CircuitID", "N/A"),
+                "Algorithm": item.get("AlgorithmType", "N/A"),
+                "Qubits": item.get("NumQubits", 0),
+                "Gates": item.get("NumGates", 0),
+                "Fidelity": f"{item.get('Fidelity', 0):.3f}",
+                "Entanglement": f"{item.get('Entanglement', 0):.3f}",
+                "Exec Time (ms)": item.get("ExecutionTimeMs", 0),
+                "Timestamp": item.get("Timestamp", "N/A")[:19],  # Truncate timestamp
+            }
+        )
 
     df = pd.DataFrame(data)
     return df
 
 
-def display_measurement_probabilities(item: Dict[str, Any]):
+def display_measurement_probabilities(item: dict[str, Any]):
     """
     Display measurement probabilities for a circuit.
 
     Args:
         item: DynamoDB item
     """
-    circuit_id = item.get('CircuitID', 'Unknown')
-    probs = item.get('MeasurementProbabilities', {})
+    circuit_id = item.get("CircuitID", "Unknown")
+    probs = item.get("MeasurementProbabilities", {})
 
     if not probs:
         print(f"  No measurement data for {circuit_id}")
@@ -233,7 +229,7 @@ def display_measurement_probabilities(item: Dict[str, Any]):
     print(f"\n  Circuit: {circuit_id}")
     print(f"  Algorithm: {item.get('AlgorithmType', 'N/A')}")
     print(f"  Qubits: {item.get('NumQubits', 0)}")
-    print(f"  Measurement Probabilities:")
+    print("  Measurement Probabilities:")
 
     # Sort by probability (descending)
     sorted_probs = sorted(probs.items(), key=lambda x: float(x[1]), reverse=True)
@@ -241,12 +237,13 @@ def display_measurement_probabilities(item: Dict[str, Any]):
     for state, prob in sorted_probs[:10]:  # Show top 10
         prob_float = float(prob)
         bar_length = int(prob_float * 50)
-        bar = '█' * bar_length
+        bar = "█" * bar_length
         print(f"    |{state}⟩: {prob_float:.4f} {bar}")
 
 
-def download_detailed_results(s3_client, bucket_name: str,
-                              s3_key: str, output_dir: str = 'results') -> Optional[Dict]:
+def download_detailed_results(
+    s3_client, bucket_name: str, s3_key: str, output_dir: str = "results"
+) -> Optional[dict]:
     """
     Download detailed results from S3.
 
@@ -268,7 +265,7 @@ def download_detailed_results(s3_client, bucket_name: str,
         s3_client.download_file(bucket_name, s3_key, local_filename)
 
         # Read and parse JSON
-        with open(local_filename, 'r') as f:
+        with open(local_filename) as f:
             data = json.load(f)
 
         print(f"  ✅ Downloaded: {local_filename}")
@@ -279,7 +276,7 @@ def download_detailed_results(s3_client, bucket_name: str,
         return None
 
 
-def calculate_statistics(items: List[Dict[str, Any]]):
+def calculate_statistics(items: list[dict[str, Any]]):
     """
     Calculate and display statistics across all results.
 
@@ -299,7 +296,7 @@ def calculate_statistics(items: List[Dict[str, Any]]):
     algorithm_time = {}
 
     for item in items:
-        algo = item.get('AlgorithmType', 'unknown')
+        algo = item.get("AlgorithmType", "unknown")
         algorithm_counts[algo] = algorithm_counts.get(algo, 0) + 1
 
         if algo not in algorithm_qubits:
@@ -307,9 +304,9 @@ def calculate_statistics(items: List[Dict[str, Any]]):
             algorithm_fidelity[algo] = []
             algorithm_time[algo] = []
 
-        algorithm_qubits[algo].append(item.get('NumQubits', 0))
-        algorithm_fidelity[algo].append(item.get('Fidelity', 0))
-        algorithm_time[algo].append(item.get('ExecutionTimeMs', 0))
+        algorithm_qubits[algo].append(item.get("NumQubits", 0))
+        algorithm_fidelity[algo].append(item.get("Fidelity", 0))
+        algorithm_time[algo].append(item.get("ExecutionTimeMs", 0))
 
     print("\n" + "=" * 70)
     print("Circuit Statistics by Algorithm Type")
@@ -331,24 +328,35 @@ def calculate_statistics(items: List[Dict[str, Any]]):
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
-        description='Query quantum circuit simulation results from DynamoDB'
+        description="Query quantum circuit simulation results from DynamoDB"
     )
-    parser.add_argument('--algorithm', '-a', type=str,
-                       help='Filter by algorithm type (bell, grover, ghz, vqe, etc.)')
-    parser.add_argument('--min-qubits', type=int,
-                       help='Minimum number of qubits')
-    parser.add_argument('--max-qubits', type=int,
-                       help='Maximum number of qubits')
-    parser.add_argument('--min-fidelity', type=float, default=0.0,
-                       help='Minimum fidelity threshold (default: 0.0)')
-    parser.add_argument('--show-measurements', '-m', action='store_true',
-                       help='Show measurement probabilities')
-    parser.add_argument('--download-results', '-d', action='store_true',
-                       help='Download detailed results from S3')
-    parser.add_argument('--stats', '-s', action='store_true',
-                       help='Show statistics across all results')
-    parser.add_argument('--output', '-o', type=str, default='results.csv',
-                       help='Output CSV filename (default: results.csv)')
+    parser.add_argument(
+        "--algorithm",
+        "-a",
+        type=str,
+        help="Filter by algorithm type (bell, grover, ghz, vqe, etc.)",
+    )
+    parser.add_argument("--min-qubits", type=int, help="Minimum number of qubits")
+    parser.add_argument("--max-qubits", type=int, help="Maximum number of qubits")
+    parser.add_argument(
+        "--min-fidelity", type=float, default=0.0, help="Minimum fidelity threshold (default: 0.0)"
+    )
+    parser.add_argument(
+        "--show-measurements", "-m", action="store_true", help="Show measurement probabilities"
+    )
+    parser.add_argument(
+        "--download-results", "-d", action="store_true", help="Download detailed results from S3"
+    )
+    parser.add_argument(
+        "--stats", "-s", action="store_true", help="Show statistics across all results"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default="results.csv",
+        help="Output CSV filename (default: results.csv)",
+    )
 
     args = parser.parse_args()
 
@@ -400,7 +408,7 @@ def main():
 
     # Download detailed results if requested
     if args.download_results:
-        bucket_name = os.environ.get('AWS_S3_BUCKET')
+        bucket_name = os.environ.get("AWS_S3_BUCKET")
         if not bucket_name:
             print("⚠️  AWS_S3_BUCKET not set, skipping download")
         else:
@@ -408,7 +416,7 @@ def main():
             print("Downloading Detailed Results from S3")
             print("=" * 70)
             for item in items:
-                s3_key = item.get('S3ResultsKey')
+                s3_key = item.get("S3ResultsKey")
                 if s3_key:
                     download_detailed_results(s3_client, bucket_name, s3_key)
             print()
@@ -426,9 +434,9 @@ def main():
 
     if items:
         items_float = [decimal_to_float(item) for item in items]
-        avg_qubits = sum(item.get('NumQubits', 0) for item in items_float) / len(items_float)
-        avg_fidelity = sum(item.get('Fidelity', 0) for item in items_float) / len(items_float)
-        avg_time = sum(item.get('ExecutionTimeMs', 0) for item in items_float) / len(items_float)
+        avg_qubits = sum(item.get("NumQubits", 0) for item in items_float) / len(items_float)
+        avg_fidelity = sum(item.get("Fidelity", 0) for item in items_float) / len(items_float)
+        avg_time = sum(item.get("ExecutionTimeMs", 0) for item in items_float) / len(items_float)
 
         print(f"Average qubits: {avg_qubits:.1f}")
         print(f"Average fidelity: {avg_fidelity:.3f}")
@@ -449,6 +457,7 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(main())

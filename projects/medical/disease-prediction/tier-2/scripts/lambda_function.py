@@ -20,34 +20,34 @@ Environment Variables:
 Supported formats: PNG, JPG, JPEG, DICOM
 """
 
-import json
-import os
 import io
+import json
+import logging
+import os
 import time
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Tuple, Optional
+from typing import Any, Optional
 
 import boto3
 import numpy as np
 from PIL import Image
-import logging
 
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # AWS clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 
 # Environment variables
-PROCESSED_BUCKET = os.environ.get('PROCESSED_BUCKET', os.environ.get('S3_BUCKET_NAME'))
-DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE', 'medical-predictions')
-TARGET_IMAGE_SIZE = int(os.environ.get('IMAGE_SIZE', 224))
+PROCESSED_BUCKET = os.environ.get("PROCESSED_BUCKET", os.environ.get("S3_BUCKET_NAME"))
+DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "medical-predictions")
+TARGET_IMAGE_SIZE = int(os.environ.get("IMAGE_SIZE", 224))
 
 # Constants
-SUPPORTED_FORMATS = {'.png', '.jpg', '.jpeg'}
+SUPPORTED_FORMATS = {".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
 
 
@@ -56,7 +56,7 @@ def get_image_extension(key: str) -> str:
     return os.path.splitext(key.lower())[1]
 
 
-def download_image_from_s3(bucket: str, key: str) -> Tuple[Optional[bytes], Dict[str, Any]]:
+def download_image_from_s3(bucket: str, key: str) -> tuple[Optional[bytes], dict[str, Any]]:
     """
     Download image from S3.
 
@@ -71,7 +71,7 @@ def download_image_from_s3(bucket: str, key: str) -> Tuple[Optional[bytes], Dict
         logger.info(f"Downloading {key} from {bucket}")
 
         response = s3_client.get_object(Bucket=bucket, Key=key)
-        image_bytes = response['Body'].read()
+        image_bytes = response["Body"].read()
 
         # Check file size
         file_size = len(image_bytes)
@@ -79,11 +79,11 @@ def download_image_from_s3(bucket: str, key: str) -> Tuple[Optional[bytes], Dict
             raise ValueError(f"File too large: {file_size} bytes > {MAX_FILE_SIZE}")
 
         metadata = {
-            'source_bucket': bucket,
-            'source_key': key,
-            'source_size': file_size,
-            'content_type': response.get('ContentType', 'unknown'),
-            'last_modified': response.get('LastModified', datetime.utcnow()).isoformat()
+            "source_bucket": bucket,
+            "source_key": key,
+            "source_size": file_size,
+            "content_type": response.get("ContentType", "unknown"),
+            "last_modified": response.get("LastModified", datetime.utcnow()).isoformat(),
         }
 
         logger.info(f"Successfully downloaded {key} ({file_size} bytes)")
@@ -91,13 +91,15 @@ def download_image_from_s3(bucket: str, key: str) -> Tuple[Optional[bytes], Dict
 
     except s3_client.exceptions.NoSuchKey:
         logger.error(f"Image not found: {key}")
-        return None, {'error': 'Image not found'}
+        return None, {"error": "Image not found"}
     except Exception as e:
-        logger.error(f"Error downloading image: {str(e)}")
-        return None, {'error': str(e)}
+        logger.error(f"Error downloading image: {e!s}")
+        return None, {"error": str(e)}
 
 
-def preprocess_image(image_bytes: bytes, target_size: int = 224) -> Tuple[Optional[np.ndarray], Dict[str, Any]]:
+def preprocess_image(
+    image_bytes: bytes, target_size: int = 224
+) -> tuple[Optional[np.ndarray], dict[str, Any]]:
     """
     Preprocess medical image.
 
@@ -124,13 +126,13 @@ def preprocess_image(image_bytes: bytes, target_size: int = 224) -> Tuple[Option
         logger.info(f"Image format: {image.format}, Mode: {image.mode}, Size: {image.size}")
 
         # Store original properties
-        metadata['original_format'] = str(image.format)
-        metadata['original_mode'] = image.mode
-        metadata['original_size'] = image.size
+        metadata["original_format"] = str(image.format)
+        metadata["original_mode"] = image.mode
+        metadata["original_size"] = image.size
 
         # Convert to grayscale (standard for medical images)
-        if image.mode != 'L':
-            image = image.convert('L')
+        if image.mode != "L":
+            image = image.convert("L")
 
         # Resize to target size
         image_resized = image.resize((target_size, target_size), Image.Resampling.LANCZOS)
@@ -142,27 +144,30 @@ def preprocess_image(image_bytes: bytes, target_size: int = 224) -> Tuple[Option
         image_normalized = image_array / 255.0
 
         # Store processing metadata
-        metadata['processed_size'] = (target_size, target_size)
-        metadata['dtype'] = str(image_normalized.dtype)
-        metadata['min_value'] = float(image_normalized.min())
-        metadata['max_value'] = float(image_normalized.max())
-        metadata['mean_value'] = float(image_normalized.mean())
-        metadata['std_value'] = float(image_normalized.std())
-        metadata['processing_time_ms'] = (time.time() - start_time) * 1000
+        metadata["processed_size"] = (target_size, target_size)
+        metadata["dtype"] = str(image_normalized.dtype)
+        metadata["min_value"] = float(image_normalized.min())
+        metadata["max_value"] = float(image_normalized.max())
+        metadata["mean_value"] = float(image_normalized.mean())
+        metadata["std_value"] = float(image_normalized.std())
+        metadata["processing_time_ms"] = (time.time() - start_time) * 1000
 
-        logger.info(f"Image preprocessing completed: {target_size}x{target_size}, "
-                   f"normalized [{metadata['min_value']:.3f}, {metadata['max_value']:.3f}]")
+        logger.info(
+            f"Image preprocessing completed: {target_size}x{target_size}, "
+            f"normalized [{metadata['min_value']:.3f}, {metadata['max_value']:.3f}]"
+        )
 
         return image_normalized, metadata
 
     except Exception as e:
-        logger.error(f"Error preprocessing image: {str(e)}")
-        metadata['error'] = str(e)
+        logger.error(f"Error preprocessing image: {e!s}")
+        metadata["error"] = str(e)
         return None, metadata
 
 
-def save_processed_image(image_array: np.ndarray, bucket: str, output_prefix: str,
-                        source_key: str) -> Tuple[bool, Dict[str, Any]]:
+def save_processed_image(
+    image_array: np.ndarray, bucket: str, output_prefix: str, source_key: str
+) -> tuple[bool, dict[str, Any]]:
     """
     Save processed image to S3.
 
@@ -186,11 +191,11 @@ def save_processed_image(image_array: np.ndarray, bucket: str, output_prefix: st
 
         # Convert numpy array back to image for saving as PNG
         image_normalized = (image_array * 255).astype(np.uint8)
-        image = Image.fromarray(image_normalized, mode='L')
+        image = Image.fromarray(image_normalized, mode="L")
 
         # Save to bytes buffer
         image_buffer = io.BytesIO()
-        image.save(image_buffer, format='PNG')
+        image.save(image_buffer, format="PNG")
         image_buffer.seek(0)
         image_bytes = image_buffer.getvalue()
 
@@ -200,29 +205,31 @@ def save_processed_image(image_array: np.ndarray, bucket: str, output_prefix: st
             Bucket=bucket,
             Key=output_key,
             Body=image_bytes,
-            ContentType='image/png',
+            ContentType="image/png",
             Metadata={
-                'processed_at': datetime.utcnow().isoformat(),
-                'source_key': source_key,
-                'image_size': f"{image_array.shape[0]}x{image_array.shape[1]}"
-            }
+                "processed_at": datetime.utcnow().isoformat(),
+                "source_key": source_key,
+                "image_size": f"{image_array.shape[0]}x{image_array.shape[1]}",
+            },
         )
 
-        metadata['output_bucket'] = bucket
-        metadata['output_key'] = output_key
-        metadata['output_size'] = len(image_bytes)
-        metadata['save_time_ms'] = (time.time() - start_time) * 1000
+        metadata["output_bucket"] = bucket
+        metadata["output_key"] = output_key
+        metadata["output_size"] = len(image_bytes)
+        metadata["save_time_ms"] = (time.time() - start_time) * 1000
 
         logger.info(f"Successfully saved processed image: {output_key} ({len(image_bytes)} bytes)")
         return True, metadata
 
     except Exception as e:
-        logger.error(f"Error saving processed image: {str(e)}")
-        metadata['error'] = str(e)
+        logger.error(f"Error saving processed image: {e!s}")
+        metadata["error"] = str(e)
         return False, metadata
 
 
-def store_metadata_dynamodb(image_id: str, table_name: str, metadata: Dict[str, Any]) -> Tuple[bool, str]:
+def store_metadata_dynamodb(
+    image_id: str, table_name: str, metadata: dict[str, Any]
+) -> tuple[bool, str]:
     """
     Store prediction metadata in DynamoDB.
 
@@ -239,23 +246,23 @@ def store_metadata_dynamodb(image_id: str, table_name: str, metadata: Dict[str, 
 
         # Prepare item for DynamoDB
         item = {
-            'image_id': image_id,
-            'timestamp': int(datetime.utcnow().timestamp() * 1000),  # milliseconds
-            'metadata': json.dumps(metadata, default=str)  # Store metadata as JSON string
+            "image_id": image_id,
+            "timestamp": int(datetime.utcnow().timestamp() * 1000),  # milliseconds
+            "metadata": json.dumps(metadata, default=str),  # Store metadata as JSON string
         }
 
         logger.info(f"Storing metadata for {image_id} in DynamoDB table {table_name}")
-        response = table.put_item(Item=item)
+        table.put_item(Item=item)
 
         logger.info(f"Successfully stored metadata: {image_id}")
         return True, f"Metadata stored: {image_id}"
 
     except Exception as e:
-        logger.error(f"Error storing metadata in DynamoDB: {str(e)}")
+        logger.error(f"Error storing metadata in DynamoDB: {e!s}")
         return False, str(e)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Lambda handler for image preprocessing.
 
@@ -268,22 +275,18 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     logger.info(f"Lambda invoked with event: {json.dumps(event)}")
 
-    response = {
-        'statusCode': 200,
-        'body': {},
-        'errors': []
-    }
+    response = {"statusCode": 200, "body": {}, "errors": []}
 
     try:
         # Extract S3 bucket and key from event
         # Handle both direct S3 events and test events
-        if 'Records' in event:
-            s3_record = event['Records'][0]
-            bucket = s3_record['s3']['bucket']['name']
-            key = s3_record['s3']['object']['key']
+        if "Records" in event:
+            s3_record = event["Records"][0]
+            bucket = s3_record["s3"]["bucket"]["name"]
+            key = s3_record["s3"]["object"]["key"]
         else:
-            bucket = event.get('s3', {}).get('bucket', {}).get('name')
-            key = event.get('s3', {}).get('object', {}).get('key')
+            bucket = event.get("s3", {}).get("bucket", {}).get("name")
+            key = event.get("s3", {}).get("object", {}).get("key")
 
         if not bucket or not key:
             raise ValueError("Invalid event: bucket and key not found")
@@ -291,10 +294,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(f"Processing image: s3://{bucket}/{key}")
 
         # Skip if not in raw-images folder
-        if 'raw-images' not in key:
+        if "raw-images" not in key:
             logger.info(f"Skipping {key} - not in raw-images prefix")
-            response['statusCode'] = 200
-            response['body'] = {'message': 'Skipped - not raw image'}
+            response["statusCode"] = 200
+            response["body"] = {"message": "Skipped - not raw image"}
             return response
 
         # Generate unique image ID
@@ -303,63 +306,58 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Download image from S3
         image_bytes, download_metadata = download_image_from_s3(bucket, key)
         if image_bytes is None:
-            response['statusCode'] = 400
-            response['errors'].append(f"Failed to download image: {download_metadata.get('error')}")
+            response["statusCode"] = 400
+            response["errors"].append(f"Failed to download image: {download_metadata.get('error')}")
             return response
 
         # Preprocess image
         processed_image, preprocess_metadata = preprocess_image(image_bytes, TARGET_IMAGE_SIZE)
         if processed_image is None:
-            response['statusCode'] = 400
-            response['errors'].append(f"Failed to preprocess image: {preprocess_metadata.get('error')}")
+            response["statusCode"] = 400
+            response["errors"].append(
+                f"Failed to preprocess image: {preprocess_metadata.get('error')}"
+            )
             return response
 
         # Save processed image
         processed_bucket = PROCESSED_BUCKET or bucket
         save_success, save_metadata = save_processed_image(
-            processed_image,
-            processed_bucket,
-            'processed-images/',
-            key
+            processed_image, processed_bucket, "processed-images/", key
         )
         if not save_success:
-            response['statusCode'] = 400
-            response['errors'].append(f"Failed to save processed image: {save_metadata.get('error')}")
+            response["statusCode"] = 400
+            response["errors"].append(
+                f"Failed to save processed image: {save_metadata.get('error')}"
+            )
             return response
 
         # Combine all metadata
-        combined_metadata = {
-            **download_metadata,
-            **preprocess_metadata,
-            **save_metadata
-        }
+        combined_metadata = {**download_metadata, **preprocess_metadata, **save_metadata}
 
         # Store metadata in DynamoDB
         store_success, store_message = store_metadata_dynamodb(
-            image_id,
-            DYNAMODB_TABLE,
-            combined_metadata
+            image_id, DYNAMODB_TABLE, combined_metadata
         )
         if not store_success:
             logger.warning(f"Failed to store metadata: {store_message}")
-            response['errors'].append(f"Warning: {store_message}")
+            response["errors"].append(f"Warning: {store_message}")
 
         # Build success response
-        response['statusCode'] = 200
-        response['body'] = {
-            'image_id': image_id,
-            'source_key': key,
-            'source_size': download_metadata.get('source_size'),
-            'processed_key': save_metadata.get('output_key'),
-            'processed_size': save_metadata.get('output_size'),
-            'processing_time_ms': preprocess_metadata.get('processing_time_ms'),
-            'image_stats': {
-                'min': preprocess_metadata.get('min_value'),
-                'max': preprocess_metadata.get('max_value'),
-                'mean': preprocess_metadata.get('mean_value'),
-                'std': preprocess_metadata.get('std_value')
+        response["statusCode"] = 200
+        response["body"] = {
+            "image_id": image_id,
+            "source_key": key,
+            "source_size": download_metadata.get("source_size"),
+            "processed_key": save_metadata.get("output_key"),
+            "processed_size": save_metadata.get("output_size"),
+            "processing_time_ms": preprocess_metadata.get("processing_time_ms"),
+            "image_stats": {
+                "min": preprocess_metadata.get("min_value"),
+                "max": preprocess_metadata.get("max_value"),
+                "mean": preprocess_metadata.get("mean_value"),
+                "std": preprocess_metadata.get("std_value"),
             },
-            'metadata_stored': store_success
+            "metadata_stored": store_success,
         }
 
         logger.info(f"Successfully processed image: {image_id}")
@@ -368,20 +366,20 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return response
 
     except Exception as e:
-        logger.error(f"Unexpected error in lambda_handler: {str(e)}", exc_info=True)
-        response['statusCode'] = 500
-        response['errors'].append(f"Internal error: {str(e)}")
+        logger.error(f"Unexpected error in lambda_handler: {e!s}", exc_info=True)
+        response["statusCode"] = 500
+        response["errors"].append(f"Internal error: {e!s}")
         return response
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # For local testing
     test_event = {
-        'Records': [
+        "Records": [
             {
-                's3': {
-                    'bucket': {'name': 'medical-images-test'},
-                    'object': {'key': 'raw-images/sample.png'}
+                "s3": {
+                    "bucket": {"name": "medical-images-test"},
+                    "object": {"key": "raw-images/sample.png"},
                 }
             }
         ]

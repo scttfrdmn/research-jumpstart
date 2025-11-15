@@ -7,4 +7,4 @@ This package contains scripts for environmental monitoring with AWS:
 - query_results.py: Query processed data from DynamoDB
 """
 
-__version__ = '1.0.0'
+__version__ = "1.0.0"

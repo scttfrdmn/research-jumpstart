@@ -4,20 +4,20 @@ High-throughput screening utilities.
 Functions for screening materials using ensemble models.
 """
 
-import torch
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Optional
+import torch
 from torch_geometric.data import DataLoader
-from tqdm.auto import tqdm
 
 
 def ensemble_predict(
-    models: List[torch.nn.Module],
+    models: list[torch.nn.Module],
     data_loader: DataLoader,
     device: str = "cuda",
-    property_name: str = "band_gap"
-) -> Tuple[np.ndarray, np.ndarray]:
+    property_name: str = "band_gap",
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Generate ensemble predictions with uncertainty quantification.
 
@@ -56,12 +56,12 @@ def ensemble_predict(
 
 
 def screen_materials(
-    models: List[torch.nn.Module],
+    models: list[torch.nn.Module],
     materials_df: pd.DataFrame,
-    graphs: List,
+    graphs: list,
     property_name: str = "band_gap",
     batch_size: int = 32,
-    device: str = "cuda"
+    device: str = "cuda",
 ) -> pd.DataFrame:
     """
     Screen materials using ensemble models.
@@ -83,9 +83,7 @@ def screen_materials(
     data_loader = DataLoader(graphs, batch_size=batch_size, shuffle=False)
 
     # Get ensemble predictions
-    mean_pred, std_pred = ensemble_predict(
-        models, data_loader, device, property_name
-    )
+    mean_pred, std_pred = ensemble_predict(models, data_loader, device, property_name)
 
     # Add to dataframe
     results_df = materials_df.copy()
@@ -100,7 +98,7 @@ def filter_by_property(
     property_name: str,
     min_value: Optional[float] = None,
     max_value: Optional[float] = None,
-    max_uncertainty: Optional[float] = None
+    max_uncertainty: Optional[float] = None,
 ) -> pd.DataFrame:
     """
     Filter materials by predicted property value and uncertainty.
@@ -139,7 +137,7 @@ def rank_materials(
     target_value: Optional[float] = None,
     minimize: bool = False,
     consider_uncertainty: bool = True,
-    uncertainty_weight: float = 0.5
+    uncertainty_weight: float = 0.5,
 ) -> pd.DataFrame:
     """
     Rank materials by how well they match target criteria.
@@ -184,11 +182,7 @@ def rank_materials(
 
 
 def find_pareto_optimal(
-    df: pd.DataFrame,
-    property1: str,
-    property2: str,
-    maximize1: bool = True,
-    maximize2: bool = True
+    df: pd.DataFrame, property1: str, property2: str, maximize1: bool = True, maximize2: bool = True
 ) -> pd.DataFrame:
     """
     Find Pareto-optimal materials for multi-objective optimization.
@@ -221,8 +215,9 @@ def find_pareto_optimal(
         if is_pareto[i]:
             # Check if any other point dominates this one
             is_dominated = np.any(
-                (prop1 >= prop1[i]) & (prop2 >= prop2[i]) &
-                ((prop1 > prop1[i]) | (prop2 > prop2[i]))
+                (prop1 >= prop1[i])
+                & (prop2 >= prop2[i])
+                & ((prop1 > prop1[i]) | (prop2 > prop2[i]))
             )
             if is_dominated:
                 is_pareto[i] = False
@@ -237,7 +232,7 @@ def export_candidates(
     df: pd.DataFrame,
     output_file: str,
     top_n: Optional[int] = None,
-    columns: Optional[List[str]] = None
+    columns: Optional[list[str]] = None,
 ):
     """
     Export screening candidates to file.
@@ -269,7 +264,7 @@ def export_candidates(
     print(f"Exported {len(export_df)} candidates to {output_file}")
 
 
-def calculate_screening_metrics(df: pd.DataFrame, property_name: str) -> Dict:
+def calculate_screening_metrics(df: pd.DataFrame, property_name: str) -> dict:
     """
     Calculate metrics for screening results.
 
@@ -290,8 +285,8 @@ def calculate_screening_metrics(df: pd.DataFrame, property_name: str) -> Dict:
             "std": df[pred_col].std(),
             "min": df[pred_col].min(),
             "max": df[pred_col].max(),
-            "median": df[pred_col].median()
-        }
+            "median": df[pred_col].median(),
+        },
     }
 
     if unc_col in df.columns:
@@ -300,7 +295,7 @@ def calculate_screening_metrics(df: pd.DataFrame, property_name: str) -> Dict:
             "std": df[unc_col].std(),
             "min": df[unc_col].min(),
             "max": df[unc_col].max(),
-            "median": df[unc_col].median()
+            "median": df[unc_col].median(),
         }
 
     return metrics

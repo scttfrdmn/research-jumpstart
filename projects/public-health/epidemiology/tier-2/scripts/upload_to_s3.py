@@ -15,91 +15,76 @@ Author: Research Jumpstart
 """
 
 import argparse
+import hashlib
+import logging
 import os
 import sys
-import csv
-import hashlib
-import json
-import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
+
 import boto3
-from botocore.exceptions import ClientError, NoCredentialsError
 import pandas as pd
-from tqdm import tqdm
+from botocore.exceptions import ClientError, NoCredentialsError
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # AWS clients
-s3_client = boto3.client('s3')
+s3_client = boto3.client("s3")
 
 # Required columns for case reports
-REQUIRED_COLUMNS = [
-    'case_id', 'disease', 'report_date', 'region',
-    'age_group', 'sex', 'outcome'
-]
+REQUIRED_COLUMNS = ["case_id", "disease", "report_date", "region", "age_group", "sex", "outcome"]
 
 # Valid values for categorical fields
 VALID_VALUES = {
-    'age_group': ['0-4', '5-14', '15-24', '25-34', '35-44', '45-54', '55-64', '65-74', '75+', 'unknown'],
-    'sex': ['M', 'F', 'other', 'unknown'],
-    'outcome': ['recovered', 'hospitalized', 'icu', 'fatal', 'active', 'unknown']
+    "age_group": [
+        "0-4",
+        "5-14",
+        "15-24",
+        "25-34",
+        "35-44",
+        "45-54",
+        "55-64",
+        "65-74",
+        "75+",
+        "unknown",
+    ],
+    "sex": ["M", "F", "other", "unknown"],
+    "outcome": ["recovered", "hospitalized", "icu", "fatal", "active", "unknown"],
 }
 
 
 def parse_arguments():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description='Upload disease case report data to S3'
-    )
+    parser = argparse.ArgumentParser(description="Upload disease case report data to S3")
     parser.add_argument(
-        '--input-file',
+        "--input-file", type=str, required=True, help="Path to input CSV file with case data"
+    )
+    parser.add_argument("--s3-bucket", type=str, required=True, help="S3 bucket name for upload")
+    parser.add_argument(
+        "--prefix",
         type=str,
-        required=True,
-        help='Path to input CSV file with case data'
+        default="case-data/",
+        help="S3 prefix (folder) for uploaded files (default: case-data/)",
     )
     parser.add_argument(
-        '--s3-bucket',
-        type=str,
-        required=True,
-        help='S3 bucket name for upload'
+        "--anonymize", action="store_true", help="Anonymize sensitive case IDs before upload"
     )
     parser.add_argument(
-        '--prefix',
-        type=str,
-        default='case-data/',
-        help='S3 prefix (folder) for uploaded files (default: case-data/)'
+        "--validate-only", action="store_true", help="Only validate data without uploading"
     )
     parser.add_argument(
-        '--anonymize',
-        action='store_true',
-        help='Anonymize sensitive case IDs before upload'
-    )
-    parser.add_argument(
-        '--validate-only',
-        action='store_true',
-        help='Only validate data without uploading'
-    )
-    parser.add_argument(
-        '--output-file',
+        "--output-file",
         type=str,
         default=None,
-        help='Save processed data to local file before upload'
+        help="Save processed data to local file before upload",
     )
-    parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Enable verbose output'
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     return parser.parse_args()
 
 
-def validate_data(df: pd.DataFrame) -> Tuple[bool, List[str]]:
+def validate_data(df: pd.DataFrame) -> tuple[bool, list[str]]:
     """
     Validate case report data.
 
@@ -123,18 +108,18 @@ def validate_data(df: pd.DataFrame) -> Tuple[bool, List[str]]:
         return False, errors
 
     # Validate case_id uniqueness
-    if df['case_id'].duplicated().any():
-        dup_count = df['case_id'].duplicated().sum()
+    if df["case_id"].duplicated().any():
+        dup_count = df["case_id"].duplicated().sum()
         errors.append(f"Found {dup_count} duplicate case IDs")
 
     # Validate date format
     try:
-        pd.to_datetime(df['report_date'], errors='coerce')
-        invalid_dates = df['report_date'].isna().sum()
+        pd.to_datetime(df["report_date"], errors="coerce")
+        invalid_dates = df["report_date"].isna().sum()
         if invalid_dates > 0:
             errors.append(f"Found {invalid_dates} invalid date formats (expected YYYY-MM-DD)")
     except Exception as e:
-        errors.append(f"Date validation error: {str(e)}")
+        errors.append(f"Date validation error: {e!s}")
 
     # Validate categorical fields
     for field, valid_values in VALID_VALUES.items():
@@ -154,11 +139,11 @@ def validate_data(df: pd.DataFrame) -> Tuple[bool, List[str]]:
             errors.append(f"Found {missing_count} missing values in required column '{col}'")
 
     # Validate disease names (should not be empty)
-    if df['disease'].str.strip().eq('').any():
+    if df["disease"].str.strip().eq("").any():
         errors.append("Found empty disease names")
 
     # Validate region format (should not be empty)
-    if df['region'].str.strip().eq('').any():
+    if df["region"].str.strip().eq("").any():
         errors.append("Found empty region values")
 
     is_valid = len(errors) == 0
@@ -180,12 +165,10 @@ def anonymize_case_ids(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Hash case IDs
-    df['case_id'] = df['case_id'].apply(
-        lambda x: hashlib.sha256(str(x).encode()).hexdigest()[:16]
-    )
+    df["case_id"] = df["case_id"].apply(lambda x: hashlib.sha256(str(x).encode()).hexdigest()[:16])
 
     # Remove any PII columns if present (common PII fields)
-    pii_columns = ['name', 'ssn', 'address', 'phone', 'email', 'dob']
+    pii_columns = ["name", "ssn", "address", "phone", "email", "dob"]
     existing_pii = [col for col in pii_columns if col in df.columns]
 
     if existing_pii:
@@ -193,8 +176,8 @@ def anonymize_case_ids(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=existing_pii)
 
     # Anonymize zip codes (keep only first 3 digits)
-    if 'zip_code' in df.columns:
-        df['zip_code'] = df['zip_code'].astype(str).str[:3] + 'XX'
+    if "zip_code" in df.columns:
+        df["zip_code"] = df["zip_code"].astype(str).str[:3] + "XX"
 
     logger.info(f"Anonymized {len(df)} case records")
     return df
@@ -213,10 +196,10 @@ def add_metadata(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Add upload timestamp
-    df['upload_timestamp'] = datetime.utcnow().isoformat()
+    df["upload_timestamp"] = datetime.utcnow().isoformat()
 
     # Add data version
-    df['data_version'] = '1.0'
+    df["data_version"] = "1.0"
 
     return df
 
@@ -235,13 +218,13 @@ def check_bucket_exists(bucket_name: str) -> bool:
         s3_client.head_bucket(Bucket=bucket_name)
         return True
     except ClientError as e:
-        error_code = e.response['Error']['Code']
-        if error_code == '404':
+        error_code = e.response["Error"]["Code"]
+        if error_code == "404":
             logger.error(f"Bucket '{bucket_name}' does not exist")
-        elif error_code == '403':
+        elif error_code == "403":
             logger.error(f"Access denied to bucket '{bucket_name}'")
         else:
-            logger.error(f"Error checking bucket: {str(e)}")
+            logger.error(f"Error checking bucket: {e!s}")
         return False
     except NoCredentialsError:
         logger.error("AWS credentials not found. Run 'aws configure' first.")
@@ -249,10 +232,7 @@ def check_bucket_exists(bucket_name: str) -> bool:
 
 
 def upload_to_s3(
-    df: pd.DataFrame,
-    bucket_name: str,
-    prefix: str,
-    output_filename: Optional[str] = None
+    df: pd.DataFrame, bucket_name: str, prefix: str, output_filename: Optional[str] = None
 ) -> bool:
     """
     Upload data to S3 bucket.
@@ -268,7 +248,7 @@ def upload_to_s3(
     """
     try:
         # Generate S3 key
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         s3_key = f"{prefix}case_reports_{timestamp}.csv"
 
         # Convert to CSV
@@ -276,7 +256,7 @@ def upload_to_s3(
 
         # Save locally if requested
         if output_filename:
-            with open(output_filename, 'w') as f:
+            with open(output_filename, "w") as f:
                 f.write(csv_buffer)
             logger.info(f"Saved processed data to: {output_filename}")
 
@@ -286,13 +266,13 @@ def upload_to_s3(
         s3_client.put_object(
             Bucket=bucket_name,
             Key=s3_key,
-            Body=csv_buffer.encode('utf-8'),
-            ContentType='text/csv',
+            Body=csv_buffer.encode("utf-8"),
+            ContentType="text/csv",
             Metadata={
-                'upload-timestamp': datetime.utcnow().isoformat(),
-                'record-count': str(len(df)),
-                'data-type': 'case-reports'
-            }
+                "upload-timestamp": datetime.utcnow().isoformat(),
+                "record-count": str(len(df)),
+                "data-type": "case-reports",
+            },
         )
 
         logger.info(f"✓ Upload successful: s3://{bucket_name}/{s3_key}")
@@ -301,10 +281,10 @@ def upload_to_s3(
         return True
 
     except ClientError as e:
-        logger.error(f"S3 upload error: {str(e)}")
+        logger.error(f"S3 upload error: {e!s}")
         return False
     except Exception as e:
-        logger.error(f"Unexpected error during upload: {str(e)}")
+        logger.error(f"Unexpected error during upload: {e!s}")
         return False
 
 
@@ -332,7 +312,7 @@ def main():
         df = pd.read_csv(args.input_file)
         logger.info(f"Loaded {len(df)} records from {args.input_file}")
     except Exception as e:
-        logger.error(f"Error loading CSV file: {str(e)}")
+        logger.error(f"Error loading CSV file: {e!s}")
         sys.exit(1)
 
     # Validate data
@@ -369,10 +349,7 @@ def main():
 
     # Upload to S3
     success = upload_to_s3(
-        df=df,
-        bucket_name=args.s3_bucket,
-        prefix=args.prefix,
-        output_filename=args.output_file
+        df=df, bucket_name=args.s3_bucket, prefix=args.prefix, output_filename=args.output_file
     )
 
     if success:
@@ -386,5 +363,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

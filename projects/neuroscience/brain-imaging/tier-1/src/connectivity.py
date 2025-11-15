@@ -2,19 +2,18 @@
 Functional connectivity analysis utilities.
 """
 
-import numpy as np
-import pandas as pd
-from scipy import stats
 from pathlib import Path
-import networkx as nx
 
+import networkx as nx
+import numpy as np
+from scipy import stats
 
 # Define base directory
 BASE_DIR = Path(__file__).parent.parent
-PROCESSED_DIR = BASE_DIR / 'data' / 'processed'
+PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 
-def compute_correlation_matrix(timeseries, method='pearson'):
+def compute_correlation_matrix(timeseries, method="pearson"):
     """
     Compute functional connectivity matrix.
 
@@ -32,9 +31,9 @@ def compute_correlation_matrix(timeseries, method='pearson'):
     """
     print(f"Computing {method} correlation matrix...")
 
-    if method == 'pearson':
+    if method == "pearson":
         conn_matrix = np.corrcoef(timeseries.T)
-    elif method == 'spearman':
+    elif method == "spearman":
         conn_matrix = stats.spearmanr(timeseries)[0]
     else:
         raise ValueError(f"Unknown method: {method}")
@@ -86,10 +85,7 @@ def threshold_matrix(conn_matrix, threshold=0.3, absolute=True):
     """
     thresholded = conn_matrix.copy()
 
-    if absolute:
-        mask = np.abs(thresholded) < threshold
-    else:
-        mask = thresholded < threshold
+    mask = np.abs(thresholded) < threshold if absolute else thresholded < threshold
 
     thresholded[mask] = 0
 
@@ -149,47 +145,47 @@ def compute_graph_metrics(conn_matrix, threshold=0.3):
     metrics = {}
 
     # Basic properties
-    metrics['n_nodes'] = G.number_of_nodes()
-    metrics['n_edges'] = G.number_of_edges()
-    metrics['density'] = nx.density(G)
+    metrics["n_nodes"] = G.number_of_nodes()
+    metrics["n_edges"] = G.number_of_edges()
+    metrics["density"] = nx.density(G)
 
     # Check if connected
     if nx.is_connected(G):
-        metrics['avg_path_length'] = nx.average_shortest_path_length(G)
-        metrics['diameter'] = nx.diameter(G)
-        metrics['global_efficiency'] = nx.global_efficiency(G)
+        metrics["avg_path_length"] = nx.average_shortest_path_length(G)
+        metrics["diameter"] = nx.diameter(G)
+        metrics["global_efficiency"] = nx.global_efficiency(G)
     else:
         # For disconnected graphs, use largest component
         largest_cc = max(nx.connected_components(G), key=len)
         G_connected = G.subgraph(largest_cc).copy()
-        metrics['avg_path_length'] = nx.average_shortest_path_length(G_connected)
-        metrics['diameter'] = nx.diameter(G_connected)
-        metrics['global_efficiency'] = nx.global_efficiency(G)
+        metrics["avg_path_length"] = nx.average_shortest_path_length(G_connected)
+        metrics["diameter"] = nx.diameter(G_connected)
+        metrics["global_efficiency"] = nx.global_efficiency(G)
 
     # Clustering
-    metrics['avg_clustering'] = nx.average_clustering(G)
-    metrics['transitivity'] = nx.transitivity(G)
+    metrics["avg_clustering"] = nx.average_clustering(G)
+    metrics["transitivity"] = nx.transitivity(G)
 
     # Centrality (expensive for large graphs, compute average)
     degree_centrality = nx.degree_centrality(G)
-    metrics['avg_degree_centrality'] = np.mean(list(degree_centrality.values()))
+    metrics["avg_degree_centrality"] = np.mean(list(degree_centrality.values()))
 
     # Small-worldness
     # Compare to random graph
-    n_nodes = metrics['n_nodes']
-    n_edges = metrics['n_edges']
+    n_nodes = metrics["n_nodes"]
+    n_edges = metrics["n_edges"]
     G_random = nx.gnm_random_graph(n_nodes, n_edges, seed=42)
 
     C_rand = nx.average_clustering(G_random)
     L_rand = nx.average_shortest_path_length(G_random) if nx.is_connected(G_random) else np.inf
 
-    gamma = metrics['avg_clustering'] / C_rand if C_rand > 0 else 0
-    lambda_val = metrics['avg_path_length'] / L_rand if L_rand > 0 and L_rand < np.inf else 0
+    gamma = metrics["avg_clustering"] / C_rand if C_rand > 0 else 0
+    lambda_val = metrics["avg_path_length"] / L_rand if L_rand > 0 and L_rand < np.inf else 0
     sigma = gamma / lambda_val if lambda_val > 0 else 0
 
-    metrics['small_worldness'] = sigma
+    metrics["small_worldness"] = sigma
 
-    print(f"✓ Graph metrics computed:")
+    print("✓ Graph metrics computed:")
     print(f"  Nodes: {metrics['n_nodes']}, Edges: {metrics['n_edges']}")
     print(f"  Clustering: {metrics['avg_clustering']:.3f}")
     print(f"  Path length: {metrics['avg_path_length']:.3f}")
@@ -209,7 +205,7 @@ def save_connectivity_matrix(conn_matrix, subject_id):
     subject_id : str
         Subject identifier
     """
-    output_path = PROCESSED_DIR / 'connectivity' / f'{subject_id}_conn.npy'
+    output_path = PROCESSED_DIR / "connectivity" / f"{subject_id}_conn.npy"
     np.save(output_path, conn_matrix)
     print(f"✓ Saved connectivity matrix to {output_path}")
 
@@ -228,7 +224,7 @@ def load_connectivity_matrix(subject_id):
     conn_matrix : ndarray
         Connectivity matrix
     """
-    input_path = PROCESSED_DIR / 'connectivity' / f'{subject_id}_conn.npy'
+    input_path = PROCESSED_DIR / "connectivity" / f"{subject_id}_conn.npy"
 
     if not input_path.exists():
         raise FileNotFoundError(f"Connectivity matrix not found: {input_path}")
@@ -294,7 +290,7 @@ def compute_network_segregation(conn_matrix, network_labels):
         Within and between network connectivity
     """
     network_labels = np.array(network_labels)
-    unique_networks = np.unique(network_labels)
+    np.unique(network_labels)
 
     within_conn = []
     between_conn = []
@@ -309,22 +305,24 @@ def compute_network_segregation(conn_matrix, network_labels):
             between_conn.append(conn_matrix[i, j])
 
     segregation = {
-        'within_mean': np.mean(within_conn),
-        'within_std': np.std(within_conn),
-        'between_mean': np.mean(between_conn),
-        'between_std': np.std(between_conn),
-        'segregation_index': np.mean(within_conn) - np.mean(between_conn)
+        "within_mean": np.mean(within_conn),
+        "within_std": np.std(within_conn),
+        "between_mean": np.mean(between_conn),
+        "between_std": np.std(between_conn),
+        "segregation_index": np.mean(within_conn) - np.mean(between_conn),
     }
 
-    print(f"✓ Network segregation computed:")
+    print("✓ Network segregation computed:")
     print(f"  Within-network: {segregation['within_mean']:.3f} ± {segregation['within_std']:.3f}")
-    print(f"  Between-network: {segregation['between_mean']:.3f} ± {segregation['between_std']:.3f}")
+    print(
+        f"  Between-network: {segregation['between_mean']:.3f} ± {segregation['between_std']:.3f}"
+    )
     print(f"  Segregation index: {segregation['segregation_index']:.3f}")
 
     return segregation
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test connectivity functions
     print("Testing connectivity utilities...")
 

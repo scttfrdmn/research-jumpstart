@@ -7,14 +7,9 @@ and temporal gap-filling.
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
-from typing import Tuple, Optional
 
 
-def cloud_mask(
-    image: np.ndarray,
-    threshold: float = 0.3,
-    band_idx: int = 0
-) -> np.ndarray:
+def cloud_mask(image: np.ndarray, threshold: float = 0.3, band_idx: int = 0) -> np.ndarray:
     """
     Generate cloud mask from satellite imagery.
 
@@ -32,17 +27,15 @@ def cloud_mask(
     mask = brightness < threshold
 
     # Morphological operations to clean mask
-    from scipy.ndimage import binary_erosion, binary_dilation
+    from scipy.ndimage import binary_dilation, binary_erosion
+
     mask = binary_erosion(mask, iterations=2)
     mask = binary_dilation(mask, iterations=2)
 
     return mask
 
 
-def atmospheric_correction(
-    image: np.ndarray,
-    method: str = 'dos'
-) -> np.ndarray:
+def atmospheric_correction(image: np.ndarray, method: str = "dos") -> np.ndarray:
     """
     Apply atmospheric correction to satellite imagery.
 
@@ -53,14 +46,13 @@ def atmospheric_correction(
     Returns:
         Corrected image
     """
-    if method == 'dos':
+    if method == "dos":
         # Dark Object Subtraction (simple atmospheric correction)
         corrected = image.copy()
         for band in range(image.shape[2]):
             dark_pixel = np.percentile(image[:, :, band], 1)
             corrected[:, :, band] = np.clip(
-                (image[:, :, band] - dark_pixel) / (1 - dark_pixel),
-                0, 1
+                (image[:, :, band] - dark_pixel) / (1 - dark_pixel), 0, 1
             )
         return corrected
     else:
@@ -68,9 +60,7 @@ def atmospheric_correction(
 
 
 def coregister_sensors(
-    reference: np.ndarray,
-    target: np.ndarray,
-    method: str = 'nearest'
+    reference: np.ndarray, target: np.ndarray, method: str = "nearest"
 ) -> np.ndarray:
     """
     Co-register two satellite images to common grid.
@@ -89,21 +79,17 @@ def coregister_sensors(
     zoom_factors = [
         reference.shape[0] / target.shape[0],
         reference.shape[1] / target.shape[1],
-        1  # Don't zoom bands dimension
+        1,  # Don't zoom bands dimension
     ]
 
     # Resample
-    order = 0 if method == 'nearest' else 1
+    order = 0 if method == "nearest" else 1
     resampled = zoom(target, zoom_factors, order=order)
 
     return resampled
 
 
-def gap_fill_timeseries(
-    data: np.ndarray,
-    dates: np.ndarray,
-    max_gap: int = 3
-) -> np.ndarray:
+def gap_fill_timeseries(data: np.ndarray, dates: np.ndarray, max_gap: int = 3) -> np.ndarray:
     """
     Fill gaps in time series using interpolation.
 
@@ -140,9 +126,7 @@ def gap_fill_timeseries(
 
 
 def calculate_cloud_free_composite(
-    images: np.ndarray,
-    cloud_masks: np.ndarray,
-    method: str = 'median'
+    images: np.ndarray, cloud_masks: np.ndarray, method: str = "median"
 ) -> np.ndarray:
     """
     Create cloud-free composite from time series.
@@ -161,11 +145,11 @@ def calculate_cloud_free_composite(
         masked[i][~cloud_masks[i]] = np.nan
 
     # Composite
-    if method == 'median':
+    if method == "median":
         composite = np.nanmedian(masked, axis=0)
-    elif method == 'mean':
+    elif method == "mean":
         composite = np.nanmean(masked, axis=0)
-    elif method == 'max':
+    elif method == "max":
         composite = np.nanmax(masked, axis=0)
     else:
         raise ValueError(f"Unknown method: {method}")
@@ -173,10 +157,7 @@ def calculate_cloud_free_composite(
     return composite
 
 
-def normalize_bands(
-    image: np.ndarray,
-    method: str = 'minmax'
-) -> np.ndarray:
+def normalize_bands(image: np.ndarray, method: str = "minmax") -> np.ndarray:
     """
     Normalize band values.
 
@@ -187,7 +168,7 @@ def normalize_bands(
     Returns:
         Normalized image
     """
-    if method == 'minmax':
+    if method == "minmax":
         # Min-max scaling to [0, 1]
         normalized = np.zeros_like(image)
         for band in range(image.shape[2]):
@@ -195,12 +176,11 @@ def normalize_bands(
             min_val = np.percentile(band_data, 2)
             max_val = np.percentile(band_data, 98)
             normalized[:, :, band] = np.clip(
-                (band_data - min_val) / (max_val - min_val + 1e-8),
-                0, 1
+                (band_data - min_val) / (max_val - min_val + 1e-8), 0, 1
             )
         return normalized
 
-    elif method == 'zscore':
+    elif method == "zscore":
         # Z-score normalization
         normalized = np.zeros_like(image)
         for band in range(image.shape[2]):
@@ -214,10 +194,7 @@ def normalize_bands(
         raise ValueError(f"Unknown method: {method}")
 
 
-def spatial_smoothing(
-    image: np.ndarray,
-    sigma: float = 1.0
-) -> np.ndarray:
+def spatial_smoothing(image: np.ndarray, sigma: float = 1.0) -> np.ndarray:
     """
     Apply spatial smoothing to reduce noise.
 

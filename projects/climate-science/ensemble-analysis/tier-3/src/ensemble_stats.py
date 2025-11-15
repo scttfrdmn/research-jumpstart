@@ -5,19 +5,17 @@ This module provides functions to compute ensemble statistics, assess model
 agreement, and quantify uncertainty across climate model projections.
 """
 
+import logging
+from typing import Optional
+
 import numpy as np
 import xarray as xr
-from typing import Dict, List, Optional, Tuple
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def create_ensemble(
-    model_data: Dict[str, xr.DataArray],
-    align_time: bool = True
-) -> xr.DataArray:
+def create_ensemble(model_data: dict[str, xr.DataArray], align_time: bool = True) -> xr.DataArray:
     """
     Combine multiple model outputs into an ensemble array.
 
@@ -47,7 +45,7 @@ def create_ensemble(
     model_list = []
     for model_name, data in model_data.items():
         data_copy = data.copy()
-        data_copy.coords['model'] = model_name
+        data_copy.coords["model"] = model_name
         model_list.append(data_copy)
 
     # Concatenate along model dimension
@@ -61,12 +59,9 @@ def create_ensemble(
         logger.info(f"Aligning to common period: {common_start} to {common_end}")
 
         # Subset all models to common period
-        model_list = [
-            data.sel(time=slice(common_start, common_end))
-            for data in model_list
-        ]
+        model_list = [data.sel(time=slice(common_start, common_end)) for data in model_list]
 
-    ensemble = xr.concat(model_list, dim='model')
+    ensemble = xr.concat(model_list, dim="model")
 
     logger.info(
         f"Ensemble shape: {ensemble.shape} "
@@ -95,7 +90,7 @@ def ensemble_mean(ensemble: xr.DataArray) -> xr.DataArray:
     >>> ens_mean = ensemble_mean(ensemble)
     """
     logger.info("Calculating ensemble mean")
-    return ensemble.mean('model')
+    return ensemble.mean("model")
 
 
 def ensemble_std(ensemble: xr.DataArray) -> xr.DataArray:
@@ -117,13 +112,12 @@ def ensemble_std(ensemble: xr.DataArray) -> xr.DataArray:
     >>> ens_std = ensemble_std(ensemble)
     """
     logger.info("Calculating ensemble standard deviation")
-    return ensemble.std('model')
+    return ensemble.std("model")
 
 
 def ensemble_percentiles(
-    ensemble: xr.DataArray,
-    percentiles: List[float] = [10, 25, 50, 75, 90]
-) -> Dict[str, xr.DataArray]:
+    ensemble: xr.DataArray, percentiles: Optional[list[float]] = None
+) -> dict[str, xr.DataArray]:
     """
     Calculate ensemble percentiles.
 
@@ -146,16 +140,18 @@ def ensemble_percentiles(
     >>> p50 = percentiles['p50']
     >>> p90 = percentiles['p90']
     """
+    if percentiles is None:
+        percentiles = [10, 25, 50, 75, 90]
     logger.info(f"Calculating ensemble percentiles: {percentiles}")
 
     result = {}
     for p in percentiles:
-        result[f'p{int(p)}'] = ensemble.quantile(p / 100, dim='model')
+        result[f"p{int(p)}"] = ensemble.quantile(p / 100, dim="model")
 
     return result
 
 
-def ensemble_range(ensemble: xr.DataArray) -> Tuple[xr.DataArray, xr.DataArray]:
+def ensemble_range(ensemble: xr.DataArray) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Calculate ensemble minimum and maximum.
 
@@ -174,13 +170,11 @@ def ensemble_range(ensemble: xr.DataArray) -> Tuple[xr.DataArray, xr.DataArray]:
     >>> ens_min, ens_max = ensemble_range(ensemble)
     """
     logger.info("Calculating ensemble range")
-    return ensemble.min('model'), ensemble.max('model')
+    return ensemble.min("model"), ensemble.max("model")
 
 
 def model_agreement(
-    ensemble: xr.DataArray,
-    threshold: float = 0.0,
-    method: str = 'sign'
+    ensemble: xr.DataArray, threshold: float = 0.0, method: str = "sign"
 ) -> xr.DataArray:
     """
     Calculate model agreement on change signal.
@@ -209,29 +203,26 @@ def model_agreement(
     """
     logger.info(f"Calculating model agreement using '{method}' method")
 
-    if method == 'sign':
+    if method == "sign":
         # Fraction of models agreeing on sign
-        positive = (ensemble > threshold).sum('model')
-        negative = (ensemble < threshold).sum('model')
+        positive = (ensemble > threshold).sum("model")
+        negative = (ensemble < threshold).sum("model")
         agreement = xr.where(
-            positive >= negative,
-            positive / len(ensemble.model),
-            negative / len(ensemble.model)
+            positive >= negative, positive / len(ensemble.model), negative / len(ensemble.model)
         )
 
-    elif method == 'threshold':
+    elif method == "threshold":
         # Fraction of models exceeding threshold
-        agreement = (ensemble > threshold).sum('model') / len(ensemble.model)
+        agreement = (ensemble > threshold).sum("model") / len(ensemble.model)
 
-    elif method == 'robust':
+    elif method == "robust":
         # Robust change: mean exceeds 1 standard deviation
-        ens_mean = ensemble.mean('model')
-        ens_std = ensemble.std('model')
+        ens_mean = ensemble.mean("model")
+        ens_std = ensemble.std("model")
         robust_mask = np.abs(ens_mean) > ens_std
         # Fraction agreeing with robust signal
-        agreement = (
-            xr.where(ens_mean > 0, ensemble > 0, ensemble < 0)
-            .sum('model') / len(ensemble.model)
+        agreement = xr.where(ens_mean > 0, ensemble > 0, ensemble < 0).sum("model") / len(
+            ensemble.model
         )
         agreement = xr.where(robust_mask, agreement, np.nan)
 
@@ -266,8 +257,8 @@ def signal_to_noise(ensemble: xr.DataArray) -> xr.DataArray:
     """
     logger.info("Calculating signal-to-noise ratio")
 
-    ens_mean = ensemble.mean('model')
-    ens_std = ensemble.std('model')
+    ens_mean = ensemble.mean("model")
+    ens_std = ensemble.std("model")
 
     # Avoid division by zero
     snr = xr.where(ens_std > 0, ens_mean / ens_std, np.nan)
@@ -299,23 +290,16 @@ def coefficient_of_variation(ensemble: xr.DataArray) -> xr.DataArray:
     """
     logger.info("Calculating coefficient of variation")
 
-    ens_mean = ensemble.mean('model')
-    ens_std = ensemble.std('model')
+    ens_mean = ensemble.mean("model")
+    ens_std = ensemble.std("model")
 
     # Avoid division by zero
-    cv = xr.where(
-        np.abs(ens_mean) > 0,
-        ens_std / np.abs(ens_mean) * 100,
-        np.nan
-    )
+    cv = xr.where(np.abs(ens_mean) > 0, ens_std / np.abs(ens_mean) * 100, np.nan)
 
     return cv
 
 
-def calculate_spread(
-    ensemble: xr.DataArray,
-    method: str = 'iqr'
-) -> xr.DataArray:
+def calculate_spread(ensemble: xr.DataArray, method: str = "iqr") -> xr.DataArray:
     """
     Calculate ensemble spread (uncertainty).
 
@@ -340,16 +324,16 @@ def calculate_spread(
     """
     logger.info(f"Calculating ensemble spread using '{method}' method")
 
-    if method == 'std':
-        spread = ensemble.std('model')
+    if method == "std":
+        spread = ensemble.std("model")
 
-    elif method == 'iqr':
-        p75 = ensemble.quantile(0.75, dim='model')
-        p25 = ensemble.quantile(0.25, dim='model')
+    elif method == "iqr":
+        p75 = ensemble.quantile(0.75, dim="model")
+        p25 = ensemble.quantile(0.25, dim="model")
         spread = p75 - p25
 
-    elif method == 'range':
-        spread = ensemble.max('model') - ensemble.min('model')
+    elif method == "range":
+        spread = ensemble.max("model") - ensemble.min("model")
 
     else:
         raise ValueError(f"Unknown spread method: {method}")
@@ -358,10 +342,8 @@ def calculate_spread(
 
 
 def identify_outliers(
-    ensemble: xr.DataArray,
-    method: str = 'iqr',
-    threshold: float = 1.5
-) -> Dict[str, bool]:
+    ensemble: xr.DataArray, method: str = "iqr", threshold: float = 1.5
+) -> dict[str, bool]:
     """
     Identify outlier models in the ensemble.
 
@@ -390,10 +372,10 @@ def identify_outliers(
 
     outliers = {}
 
-    if method == 'iqr':
+    if method == "iqr":
         # Calculate quartiles across time
-        q1 = ensemble.quantile(0.25, dim='time')
-        q3 = ensemble.quantile(0.75, dim='time')
+        q1 = ensemble.quantile(0.25, dim="time")
+        q3 = ensemble.quantile(0.75, dim="time")
         iqr = q3 - q1
 
         for model in ensemble.model.values:
@@ -403,18 +385,17 @@ def identify_outliers(
 
             # Check if any time steps are outliers
             is_outlier = (
-                (model_data < lower_bound).any() or
-                (model_data > upper_bound).any()
+                (model_data < lower_bound).any() or (model_data > upper_bound).any()
             ).values
 
             outliers[str(model)] = bool(is_outlier)
 
-    elif method == 'zscore':
-        ens_mean = ensemble.mean('model').mean('time')
-        ens_std = ensemble.mean('time').std('model')
+    elif method == "zscore":
+        ens_mean = ensemble.mean("model").mean("time")
+        ens_std = ensemble.mean("time").std("model")
 
         for model in ensemble.model.values:
-            model_mean = ensemble.sel(model=model).mean('time')
+            model_mean = ensemble.sel(model=model).mean("time")
             z_score = np.abs((model_mean - ens_mean) / ens_std)
 
             outliers[str(model)] = bool(z_score > threshold)
@@ -428,7 +409,7 @@ def identify_outliers(
     return outliers
 
 
-def ensemble_summary_stats(ensemble: xr.DataArray) -> Dict:
+def ensemble_summary_stats(ensemble: xr.DataArray) -> dict:
     """
     Calculate comprehensive ensemble summary statistics.
 
@@ -451,21 +432,21 @@ def ensemble_summary_stats(ensemble: xr.DataArray) -> Dict:
     logger.info("Calculating comprehensive ensemble statistics")
 
     stats = {
-        'n_models': len(ensemble.model),
-        'mean': float(ensemble.mean(['model', 'time']).values),
-        'std': float(ensemble.std(['model', 'time']).values),
-        'min': float(ensemble.min(['model', 'time']).values),
-        'max': float(ensemble.max(['model', 'time']).values),
-        'p10': float(ensemble.quantile(0.10, dim=['model', 'time']).values),
-        'p25': float(ensemble.quantile(0.25, dim=['model', 'time']).values),
-        'p50': float(ensemble.quantile(0.50, dim=['model', 'time']).values),
-        'p75': float(ensemble.quantile(0.75, dim=['model', 'time']).values),
-        'p90': float(ensemble.quantile(0.90, dim=['model', 'time']).values),
+        "n_models": len(ensemble.model),
+        "mean": float(ensemble.mean(["model", "time"]).values),
+        "std": float(ensemble.std(["model", "time"]).values),
+        "min": float(ensemble.min(["model", "time"]).values),
+        "max": float(ensemble.max(["model", "time"]).values),
+        "p10": float(ensemble.quantile(0.10, dim=["model", "time"]).values),
+        "p25": float(ensemble.quantile(0.25, dim=["model", "time"]).values),
+        "p50": float(ensemble.quantile(0.50, dim=["model", "time"]).values),
+        "p75": float(ensemble.quantile(0.75, dim=["model", "time"]).values),
+        "p90": float(ensemble.quantile(0.90, dim=["model", "time"]).values),
     }
 
     # Calculate per-model statistics
-    stats['model_means'] = {
-        str(model): float(ensemble.sel(model=model).mean('time').values)
+    stats["model_means"] = {
+        str(model): float(ensemble.sel(model=model).mean("time").values)
         for model in ensemble.model.values
     }
 

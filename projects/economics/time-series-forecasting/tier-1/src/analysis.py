@@ -2,19 +2,17 @@
 Statistical analysis functions for economic time series.
 """
 
-import pandas as pd
+from typing import Optional
+
 import numpy as np
+import pandas as pd
 from scipy import stats
+from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, grangercausalitytests
 from statsmodels.tsa.vector_ar.var_model import VAR
-from statsmodels.tsa.seasonal import seasonal_decompose
-from typing import Tuple, Dict, List, Optional
 
 
-def test_stationarity(
-    series: pd.Series,
-    significance_level: float = 0.05
-) -> Dict[str, float]:
+def test_stationarity(series: pd.Series, significance_level: float = 0.05) -> dict[str, float]:
     """
     Perform Augmented Dickey-Fuller test for stationarity.
 
@@ -25,25 +23,22 @@ def test_stationarity(
     Returns:
         Dictionary with test results
     """
-    result = adfuller(series.dropna(), autolag='AIC')
+    result = adfuller(series.dropna(), autolag="AIC")
 
     return {
-        'adf_statistic': result[0],
-        'p_value': result[1],
-        'n_lags': result[2],
-        'n_obs': result[3],
-        'critical_1pct': result[4]['1%'],
-        'critical_5pct': result[4]['5%'],
-        'critical_10pct': result[4]['10%'],
-        'is_stationary': result[1] < significance_level
+        "adf_statistic": result[0],
+        "p_value": result[1],
+        "n_lags": result[2],
+        "n_obs": result[3],
+        "critical_1pct": result[4]["1%"],
+        "critical_5pct": result[4]["5%"],
+        "critical_10pct": result[4]["10%"],
+        "is_stationary": result[1] < significance_level,
     }
 
 
 def granger_causality_test(
-    data: pd.DataFrame,
-    x_col: str,
-    y_col: str,
-    max_lag: int = 4
+    data: pd.DataFrame, x_col: str, y_col: str, max_lag: int = 4
 ) -> pd.DataFrame:
     """
     Test if x Granger-causes y.
@@ -65,13 +60,15 @@ def granger_causality_test(
         summary = []
         for lag in range(1, max_lag + 1):
             test_result = result[lag][0]
-            summary.append({
-                'lag': lag,
-                'ssr_ftest_pvalue': test_result['ssr_ftest'][1],
-                'ssr_chi2test_pvalue': test_result['ssr_chi2test'][1],
-                'lrtest_pvalue': test_result['lrtest'][1],
-                'params_ftest_pvalue': test_result['params_ftest'][1]
-            })
+            summary.append(
+                {
+                    "lag": lag,
+                    "ssr_ftest_pvalue": test_result["ssr_ftest"][1],
+                    "ssr_chi2test_pvalue": test_result["ssr_chi2test"][1],
+                    "lrtest_pvalue": test_result["lrtest"][1],
+                    "params_ftest_pvalue": test_result["params_ftest"][1],
+                }
+            )
 
         return pd.DataFrame(summary)
     except Exception as e:
@@ -79,10 +76,7 @@ def granger_causality_test(
         return pd.DataFrame()
 
 
-def fit_var_model(
-    data: pd.DataFrame,
-    max_lag: int = 4
-) -> Tuple[VAR, int]:
+def fit_var_model(data: pd.DataFrame, max_lag: int = 4) -> tuple[VAR, int]:
     """
     Fit Vector Autoregression (VAR) model.
 
@@ -106,9 +100,7 @@ def fit_var_model(
 
 
 def impulse_response_analysis(
-    var_model,
-    periods: int = 20,
-    shock_var: Optional[str] = None
+    var_model, periods: int = 20, shock_var: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Compute impulse response functions from VAR model.
@@ -130,19 +122,12 @@ def impulse_response_analysis(
     variables = var_model.names
     columns = [f"{shock}_to_{response}" for shock in variables for response in variables]
 
-    irf_df = pd.DataFrame(
-        irf_matrix.reshape(periods, -1),
-        columns=columns,
-        index=range(periods)
-    )
+    irf_df = pd.DataFrame(irf_matrix.reshape(periods, -1), columns=columns, index=range(periods))
 
     return irf_df
 
 
-def forecast_error_variance_decomposition(
-    var_model,
-    periods: int = 20
-) -> pd.DataFrame:
+def forecast_error_variance_decomposition(var_model, periods: int = 20) -> pd.DataFrame:
     """
     Compute forecast error variance decomposition (FEVD).
 
@@ -162,20 +147,15 @@ def forecast_error_variance_decomposition(
     for i, var in enumerate(variables):
         fevd_var = fevd.decomp[:, i, :]
         fevd_df = pd.DataFrame(
-            fevd_var,
-            columns=[f"shock_from_{v}" for v in variables],
-            index=range(periods)
+            fevd_var, columns=[f"shock_from_{v}" for v in variables], index=range(periods)
         )
-        fevd_df['response_variable'] = var
+        fevd_df["response_variable"] = var
         results.append(fevd_df)
 
     return pd.concat(results)
 
 
-def cross_correlation_analysis(
-    data: pd.DataFrame,
-    max_lag: int = 12
-) -> pd.DataFrame:
+def cross_correlation_analysis(data: pd.DataFrame, max_lag: int = 12) -> pd.DataFrame:
     """
     Compute cross-correlations at different lags.
 
@@ -208,21 +188,16 @@ def cross_correlation_analysis(
                 else:
                     corr = s1.corr(s2)
 
-                results.append({
-                    'series1': col1,
-                    'series2': col2,
-                    'lag': lag,
-                    'correlation': corr
-                })
+                results.append({"series1": col1, "series2": col2, "lag": lag, "correlation": corr})
 
     return pd.DataFrame(results)
 
 
 def business_cycle_synchronization(
     data: pd.DataFrame,
-    country_col: str = 'Country',
-    indicator_col: str = 'Indicator',
-    use_hp_filter: bool = True
+    country_col: str = "Country",
+    indicator_col: str = "Indicator",
+    use_hp_filter: bool = True,
 ) -> pd.DataFrame:
     """
     Measure business cycle synchronization across countries.
@@ -242,7 +217,10 @@ def business_cycle_synchronization(
     if use_hp_filter:
         try:
             from statsmodels.tsa.filters.hp_filter import hpfilter
-            cycles = data.apply(lambda x: hpfilter(x.dropna(), lamb=1600)[0] if x.notna().sum() > 20 else x)
+
+            cycles = data.apply(
+                lambda x: hpfilter(x.dropna(), lamb=1600)[0] if x.notna().sum() > 20 else x
+            )
         except:
             cycles = data  # Fall back to original data
     else:
@@ -254,10 +232,7 @@ def business_cycle_synchronization(
     return corr_matrix
 
 
-def calculate_trend(
-    data: pd.Series,
-    x: Optional[pd.Series] = None
-) -> Dict[str, float]:
+def calculate_trend(data: pd.Series, x: Optional[pd.Series] = None) -> dict[str, float]:
     """
     Calculate linear trend using least squares regression.
 
@@ -273,27 +248,22 @@ def calculate_trend(
     if len(clean_data) < 2:
         return {}
 
-    if x is None:
-        x_vals = np.arange(len(clean_data))
-    else:
-        x_vals = x[clean_data.index].values
+    x_vals = np.arange(len(clean_data)) if x is None else x[clean_data.index].values
 
     slope, intercept, r_value, p_value, std_err = stats.linregress(x_vals, clean_data.values)
 
     return {
-        'slope': slope,
-        'intercept': intercept,
-        'r_squared': r_value ** 2,
-        'p_value': p_value,
-        'std_err': std_err
+        "slope": slope,
+        "intercept": intercept,
+        "r_squared": r_value**2,
+        "p_value": p_value,
+        "std_err": std_err,
     }
 
 
 def decompose_time_series(
-    data: pd.Series,
-    period: int = 4,
-    model: str = 'additive'
-) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    data: pd.Series, period: int = 4, model: str = "additive"
+) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
     Decompose time series into trend, seasonal, and residual components.
 
@@ -305,19 +275,14 @@ def decompose_time_series(
     Returns:
         Tuple of (trend, seasonal, residual) Series
     """
-    decomposition = seasonal_decompose(data.dropna(), model=model, period=period, extrapolate_trend='freq')
-
-    return (
-        decomposition.trend,
-        decomposition.seasonal,
-        decomposition.resid
+    decomposition = seasonal_decompose(
+        data.dropna(), model=model, period=period, extrapolate_trend="freq"
     )
 
+    return (decomposition.trend, decomposition.seasonal, decomposition.resid)
 
-def detect_structural_breaks(
-    data: pd.Series,
-    min_size: int = 20
-) -> List[int]:
+
+def detect_structural_breaks(data: pd.Series, min_size: int = 20) -> list[int]:
     """
     Detect structural breaks using Chow test.
 

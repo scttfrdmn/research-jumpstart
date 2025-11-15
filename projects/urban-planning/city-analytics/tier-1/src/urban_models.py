@@ -2,9 +2,10 @@
 Machine learning models for urban growth and mobility prediction.
 """
 
-import numpy as np
-from typing import Tuple, Optional
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
 
 
 class UrbanGrowthCNN:
@@ -12,7 +13,7 @@ class UrbanGrowthCNN:
     Convolutional neural network for predicting urban growth from satellite imagery.
     """
 
-    def __init__(self, input_shape: Tuple[int, int, int], n_classes: int = 2):
+    def __init__(self, input_shape: tuple[int, int, int], n_classes: int = 2):
         """
         Initialize urban growth CNN model.
 
@@ -40,7 +41,7 @@ class UrbanGrowthCNN:
         X_val: Optional[np.ndarray] = None,
         y_val: Optional[np.ndarray] = None,
         epochs: int = 50,
-        batch_size: int = 32
+        batch_size: int = 32,
     ):
         """
         Train the urban growth model.
@@ -88,7 +89,7 @@ class UrbanGrowthCNN:
         pass
 
     @classmethod
-    def load(cls, path: Path) -> 'UrbanGrowthCNN':
+    def load(cls, path: Path) -> "UrbanGrowthCNN":
         """Load model from disk."""
         # TODO: Implement model loading
         print(f"Loading model from {path}")
@@ -112,12 +113,7 @@ class MobilityPredictor:
         self.n_features = n_features
         self.model = None
 
-    def train(
-        self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-        model_type: str = 'random_forest'
-    ):
+    def train(self, X_train: np.ndarray, y_train: np.ndarray, model_type: str = "random_forest"):
         """
         Train mobility prediction model.
 
@@ -153,11 +149,7 @@ class MobilityPredictor:
 
 
 def train_city_model(
-    city: str,
-    imagery: np.ndarray,
-    labels: np.ndarray,
-    model_dir: Path,
-    epochs: int = 50
+    city: str, imagery: np.ndarray, labels: np.ndarray, model_dir: Path, epochs: int = 50
 ) -> UrbanGrowthCNN:
     """
     Train urban growth model for a specific city with checkpointing.

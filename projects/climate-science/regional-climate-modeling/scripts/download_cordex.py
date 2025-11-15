@@ -12,38 +12,37 @@ Usage:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
 # CORDEX domain codes
 DOMAINS = {
-    'EUR': 'Europe',
-    'NAM': 'North America',
-    'SAM': 'South America',
-    'AFR': 'Africa',
-    'EAS': 'East Asia',
-    'SEA': 'Southeast Asia',
-    'WAS': 'West Asia',
-    'AUS': 'Australasia',
-    'ANT': 'Antarctica',
-    'ARC': 'Arctic'
+    "EUR": "Europe",
+    "NAM": "North America",
+    "SAM": "South America",
+    "AFR": "Africa",
+    "EAS": "East Asia",
+    "SEA": "Southeast Asia",
+    "WAS": "West Asia",
+    "AUS": "Australasia",
+    "ANT": "Antarctica",
+    "ARC": "Arctic",
 }
 
 # Common variables
 VARIABLES = {
-    'tas': 'Near-surface air temperature',
-    'tasmax': 'Daily maximum temperature',
-    'tasmin': 'Daily minimum temperature',
-    'pr': 'Precipitation',
-    'sfcWind': 'Near-surface wind speed',
-    'hurs': 'Near-surface relative humidity',
-    'ps': 'Surface air pressure',
-    'rsds': 'Surface downwelling shortwave radiation'
+    "tas": "Near-surface air temperature",
+    "tasmax": "Daily maximum temperature",
+    "tasmin": "Daily minimum temperature",
+    "pr": "Precipitation",
+    "sfcWind": "Near-surface wind speed",
+    "hurs": "Near-surface relative humidity",
+    "ps": "Surface air pressure",
+    "rsds": "Surface downwelling shortwave radiation",
 }
 
 # RCP scenarios
-SCENARIOS = ['rcp26', 'rcp45', 'rcp60', 'rcp85', 'historical']
+SCENARIOS = ["rcp26", "rcp45", "rcp60", "rcp85", "historical"]
 
 
 def list_domains():
@@ -64,7 +63,7 @@ def list_variables():
     print()
 
 
-def get_esgf_download_urls(domain, variable, scenario, model='all'):
+def get_esgf_download_urls(domain, variable, scenario, model="all"):
     """
     Generate ESGF download URLs for CORDEX data.
 
@@ -89,7 +88,7 @@ def get_esgf_download_urls(domain, variable, scenario, model='all'):
     list : URLs or instructions
     """
 
-    print(f"\nSearching for CORDEX data:")
+    print("\nSearching for CORDEX data:")
     print(f"  Domain: {domain} ({DOMAINS.get(domain, 'Unknown')})")
     print(f"  Variable: {variable} ({VARIABLES.get(variable, 'Unknown')})")
     print(f"  Scenario: {scenario}")
@@ -104,7 +103,7 @@ def get_esgf_download_urls(domain, variable, scenario, model='all'):
     print("-" * 70)
     print("1. Go to: https://esgf-node.llnl.gov/search/esgf-llnl/")
     print("2. Search criteria:")
-    print(f"   - Project: CORDEX")
+    print("   - Project: CORDEX")
     print(f"   - Domain: {domain}")
     print(f"   - Variable: {variable}")
     print(f"   - Experiment: {scenario}")
@@ -173,15 +172,16 @@ c.retrieve(
     return []
 
 
-def download_sample_data(output_dir='../data/cordex_sample'):
+def download_sample_data(output_dir="../data/cordex_sample"):
     """
     Download a small sample dataset for testing.
 
     This creates synthetic data that mimics CORDEX structure.
     """
+    from datetime import datetime
+
     import numpy as np
     import xarray as xr
-    from datetime import datetime
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -191,7 +191,7 @@ def download_sample_data(output_dir='../data/cordex_sample'):
     # Create a small synthetic dataset
     lats = np.arange(30, 50, 0.5)
     lons = np.arange(-100, -60, 0.5)
-    time = pd.date_range('1990-01-01', '2005-12-31', freq='MS')
+    time = pd.date_range("1990-01-01", "2005-12-31", freq="MS")
 
     # Simple temperature field with trend
     tas_data = np.random.randn(len(time), len(lats), len(lons)) * 2 + 15
@@ -199,35 +199,31 @@ def download_sample_data(output_dir='../data/cordex_sample'):
     for i in range(len(time)):
         tas_data[i] += i * 0.002  # Small warming
 
-    ds = xr.Dataset({
-        'tas': (['time', 'lat', 'lon'], tas_data)
-    }, coords={
-        'time': time,
-        'lat': lats,
-        'lon': lons
-    })
+    ds = xr.Dataset(
+        {"tas": (["time", "lat", "lon"], tas_data)}, coords={"time": time, "lat": lats, "lon": lons}
+    )
 
     # Add CF-compliant attributes
-    ds['tas'].attrs = {
-        'standard_name': 'air_temperature',
-        'long_name': 'Near-Surface Air Temperature',
-        'units': 'K',
-        'cell_methods': 'time: mean'
+    ds["tas"].attrs = {
+        "standard_name": "air_temperature",
+        "long_name": "Near-Surface Air Temperature",
+        "units": "K",
+        "cell_methods": "time: mean",
     }
 
     ds.attrs = {
-        'Conventions': 'CF-1.6',
-        'project_id': 'CORDEX',
-        'CORDEX_domain': 'NAM-44',
-        'experiment': 'historical',
-        'driving_model_id': 'SAMPLE-GCM',
-        'model_id': 'SAMPLE-RCM',
-        'frequency': 'mon',
-        'creation_date': datetime.now().isoformat()
+        "Conventions": "CF-1.6",
+        "project_id": "CORDEX",
+        "CORDEX_domain": "NAM-44",
+        "experiment": "historical",
+        "driving_model_id": "SAMPLE-GCM",
+        "model_id": "SAMPLE-RCM",
+        "frequency": "mon",
+        "creation_date": datetime.now().isoformat(),
     }
 
-    output_file = output_path / 'tas_NAM-44_sample_historical_199001-200512.nc'
-    ds.to_netcdf(output_file, encoding={'tas': {'zlib': True, 'complevel': 5}})
+    output_file = output_path / "tas_NAM-44_sample_historical_199001-200512.nc"
+    ds.to_netcdf(output_file, encoding={"tas": {"zlib": True, "complevel": 5}})
 
     print(f"✓ Created sample file: {output_file}")
     print(f"  Size: {output_file.stat().st_size / 1024 / 1024:.1f} MB")
@@ -239,19 +235,25 @@ def download_sample_data(output_dir='../data/cordex_sample'):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Download CORDEX regional climate data',
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Download CORDEX regional climate data",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument('--domain', type=str, help='CORDEX domain (e.g., NAM, EUR)')
-    parser.add_argument('--variable', type=str, help='Variable name (e.g., tas, pr)')
-    parser.add_argument('--scenario', type=str, choices=SCENARIOS, help='RCP scenario')
-    parser.add_argument('--model', type=str, default='all', help='Specific model or all')
-    parser.add_argument('--list-domains', action='store_true', help='List available domains')
-    parser.add_argument('--list-variables', action='store_true', help='List available variables')
-    parser.add_argument('--create-sample', action='store_true', help='Create sample data for testing')
-    parser.add_argument('--output-dir', type=str, default='../data/cordex_sample',
-                       help='Output directory for downloaded data')
+    parser.add_argument("--domain", type=str, help="CORDEX domain (e.g., NAM, EUR)")
+    parser.add_argument("--variable", type=str, help="Variable name (e.g., tas, pr)")
+    parser.add_argument("--scenario", type=str, choices=SCENARIOS, help="RCP scenario")
+    parser.add_argument("--model", type=str, default="all", help="Specific model or all")
+    parser.add_argument("--list-domains", action="store_true", help="List available domains")
+    parser.add_argument("--list-variables", action="store_true", help="List available variables")
+    parser.add_argument(
+        "--create-sample", action="store_true", help="Create sample data for testing"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="../data/cordex_sample",
+        help="Output directory for downloaded data",
+    )
 
     args = parser.parse_args()
 
@@ -265,8 +267,8 @@ def main():
 
     if args.create_sample:
         sample_file = download_sample_data(args.output_dir)
-        print(f"\nSample data ready! Load it with:")
-        print(f"  import xarray as xr")
+        print("\nSample data ready! Load it with:")
+        print("  import xarray as xr")
         print(f"  ds = xr.open_dataset('{sample_file}')")
         return
 
@@ -279,5 +281,5 @@ def main():
     get_esgf_download_urls(args.domain, args.variable, args.scenario, args.model)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

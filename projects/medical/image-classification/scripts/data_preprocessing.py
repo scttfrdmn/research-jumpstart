@@ -15,14 +15,14 @@ Usage:
 """
 
 import os
+
+import albumentations as A
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from PIL import Image
 import torch
-from torch.utils.data import Dataset, DataLoader
-import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
 
 
 class MedicalImageDataset(Dataset):
@@ -69,7 +69,7 @@ class MedicalImageDataset(Dataset):
             image = self._cache[idx]
         else:
             image_path = self.image_paths[idx]
-            image = Image.open(image_path).convert('RGB')
+            image = Image.open(image_path).convert("RGB")
             image = np.array(image)
 
             if self.cache_images:
@@ -78,7 +78,7 @@ class MedicalImageDataset(Dataset):
         # Apply transformations
         if self.transform is not None:
             augmented = self.transform(image=image)
-            image = augmented['image']
+            image = augmented["image"]
         else:
             # Default: convert to tensor
             image = torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
@@ -88,7 +88,7 @@ class MedicalImageDataset(Dataset):
         return image, label
 
 
-def get_transforms(mode='train', image_size=224):
+def get_transforms(mode="train", image_size=224):
     """
     Get augmentation pipeline for medical images.
 
@@ -104,53 +104,38 @@ def get_transforms(mode='train', image_size=224):
     transform : albumentations.Compose
         Augmentation pipeline
     """
-    if mode == 'train':
+    if mode == "train":
         # Training augmentations: preserve medical image characteristics
-        transform = A.Compose([
-            A.Resize(image_size, image_size),
-
-            # Geometric transformations (mild)
-            A.HorizontalFlip(p=0.5),
-            A.ShiftScaleRotate(
-                shift_limit=0.1,
-                scale_limit=0.1,
-                rotate_limit=10,
-                p=0.5
-            ),
-
-            # Intensity transformations (common in medical imaging)
-            A.RandomBrightnessContrast(
-                brightness_limit=0.2,
-                contrast_limit=0.2,
-                p=0.5
-            ),
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
-
-            # Normalize and convert to tensor
-            A.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            ),
-            ToTensorV2()
-        ])
+        transform = A.Compose(
+            [
+                A.Resize(image_size, image_size),
+                # Geometric transformations (mild)
+                A.HorizontalFlip(p=0.5),
+                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=10, p=0.5),
+                # Intensity transformations (common in medical imaging)
+                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+                A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
+                # Normalize and convert to tensor
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ]
+        )
     else:
         # Validation/test: only resize and normalize
-        transform = A.Compose([
-            A.Resize(image_size, image_size),
-            A.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            ),
-            ToTensorV2()
-        ])
+        transform = A.Compose(
+            [
+                A.Resize(image_size, image_size),
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ]
+        )
 
     return transform
 
 
-def create_data_loaders(train_paths, train_labels,
-                       val_paths, val_labels,
-                       batch_size=32, num_workers=4,
-                       image_size=224):
+def create_data_loaders(
+    train_paths, train_labels, val_paths, val_labels, batch_size=32, num_workers=4, image_size=224
+):
     """
     Create train and validation data loaders.
 
@@ -173,30 +158,20 @@ def create_data_loaders(train_paths, train_labels,
     """
     # Create datasets
     train_dataset = MedicalImageDataset(
-        train_paths, train_labels,
-        transform=get_transforms('train', image_size)
+        train_paths, train_labels, transform=get_transforms("train", image_size)
     )
 
     val_dataset = MedicalImageDataset(
-        val_paths, val_labels,
-        transform=get_transforms('val', image_size)
+        val_paths, val_labels, transform=get_transforms("val", image_size)
     )
 
     # Create loaders
     train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True
     )
 
     val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True
+        val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True
     )
 
     return train_loader, val_loader
@@ -227,38 +202,33 @@ def load_image_metadata(csv_path, image_dir=None):
     df = pd.read_csv(csv_path)
 
     # Validate required columns
-    required = ['filename', 'label']
+    required = ["filename", "label"]
     if not all(col in df.columns for col in required):
         raise ValueError(f"CSV must contain columns: {required}")
 
     # Optionally prepend image directory
     if image_dir:
-        df['filename'] = df['filename'].apply(
-            lambda x: os.path.join(image_dir, x)
-        )
+        df["filename"] = df["filename"].apply(lambda x: os.path.join(image_dir, x))
 
     data = {}
 
     # Split by train/val if split column exists
-    if 'split' in df.columns:
-        for split in ['train', 'val', 'test']:
-            split_df = df[df['split'] == split]
+    if "split" in df.columns:
+        for split in ["train", "val", "test"]:
+            split_df = df[df["split"] == split]
             if len(split_df) > 0:
                 data[split] = {
-                    'paths': split_df['filename'].tolist(),
-                    'labels': split_df['label'].tolist()
+                    "paths": split_df["filename"].tolist(),
+                    "labels": split_df["label"].tolist(),
                 }
     else:
         # Return all data
-        data['all'] = {
-            'paths': df['filename'].tolist(),
-            'labels': df['label'].tolist()
-        }
+        data["all"] = {"paths": df["filename"].tolist(), "labels": df["label"].tolist()}
 
     return data
 
 
-def balance_classes(image_paths, labels, method='undersample'):
+def balance_classes(image_paths, labels, method="undersample"):
     """
     Balance class distribution.
 
@@ -276,32 +246,35 @@ def balance_classes(image_paths, labels, method='undersample'):
     balanced_paths, balanced_labels : lists
         Balanced dataset
     """
-    df = pd.DataFrame({'path': image_paths, 'label': labels})
+    df = pd.DataFrame({"path": image_paths, "label": labels})
 
     # Count samples per class
-    class_counts = df['label'].value_counts()
+    class_counts = df["label"].value_counts()
 
-    if method == 'undersample':
+    if method == "undersample":
         # Undersample to minority class size
         min_count = class_counts.min()
-        balanced_df = df.groupby('label').apply(
-            lambda x: x.sample(min_count, random_state=42)
-        ).reset_index(drop=True)
+        balanced_df = (
+            df.groupby("label")
+            .apply(lambda x: x.sample(min_count, random_state=42))
+            .reset_index(drop=True)
+        )
 
-    elif method == 'oversample':
+    elif method == "oversample":
         # Oversample to majority class size
         max_count = class_counts.max()
-        balanced_df = df.groupby('label').apply(
-            lambda x: x.sample(max_count, replace=True, random_state=42)
-        ).reset_index(drop=True)
+        balanced_df = (
+            df.groupby("label")
+            .apply(lambda x: x.sample(max_count, replace=True, random_state=42))
+            .reset_index(drop=True)
+        )
     else:
         raise ValueError("method must be 'undersample' or 'oversample'")
 
-    return balanced_df['path'].tolist(), balanced_df['label'].tolist()
+    return balanced_df["path"].tolist(), balanced_df["label"].tolist()
 
 
-def split_dataset(image_paths, labels, train_frac=0.7, val_frac=0.15,
-                 random_state=42):
+def split_dataset(image_paths, labels, train_frac=0.7, val_frac=0.15, random_state=42):
     """
     Split dataset into train/val/test sets.
 
@@ -328,10 +301,7 @@ def split_dataset(image_paths, labels, train_frac=0.7, val_frac=0.15,
 
     # First split: train vs (val + test)
     train_paths, temp_paths, train_labels, temp_labels = train_test_split(
-        image_paths, labels,
-        train_size=train_frac,
-        stratify=labels,
-        random_state=random_state
+        image_paths, labels, train_size=train_frac, stratify=labels, random_state=random_state
     )
 
     # Second split: val vs test
@@ -339,16 +309,17 @@ def split_dataset(image_paths, labels, train_frac=0.7, val_frac=0.15,
     val_size = val_frac / (val_frac + test_frac)
 
     val_paths, test_paths, val_labels, test_labels = train_test_split(
-        temp_paths, temp_labels,
+        temp_paths,
+        temp_labels,
         train_size=val_size,
         stratify=temp_labels,
-        random_state=random_state
+        random_state=random_state,
     )
 
     splits = {
-        'train': {'paths': train_paths, 'labels': train_labels},
-        'val': {'paths': val_paths, 'labels': val_labels},
-        'test': {'paths': test_paths, 'labels': test_labels}
+        "train": {"paths": train_paths, "labels": train_labels},
+        "val": {"paths": val_paths, "labels": val_labels},
+        "test": {"paths": test_paths, "labels": test_labels},
     }
 
     return splits
@@ -381,7 +352,7 @@ def preprocess_dicom(dicom_path, output_path, window_center=40, window_width=400
     image = dcm.pixel_array.astype(float)
 
     # Apply rescale slope/intercept if present
-    if hasattr(dcm, 'RescaleSlope') and hasattr(dcm, 'RescaleIntercept'):
+    if hasattr(dcm, "RescaleSlope") and hasattr(dcm, "RescaleIntercept"):
         image = image * dcm.RescaleSlope + dcm.RescaleIntercept
 
     # Apply windowing
@@ -396,7 +367,7 @@ def preprocess_dicom(dicom_path, output_path, window_center=40, window_width=400
     Image.fromarray(image).save(output_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Medical Image Data Preprocessing")
     print("=" * 50)
@@ -404,8 +375,8 @@ if __name__ == '__main__':
     # Generate synthetic example
     print("\n1. Creating synthetic dataset...")
     n_samples = 100
-    image_paths = [f'image_{i:03d}.jpg' for i in range(n_samples)]
-    labels = np.random.choice(['benign', 'malignant'], n_samples).tolist()
+    image_paths = [f"image_{i:03d}.jpg" for i in range(n_samples)]
+    labels = np.random.choice(["benign", "malignant"], n_samples).tolist()
 
     print(f"   {n_samples} images, {len(set(labels))} classes")
 
@@ -418,17 +389,15 @@ if __name__ == '__main__':
 
     # Get transforms
     print("\n3. Creating augmentation pipelines...")
-    train_transform = get_transforms('train', image_size=224)
-    val_transform = get_transforms('val', image_size=224)
+    train_transform = get_transforms("train", image_size=224)
+    val_transform = get_transforms("val", image_size=224)
     print(f"   Train augmentations: {len(train_transform.transforms)}")
     print(f"   Val augmentations: {len(val_transform.transforms)}")
 
     # Balance classes
     print("\n4. Balancing classes...")
     balanced_paths, balanced_labels = balance_classes(
-        splits['train']['paths'],
-        splits['train']['labels'],
-        method='undersample'
+        splits["train"]["paths"], splits["train"]["labels"], method="undersample"
     )
     print(f"   Original: {len(splits['train']['paths'])}")
     print(f"   Balanced: {len(balanced_paths)}")

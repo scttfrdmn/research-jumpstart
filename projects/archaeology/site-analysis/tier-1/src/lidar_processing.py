@@ -5,16 +5,15 @@ Functions for processing LiDAR terrain data, detecting archaeological
 features, and analyzing settlement patterns.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import Tuple, Dict, List, Optional
 import rasterio
 from scipy import ndimage
-from skimage import feature, filters
 
 
-def load_lidar_data(lidar_file: Path) -> Tuple[np.ndarray, Dict]:
+def load_lidar_data(lidar_file: Path) -> tuple[np.ndarray, dict]:
     """
     Load LiDAR elevation data from file.
 
@@ -27,16 +26,16 @@ def load_lidar_data(lidar_file: Path) -> Tuple[np.ndarray, Dict]:
     with rasterio.open(lidar_file) as src:
         elevation = src.read(1)
         metadata = {
-            'crs': src.crs,
-            'transform': src.transform,
-            'bounds': src.bounds,
-            'resolution': src.res
+            "crs": src.crs,
+            "transform": src.transform,
+            "bounds": src.bounds,
+            "resolution": src.res,
         }
 
     return elevation, metadata
 
 
-def calculate_terrain_metrics(elevation: np.ndarray, resolution: float) -> Dict[str, np.ndarray]:
+def calculate_terrain_metrics(elevation: np.ndarray, resolution: float) -> dict[str, np.ndarray]:
     """
     Calculate terrain analysis metrics from elevation data.
 
@@ -58,29 +57,31 @@ def calculate_terrain_metrics(elevation: np.ndarray, resolution: float) -> Dict[
     aspect = (aspect + 360) % 360  # Convert to 0-360 range
 
     # Curvature (second derivatives)
-    dyy, dyx = np.gradient(dy, resolution)
+    dyy, _dyx = np.gradient(dy, resolution)
     dxy, dxx = np.gradient(dx, resolution)
 
     # Profile curvature (curvature in direction of maximum slope)
-    profile_curvature = -2 * (dxx * dx**2 + 2 * dxy * dx * dy + dyy * dy**2) / \
-                        ((dx**2 + dy**2) * (1 + dx**2 + dy**2)**1.5)
+    profile_curvature = (
+        -2
+        * (dxx * dx**2 + 2 * dxy * dx * dy + dyy * dy**2)
+        / ((dx**2 + dy**2) * (1 + dx**2 + dy**2) ** 1.5)
+    )
 
     # Plan curvature (curvature perpendicular to maximum slope)
-    plan_curvature = 2 * (dyy * dx**2 - 2 * dxy * dx * dy + dxx * dy**2) / \
-                     ((dx**2 + dy**2)**1.5)
+    plan_curvature = 2 * (dyy * dx**2 - 2 * dxy * dx * dy + dxx * dy**2) / ((dx**2 + dy**2) ** 1.5)
 
     return {
-        'slope': slope,
-        'aspect': aspect,
-        'profile_curvature': profile_curvature,
-        'plan_curvature': plan_curvature,
-        'elevation': elevation
+        "slope": slope,
+        "aspect": aspect,
+        "profile_curvature": profile_curvature,
+        "plan_curvature": plan_curvature,
+        "elevation": elevation,
     }
 
 
-def detect_structures(elevation: np.ndarray,
-                      min_height: float = 0.5,
-                      min_size: int = 10) -> np.ndarray:
+def detect_structures(
+    elevation: np.ndarray, min_height: float = 0.5, min_size: int = 10
+) -> np.ndarray:
     """
     Detect potential archaeological structures from LiDAR data.
 
@@ -111,9 +112,9 @@ def detect_structures(elevation: np.ndarray,
     return structures
 
 
-def extract_structure_features(elevation: np.ndarray,
-                               structure_mask: np.ndarray,
-                               resolution: float) -> pd.DataFrame:
+def extract_structure_features(
+    elevation: np.ndarray, structure_mask: np.ndarray, resolution: float
+) -> pd.DataFrame:
     """
     Extract features of detected structures.
 
@@ -137,24 +138,28 @@ def extract_structure_features(elevation: np.ndarray,
         centroid_y = np.mean(y_coords) * resolution
         centroid_x = np.mean(x_coords) * resolution
 
-        features.append({
-            'structure_id': i,
-            'area_m2': np.sum(structure_pixels) * resolution**2,
-            'max_height': np.max(structure_elevation),
-            'mean_height': np.mean(structure_elevation),
-            'centroid_x': centroid_x,
-            'centroid_y': centroid_y,
-            'perimeter_m': np.sum(ndimage.binary_dilation(structure_pixels) &
-                                 ~structure_pixels) * resolution
-        })
+        features.append(
+            {
+                "structure_id": i,
+                "area_m2": np.sum(structure_pixels) * resolution**2,
+                "max_height": np.max(structure_elevation),
+                "mean_height": np.mean(structure_elevation),
+                "centroid_x": centroid_x,
+                "centroid_y": centroid_y,
+                "perimeter_m": np.sum(ndimage.binary_dilation(structure_pixels) & ~structure_pixels)
+                * resolution,
+            }
+        )
 
     return pd.DataFrame(features)
 
 
-def calculate_visibility_network(elevation: np.ndarray,
-                                 structure_locations: List[Tuple[int, int]],
-                                 resolution: float,
-                                 observer_height: float = 1.6) -> np.ndarray:
+def calculate_visibility_network(
+    elevation: np.ndarray,
+    structure_locations: list[tuple[int, int]],
+    resolution: float,
+    observer_height: float = 1.6,
+) -> np.ndarray:
     """
     Calculate inter-site visibility network.
 
@@ -183,10 +188,9 @@ def calculate_visibility_network(elevation: np.ndarray,
     return visibility_matrix.astype(int)
 
 
-def check_line_of_sight(elevation: np.ndarray,
-                        loc_a: Tuple[int, int],
-                        loc_b: Tuple[int, int],
-                        observer_height: float) -> bool:
+def check_line_of_sight(
+    elevation: np.ndarray, loc_a: tuple[int, int], loc_b: tuple[int, int], observer_height: float
+) -> bool:
     """
     Check if there is line of sight between two locations.
 
@@ -221,7 +225,7 @@ def check_line_of_sight(elevation: np.ndarray,
     return np.all(elevation_profile <= required_height)
 
 
-def analyze_settlement_pattern(structure_features: pd.DataFrame) -> Dict[str, float]:
+def analyze_settlement_pattern(structure_features: pd.DataFrame) -> dict[str, float]:
     """
     Analyze spatial patterns in settlement structure locations.
 
@@ -234,30 +238,29 @@ def analyze_settlement_pattern(structure_features: pd.DataFrame) -> Dict[str, fl
     from scipy.spatial.distance import pdist
 
     # Extract coordinates
-    coords = structure_features[['centroid_x', 'centroid_y']].values
+    coords = structure_features[["centroid_x", "centroid_y"]].values
 
     # Calculate nearest neighbor distances
     if len(coords) > 1:
         distances = pdist(coords)
         mean_distance = np.mean(distances)
-        nearest_neighbor = np.min(pdist(coords, metric='euclidean'))
+        nearest_neighbor = np.min(pdist(coords, metric="euclidean"))
     else:
         mean_distance = 0
         nearest_neighbor = 0
 
     # Calculate density
     if len(structure_features) > 0:
-        total_area = (structure_features['centroid_x'].max() -
-                     structure_features['centroid_x'].min()) * \
-                    (structure_features['centroid_y'].max() -
-                     structure_features['centroid_y'].min())
+        total_area = (
+            structure_features["centroid_x"].max() - structure_features["centroid_x"].min()
+        ) * (structure_features["centroid_y"].max() - structure_features["centroid_y"].min())
         density = len(structure_features) / max(total_area, 1)
     else:
         density = 0
 
     return {
-        'n_structures': len(structure_features),
-        'mean_inter_structure_distance': float(mean_distance),
-        'nearest_neighbor_distance': float(nearest_neighbor),
-        'structure_density': float(density)
+        "n_structures": len(structure_features),
+        "mean_inter_structure_distance": float(mean_distance),
+        "nearest_neighbor_distance": float(nearest_neighbor),
+        "structure_density": float(density),
     }

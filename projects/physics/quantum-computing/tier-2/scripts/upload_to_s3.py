@@ -13,24 +13,24 @@ Environment Variables:
     AWS_REGION: AWS region (default: us-east-1)
 """
 
-import os
 import json
+import os
+from typing import Any
+
 import boto3
-from pathlib import Path
-from typing import List, Dict, Any
 from botocore.exceptions import ClientError
 from tqdm import tqdm
 
 
 def get_s3_client():
     """Create and return boto3 S3 client."""
-    region = os.environ.get('AWS_REGION', 'us-east-1')
-    return boto3.client('s3', region_name=region)
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    return boto3.client("s3", region_name=region)
 
 
 def get_bucket_name() -> str:
     """Get S3 bucket name from environment or prompt user."""
-    bucket_name = os.environ.get('AWS_S3_BUCKET')
+    bucket_name = os.environ.get("AWS_S3_BUCKET")
 
     if not bucket_name:
         print("AWS_S3_BUCKET environment variable not set.")
@@ -49,17 +49,17 @@ def verify_bucket_exists(s3_client, bucket_name: str) -> bool:
         print(f"✅ Bucket '{bucket_name}' exists")
         return True
     except ClientError as e:
-        error_code = e.response['Error']['Code']
-        if error_code == '404':
+        error_code = e.response["Error"]["Code"]
+        if error_code == "404":
             print(f"❌ Bucket '{bucket_name}' does not exist")
-        elif error_code == '403':
+        elif error_code == "403":
             print(f"❌ Access denied to bucket '{bucket_name}'")
         else:
             print(f"❌ Error accessing bucket: {e}")
         return False
 
 
-def create_sample_circuits() -> Dict[str, str]:
+def create_sample_circuits() -> dict[str, str]:
     """
     Create sample quantum circuits in QASM format.
 
@@ -69,7 +69,7 @@ def create_sample_circuits() -> Dict[str, str]:
     circuits = {}
 
     # Bell State (2 qubits)
-    circuits['bell/bell_state.qasm'] = """OPENQASM 2.0;
+    circuits["bell/bell_state.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // Bell State: Creates maximal entanglement between 2 qubits
@@ -86,7 +86,7 @@ measure q[1] -> c[1];
 """
 
     # GHZ State (4 qubits)
-    circuits['ghz/ghz_4qubit.qasm'] = """OPENQASM 2.0;
+    circuits["ghz/ghz_4qubit.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // GHZ State: Greenberger-Horne-Zeilinger state
@@ -105,7 +105,7 @@ measure q -> c;
 """
 
     # Quantum Teleportation (3 qubits)
-    circuits['teleportation/teleportation.qasm'] = """OPENQASM 2.0;
+    circuits["teleportation/teleportation.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // Quantum Teleportation
@@ -136,7 +136,7 @@ measure q[2] -> c[2];
 """
 
     # Grover's Algorithm (3 qubits)
-    circuits['grover/grover_3qubit.qasm'] = """OPENQASM 2.0;
+    circuits["grover/grover_3qubit.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // Grover's Search Algorithm for 3 qubits
@@ -178,7 +178,7 @@ measure q -> c;
 """
 
     # Deutsch-Jozsa (4 qubits)
-    circuits['deutsch/deutsch_jozsa_4q.qasm'] = """OPENQASM 2.0;
+    circuits["deutsch/deutsch_jozsa_4q.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // Deutsch-Jozsa Algorithm
@@ -209,7 +209,7 @@ measure q[2] -> c[2];
 """
 
     # VQE Circuit for H2 molecule (4 qubits)
-    circuits['vqe/h2_molecule.qasm'] = """OPENQASM 2.0;
+    circuits["vqe/h2_molecule.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // VQE ansatz for H2 molecule simulation
@@ -240,7 +240,7 @@ measure q -> c;
 """
 
     # Simple superposition (2 qubits)
-    circuits['basic/superposition_2q.qasm'] = """OPENQASM 2.0;
+    circuits["basic/superposition_2q.qasm"] = """OPENQASM 2.0;
 include "qelib1.inc";
 
 // Simple superposition on 2 qubits
@@ -258,7 +258,7 @@ measure q -> c;
     return circuits
 
 
-def create_circuit_metadata() -> List[Dict[str, Any]]:
+def create_circuit_metadata() -> list[dict[str, Any]]:
     """
     Create metadata for each circuit.
 
@@ -273,7 +273,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_gates": 2,
             "description": "Bell state demonstrating maximal entanglement",
             "expected_fidelity": 1.0,
-            "expected_measurements": {"00": 0.5, "11": 0.5}
+            "expected_measurements": {"00": 0.5, "11": 0.5},
         },
         {
             "circuit_id": "ghz_4qubit",
@@ -282,7 +282,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_gates": 4,
             "description": "4-qubit GHZ state",
             "expected_fidelity": 1.0,
-            "expected_measurements": {"0000": 0.5, "1111": 0.5}
+            "expected_measurements": {"0000": 0.5, "1111": 0.5},
         },
         {
             "circuit_id": "teleportation",
@@ -290,7 +290,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_qubits": 3,
             "num_gates": 7,
             "description": "Quantum teleportation protocol",
-            "expected_fidelity": 0.95
+            "expected_fidelity": 0.95,
         },
         {
             "circuit_id": "grover_3qubit",
@@ -299,7 +299,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_gates": 15,
             "description": "Grover search for |101⟩",
             "expected_fidelity": 0.90,
-            "expected_measurements": {"101": 0.85}
+            "expected_measurements": {"101": 0.85},
         },
         {
             "circuit_id": "deutsch_jozsa_4q",
@@ -307,7 +307,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_qubits": 4,
             "num_gates": 11,
             "description": "Deutsch-Jozsa algorithm",
-            "expected_fidelity": 0.98
+            "expected_fidelity": 0.98,
         },
         {
             "circuit_id": "h2_molecule",
@@ -315,7 +315,7 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_qubits": 4,
             "num_gates": 12,
             "description": "VQE ansatz for H2 molecule",
-            "expected_fidelity": 0.85
+            "expected_fidelity": 0.85,
         },
         {
             "circuit_id": "superposition_2q",
@@ -324,14 +324,15 @@ def create_circuit_metadata() -> List[Dict[str, Any]]:
             "num_gates": 2,
             "description": "Simple 2-qubit superposition",
             "expected_fidelity": 1.0,
-            "expected_measurements": {"00": 0.25, "01": 0.25, "10": 0.25, "11": 0.25}
-        }
+            "expected_measurements": {"00": 0.25, "01": 0.25, "10": 0.25, "11": 0.25},
+        },
     ]
     return metadata
 
 
-def upload_file_to_s3(s3_client, bucket_name: str, file_path: str,
-                      s3_key: str, content: str) -> bool:
+def upload_file_to_s3(
+    s3_client, bucket_name: str, file_path: str, s3_key: str, content: str
+) -> bool:
     """
     Upload a file to S3.
 
@@ -350,7 +351,7 @@ def upload_file_to_s3(s3_client, bucket_name: str, file_path: str,
             Bucket=bucket_name,
             Key=s3_key,
             Body=content,
-            ContentType='text/plain' if s3_key.endswith('.qasm') else 'application/json'
+            ContentType="text/plain" if s3_key.endswith(".qasm") else "application/json",
         )
         return True
     except ClientError as e:
@@ -373,7 +374,7 @@ def main():
         return 1
 
     # Create S3 client
-    print(f"🔗 Connecting to AWS S3...")
+    print("🔗 Connecting to AWS S3...")
     s3_client = get_s3_client()
 
     # Verify bucket exists
@@ -398,8 +399,7 @@ def main():
 
     for circuit_path, circuit_content in tqdm(circuits.items(), desc="Uploading"):
         s3_key = f"circuits/{circuit_path}"
-        if upload_file_to_s3(s3_client, bucket_name, circuit_path,
-                            s3_key, circuit_content):
+        if upload_file_to_s3(s3_client, bucket_name, circuit_path, s3_key, circuit_content):
             successful += 1
         else:
             failed += 1
@@ -409,8 +409,9 @@ def main():
     # Upload metadata
     print("📤 Uploading circuit metadata...")
     metadata_content = json.dumps(metadata_list, indent=2)
-    if upload_file_to_s3(s3_client, bucket_name, "metadata.json",
-                        "circuits/metadata.json", metadata_content):
+    if upload_file_to_s3(
+        s3_client, bucket_name, "metadata.json", "circuits/metadata.json", metadata_content
+    ):
         successful += 1
         print("✅ Metadata uploaded")
     else:
@@ -432,9 +433,9 @@ def main():
 
     # List uploaded files
     print("📋 Uploaded circuits:")
-    for circuit_path in circuits.keys():
+    for circuit_path in circuits:
         print(f"   - circuits/{circuit_path}")
-    print(f"   - circuits/metadata.json")
+    print("   - circuits/metadata.json")
     print()
 
     # Next steps
@@ -443,9 +444,11 @@ def main():
     print(f"   aws s3 ls s3://{bucket_name}/circuits/ --recursive")
     print()
     print("2. Test Lambda function with a circuit:")
-    print(f"   aws lambda invoke --function-name simulate-quantum-circuit \\")
-    print(f"     --payload '{{\"Records\":[{{\"s3\":{{\"bucket\":{{\"name\":\"{bucket_name}\"}},\"object\":{{\"key\":\"circuits/bell/bell_state.qasm\"}}}}}}]}}' \\")
-    print(f"     response.json")
+    print("   aws lambda invoke --function-name simulate-quantum-circuit \\")
+    print(
+        f'     --payload \'{{"Records":[{{"s3":{{"bucket":{{"name":"{bucket_name}"}},"object":{{"key":"circuits/bell/bell_state.qasm"}}}}}}]}}\' \\'
+    )
+    print("     response.json")
     print()
     print("3. Open Jupyter notebook for analysis:")
     print("   jupyter notebook notebooks/quantum_analysis.ipynb")
@@ -454,6 +457,7 @@ def main():
     return 0 if failed == 0 else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(main())

@@ -5,12 +5,12 @@ Provides functions to access Twitter and Reddit datasets from AWS Open Data
 and other public sources without downloading large files locally.
 """
 
+import json
+import logging
+from typing import Optional
+
 import boto3
 import pandas as pd
-import json
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class SocialMediaDataAccess:
     public sources.
     """
 
-    def __init__(self, use_anon: bool = True, region: str = 'us-east-1'):
+    def __init__(self, use_anon: bool = True, region: str = "us-east-1"):
         """
         Initialize social media data access client.
 
@@ -35,7 +35,7 @@ class SocialMediaDataAccess:
         region : str, default 'us-east-1'
             AWS region
         """
-        self.s3_client = boto3.client('s3', region_name=region)
+        self.s3_client = boto3.client("s3", region_name=region)
         self.use_anon = use_anon
         logger.info("Initialized SocialMediaDataAccess client")
 
@@ -43,8 +43,8 @@ class SocialMediaDataAccess:
         self,
         bucket: str,
         prefix: str,
-        date_range: Optional[Tuple[str, str]] = None,
-        sample_size: Optional[int] = None
+        date_range: Optional[tuple[str, str]] = None,
+        sample_size: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Load Twitter data from S3.
@@ -77,25 +77,22 @@ class SocialMediaDataAccess:
         logger.info(f"Loading Twitter data from s3://{bucket}/{prefix}")
 
         # List objects in S3
-        response = self.s3_client.list_objects_v2(
-            Bucket=bucket,
-            Prefix=prefix
-        )
+        response = self.s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
-        if 'Contents' not in response:
+        if "Contents" not in response:
             raise ValueError(f"No data found at s3://{bucket}/{prefix}")
 
         # Load data files
         dfs = []
-        for obj in response.get('Contents', [])[:10]:  # Limit for performance
-            key = obj['Key']
-            if key.endswith('.json') or key.endswith('.jsonl'):
+        for obj in response.get("Contents", [])[:10]:  # Limit for performance
+            key = obj["Key"]
+            if key.endswith(".json") or key.endswith(".jsonl"):
                 try:
                     obj_data = self.s3_client.get_object(Bucket=bucket, Key=key)
-                    data = obj_data['Body'].read().decode('utf-8')
+                    data = obj_data["Body"].read().decode("utf-8")
 
                     # Parse JSON lines
-                    tweets = [json.loads(line) for line in data.strip().split('\\n') if line]
+                    tweets = [json.loads(line) for line in data.strip().split("\\n") if line]
                     df_chunk = pd.DataFrame(tweets)
                     dfs.append(df_chunk)
 
@@ -110,10 +107,10 @@ class SocialMediaDataAccess:
         df = pd.concat(dfs, ignore_index=True)
 
         # Filter by date range if specified
-        if date_range and 'created_at' in df.columns:
-            df['created_at'] = pd.to_datetime(df['created_at'])
+        if date_range and "created_at" in df.columns:
+            df["created_at"] = pd.to_datetime(df["created_at"])
             start, end = date_range
-            df = df[(df['created_at'] >= start) & (df['created_at'] <= end)]
+            df = df[(df["created_at"] >= start) & (df["created_at"] <= end)]
 
         # Sample if requested
         if sample_size and len(df) > sample_size:
@@ -127,7 +124,7 @@ class SocialMediaDataAccess:
         bucket: str,
         prefix: str,
         subreddit: Optional[str] = None,
-        sample_size: Optional[int] = None
+        sample_size: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Load Reddit data from S3.
@@ -166,12 +163,7 @@ class SocialMediaDataAccess:
         logger.info(f"Loaded {len(df)} Reddit posts")
         return df
 
-    def load_csv_dataset(
-        self,
-        bucket: str,
-        key: str,
-        **pandas_kwargs
-    ) -> pd.DataFrame:
+    def load_csv_dataset(self, bucket: str, key: str, **pandas_kwargs) -> pd.DataFrame:
         """
         Load CSV dataset from S3.
 
@@ -200,18 +192,12 @@ class SocialMediaDataAccess:
         logger.info(f"Loading CSV from s3://{bucket}/{key}")
 
         obj = self.s3_client.get_object(Bucket=bucket, Key=key)
-        df = pd.read_csv(obj['Body'], **pandas_kwargs)
+        df = pd.read_csv(obj["Body"], **pandas_kwargs)
 
         logger.info(f"Loaded {len(df)} rows")
         return df
 
-    def save_results(
-        self,
-        df: pd.DataFrame,
-        bucket: str,
-        key: str,
-        format: str = 'csv'
-    ) -> str:
+    def save_results(self, df: pd.DataFrame, bucket: str, key: str, format: str = "csv") -> str:
         """
         Save analysis results to S3.
 
@@ -243,28 +229,16 @@ class SocialMediaDataAccess:
         """
         logger.info(f"Saving results to s3://{bucket}/{key}")
 
-        if format == 'csv':
+        if format == "csv":
             csv_buffer = df.to_csv(index=False)
-            self.s3_client.put_object(
-                Bucket=bucket,
-                Key=key,
-                Body=csv_buffer.encode('utf-8')
-            )
-        elif format == 'json':
-            json_buffer = df.to_json(orient='records', lines=True)
-            self.s3_client.put_object(
-                Bucket=bucket,
-                Key=key,
-                Body=json_buffer.encode('utf-8')
-            )
-        elif format == 'parquet':
+            self.s3_client.put_object(Bucket=bucket, Key=key, Body=csv_buffer.encode("utf-8"))
+        elif format == "json":
+            json_buffer = df.to_json(orient="records", lines=True)
+            self.s3_client.put_object(Bucket=bucket, Key=key, Body=json_buffer.encode("utf-8"))
+        elif format == "parquet":
             # Requires pyarrow
             parquet_buffer = df.to_parquet()
-            self.s3_client.put_object(
-                Bucket=bucket,
-                Key=key,
-                Body=parquet_buffer
-            )
+            self.s3_client.put_object(Bucket=bucket, Key=key, Body=parquet_buffer)
         else:
             raise ValueError(f"Unsupported format: {format}")
 
@@ -273,7 +247,7 @@ class SocialMediaDataAccess:
         return s3_uri
 
 
-def validate_dataframe(df: pd.DataFrame, required_columns: List[str]) -> bool:
+def validate_dataframe(df: pd.DataFrame, required_columns: list[str]) -> bool:
     """
     Validate DataFrame has required columns.
 
@@ -300,7 +274,7 @@ def validate_dataframe(df: pd.DataFrame, required_columns: List[str]) -> bool:
     return True
 
 
-def check_s3_access(bucket: str, region: str = 'us-east-1') -> bool:
+def check_s3_access(bucket: str, region: str = "us-east-1") -> bool:
     """
     Verify S3 bucket access.
 
@@ -317,7 +291,7 @@ def check_s3_access(bucket: str, region: str = 'us-east-1') -> bool:
         True if accessible, False otherwise
     """
     try:
-        s3 = boto3.client('s3', region_name=region)
+        s3 = boto3.client("s3", region_name=region)
         s3.head_bucket(Bucket=bucket)
         logger.info(f"✓ S3 bucket '{bucket}' is accessible")
         return True

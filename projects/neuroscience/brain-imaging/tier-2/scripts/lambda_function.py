@@ -9,24 +9,24 @@ License: MIT
 """
 
 import json
-import os
-import boto3
-import tempfile
-from pathlib import Path
 import logging
+import os
+import tempfile
+
+import boto3
 
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # AWS S3 client
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
 # Import neuroimaging libraries
 try:
+    import nibabel as nib
     import numpy as np
     from scipy import ndimage
-    import nibabel as nib
 except ImportError as e:
     logger.warning(f"Optional dependency not available: {e}")
     raise
@@ -59,14 +59,9 @@ def load_nifti_from_s3(bucket: str, key: str, local_path: str) -> dict:
 
         logger.info(f"Loaded NIfTI: shape={data.shape}, dtype={data.dtype}")
 
-        return {
-            'data': data,
-            'affine': affine,
-            'header': header,
-            'original_shape': data.shape
-        }
+        return {"data": data, "affine": affine, "header": header, "original_shape": data.shape}
     except Exception as e:
-        logger.error(f"Error loading NIfTI: {str(e)}")
+        logger.error(f"Error loading NIfTI: {e!s}")
         raise
 
 
@@ -131,8 +126,10 @@ def motion_correction(data: np.ndarray, max_translation: float = 10.0) -> np.nda
     # Log mean motion
     motion_params = np.array(motion_params)
     mean_translation = np.mean(np.abs(motion_params), axis=0)
-    logger.info(f"Mean translation: x={mean_translation[0]:.3f}, "
-                f"y={mean_translation[1]:.3f}, z={mean_translation[2]:.3f} voxels")
+    logger.info(
+        f"Mean translation: x={mean_translation[0]:.3f}, "
+        f"y={mean_translation[1]:.3f}, z={mean_translation[2]:.3f} voxels"
+    )
 
     return data_corrected
 
@@ -175,8 +172,9 @@ def spatial_smoothing(data: np.ndarray, fwhm: float = 6.0) -> np.ndarray:
     return data_smoothed
 
 
-def save_nifti_to_s3(data: np.ndarray, affine: np.ndarray,
-                     bucket: str, key: str, local_path: str) -> bool:
+def save_nifti_to_s3(
+    data: np.ndarray, affine: np.ndarray, bucket: str, key: str, local_path: str
+) -> bool:
     """
     Save NIfTI file and upload to S3.
 
@@ -206,7 +204,7 @@ def save_nifti_to_s3(data: np.ndarray, affine: np.ndarray,
 
         return True
     except Exception as e:
-        logger.error(f"Error saving NIfTI: {str(e)}")
+        logger.error(f"Error saving NIfTI: {e!s}")
         return False
 
 
@@ -230,44 +228,48 @@ def lambda_handler(event, context):
 
     try:
         # Parse input parameters
-        if 'body' in event:
+        if "body" in event:
             # HTTP API call
-            body = json.loads(event['body'])
-            input_bucket = body.get('input_bucket')
-            input_key = body.get('input_key')
+            body = json.loads(event["body"])
+            input_bucket = body.get("input_bucket")
+            input_key = body.get("input_key")
         else:
             # Direct invocation
-            input_bucket = event.get('input_bucket')
-            input_key = event.get('input_key')
+            input_bucket = event.get("input_bucket")
+            input_key = event.get("input_key")
 
         if not input_bucket or not input_key:
             return {
-                'statusCode': 400,
-                'body': json.dumps({
-                    'error': 'Missing required parameters',
-                    'required': ['input_bucket', 'input_key']
-                })
+                "statusCode": 400,
+                "body": json.dumps(
+                    {
+                        "error": "Missing required parameters",
+                        "required": ["input_bucket", "input_key"],
+                    }
+                ),
             }
 
         # Get output bucket from environment variable
-        output_bucket = os.environ.get('OUTPUT_BUCKET')
+        output_bucket = os.environ.get("OUTPUT_BUCKET")
         if not output_bucket:
             logger.error("OUTPUT_BUCKET environment variable not set")
             return {
-                'statusCode': 500,
-                'body': json.dumps({'error': 'OUTPUT_BUCKET not configured'})
+                "statusCode": 500,
+                "body": json.dumps({"error": "OUTPUT_BUCKET not configured"}),
             }
 
-        logger.info(f"Parameters: input_bucket={input_bucket}, input_key={input_key}, output_bucket={output_bucket}")
+        logger.info(
+            f"Parameters: input_bucket={input_bucket}, input_key={input_key}, output_bucket={output_bucket}"
+        )
 
         # Create temporary directory
         with tempfile.TemporaryDirectory() as tmpdir:
             logger.info(f"Using temporary directory: {tmpdir}")
 
             # Define file paths
-            input_file = os.path.join(tmpdir, 'input.nii.gz')
-            corrected_file = os.path.join(tmpdir, 'corrected.nii.gz')
-            smoothed_file = os.path.join(tmpdir, 'smoothed.nii.gz')
+            input_file = os.path.join(tmpdir, "input.nii.gz")
+            corrected_file = os.path.join(tmpdir, "corrected.nii.gz")
+            smoothed_file = os.path.join(tmpdir, "smoothed.nii.gz")
 
             # Load input data from S3
             logger.info("Step 1: Loading input data")
@@ -275,14 +277,15 @@ def lambda_handler(event, context):
 
             # Apply motion correction
             logger.info("Step 2: Applying motion correction")
-            data_corrected = motion_correction(nifti_data['data'])
+            data_corrected = motion_correction(nifti_data["data"])
 
             # Save motion-corrected data
-            corrected_key = input_key.replace('.nii.gz', '_motion_corrected.nii.gz')
-            corrected_key = corrected_key.replace('.nii', '_motion_corrected.nii')
+            corrected_key = input_key.replace(".nii.gz", "_motion_corrected.nii.gz")
+            corrected_key = corrected_key.replace(".nii", "_motion_corrected.nii")
 
-            success = save_nifti_to_s3(data_corrected, nifti_data['affine'],
-                                      output_bucket, corrected_key, corrected_file)
+            success = save_nifti_to_s3(
+                data_corrected, nifti_data["affine"], output_bucket, corrected_key, corrected_file
+            )
 
             if not success:
                 raise Exception("Failed to save motion-corrected data")
@@ -292,54 +295,55 @@ def lambda_handler(event, context):
             data_smoothed = spatial_smoothing(data_corrected)
 
             # Save smoothed data
-            smoothed_key = input_key.replace('.nii.gz', '_smoothed.nii.gz')
-            smoothed_key = smoothed_key.replace('.nii', '_smoothed.nii')
+            smoothed_key = input_key.replace(".nii.gz", "_smoothed.nii.gz")
+            smoothed_key = smoothed_key.replace(".nii", "_smoothed.nii")
 
-            success = save_nifti_to_s3(data_smoothed, nifti_data['affine'],
-                                      output_bucket, smoothed_key, smoothed_file)
+            success = save_nifti_to_s3(
+                data_smoothed, nifti_data["affine"], output_bucket, smoothed_key, smoothed_file
+            )
 
             if not success:
                 raise Exception("Failed to save smoothed data")
 
             # Prepare response
             response = {
-                'statusCode': 200,
-                'body': json.dumps({
-                    'message': 'Processing completed successfully',
-                    'input': f"s3://{input_bucket}/{input_key}",
-                    'motion_corrected': f"s3://{output_bucket}/{corrected_key}",
-                    'smoothed': f"s3://{output_bucket}/{smoothed_key}",
-                    'input_shape': str(nifti_data['original_shape']),
-                    'processing_steps': ['motion_correction', 'spatial_smoothing']
-                })
+                "statusCode": 200,
+                "body": json.dumps(
+                    {
+                        "message": "Processing completed successfully",
+                        "input": f"s3://{input_bucket}/{input_key}",
+                        "motion_corrected": f"s3://{output_bucket}/{corrected_key}",
+                        "smoothed": f"s3://{output_bucket}/{smoothed_key}",
+                        "input_shape": str(nifti_data["original_shape"]),
+                        "processing_steps": ["motion_correction", "spatial_smoothing"],
+                    }
+                ),
             }
 
             logger.info(f"Processing complete. Response: {response}")
             return response
 
     except Exception as e:
-        logger.error(f"Error during processing: {str(e)}", exc_info=True)
+        logger.error(f"Error during processing: {e!s}", exc_info=True)
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'error': str(e),
-                'message': 'An error occurred during fMRI processing'
-            })
+            "statusCode": 500,
+            "body": json.dumps(
+                {"error": str(e), "message": "An error occurred during fMRI processing"}
+            ),
         }
 
 
 # For local testing
 if __name__ == "__main__":
     # Test event
-    test_event = {
-        "input_bucket": "fmri-input-test",
-        "input_key": "sample_fmri.nii.gz"
-    }
+    test_event = {"input_bucket": "fmri-input-test", "input_key": "sample_fmri.nii.gz"}
 
     # Create mock context
     class MockContext:
         def __init__(self):
-            self.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789012:function:fmri-preprocessor"
+            self.invoked_function_arn = (
+                "arn:aws:lambda:us-east-1:123456789012:function:fmri-preprocessor"
+            )
             self.aws_request_id = "test-request-id"
             self.function_version = "$LATEST"
             self.log_group_name = "/aws/lambda/fmri-preprocessor"

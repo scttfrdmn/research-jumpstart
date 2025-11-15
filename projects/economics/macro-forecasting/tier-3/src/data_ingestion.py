@@ -4,16 +4,16 @@ Data ingestion module for economic data sources.
 Provides classes for loading data from FRED, World Bank, and OECD APIs.
 """
 
-import os
-from typing import List, Optional, Dict, Union
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
-import boto3
-import awswrangler as wr
-from fredapi import Fred
-import wbgapi as wb
 import logging
+import os
+from datetime import datetime
+from typing import Optional, Union
+
+import awswrangler as wr
+import boto3
+import pandas as pd
+import wbgapi as wb
+from fredapi import Fred
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,20 +30,20 @@ class FREDDataLoader:
             api_key: FRED API key (defaults to FRED_API_KEY env var)
             bucket_name: S3 bucket for caching data
         """
-        self.api_key = api_key or os.environ.get('FRED_API_KEY')
+        self.api_key = api_key or os.environ.get("FRED_API_KEY")
         if not self.api_key:
             raise ValueError("FRED API key required. Set FRED_API_KEY env var or pass api_key.")
 
         self.fred = Fred(api_key=self.api_key)
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3') if bucket_name else None
+        self.s3_client = boto3.client("s3") if bucket_name else None
 
     def get_series(
         self,
         series_id: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        cache: bool = True
+        cache: bool = True,
     ) -> pd.Series:
         """
         Get a FRED time series.
@@ -62,7 +62,7 @@ class FREDDataLoader:
         # Check S3 cache first
         if cache and self.bucket_name:
             try:
-                s3_path = f's3://{self.bucket_name}/fred/{series_id}.parquet'
+                s3_path = f"s3://{self.bucket_name}/fred/{series_id}.parquet"
                 cached_df = wr.s3.read_parquet(path=s3_path)
                 logger.info(f"Loaded {series_id} from cache")
                 return cached_df[series_id]
@@ -71,16 +71,14 @@ class FREDDataLoader:
 
         # Fetch from FRED API
         series = self.fred.get_series(
-            series_id,
-            observation_start=start_date,
-            observation_end=end_date
+            series_id, observation_start=start_date, observation_end=end_date
         )
 
         # Cache to S3
         if cache and self.bucket_name:
             try:
                 df = pd.DataFrame({series_id: series})
-                s3_path = f's3://{self.bucket_name}/fred/{series_id}.parquet'
+                s3_path = f"s3://{self.bucket_name}/fred/{series_id}.parquet"
                 wr.s3.to_parquet(df=df, path=s3_path)
                 logger.info(f"Cached {series_id} to S3")
             except Exception as e:
@@ -90,9 +88,9 @@ class FREDDataLoader:
 
     def get_multiple_series(
         self,
-        series_ids: List[str],
+        series_ids: list[str],
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Get multiple FRED series as a DataFrame.
@@ -110,9 +108,7 @@ class FREDDataLoader:
         series_dict = {}
         for series_id in series_ids:
             try:
-                series_dict[series_id] = self.get_series(
-                    series_id, start_date, end_date
-                )
+                series_dict[series_id] = self.get_series(series_id, start_date, end_date)
             except Exception as e:
                 logger.warning(f"Failed to fetch {series_id}: {e}")
 
@@ -129,14 +125,14 @@ class FREDDataLoader:
         Returns:
             DataFrame with GDP components
         """
-        start_date = start_date or '1960-01-01'
+        start_date = start_date or "1960-01-01"
 
         series_ids = {
-            'GDP': 'GDP',
-            'PCEC': 'PCEC',  # Personal Consumption
-            'GPDI': 'GPDI',  # Gross Private Domestic Investment
-            'GCE': 'GCE',    # Government Consumption
-            'NETEXP': 'NETEXP'  # Net Exports
+            "GDP": "GDP",
+            "PCEC": "PCEC",  # Personal Consumption
+            "GPDI": "GPDI",  # Gross Private Domestic Investment
+            "GCE": "GCE",  # Government Consumption
+            "NETEXP": "NETEXP",  # Net Exports
         }
 
         return self.get_multiple_series(list(series_ids.values()), start_date)
@@ -151,13 +147,13 @@ class FREDDataLoader:
         Returns:
             DataFrame with inflation measures
         """
-        start_date = start_date or '1960-01-01'
+        start_date = start_date or "1960-01-01"
 
         series_ids = {
-            'CPI': 'CPIAUCSL',      # Consumer Price Index
-            'PCE': 'PCEPI',         # Personal Consumption Expenditures Price Index
-            'CORE_PCE': 'PCEPILFE', # Core PCE (excl. food & energy)
-            'PPI': 'PPIACO'         # Producer Price Index
+            "CPI": "CPIAUCSL",  # Consumer Price Index
+            "PCE": "PCEPI",  # Personal Consumption Expenditures Price Index
+            "CORE_PCE": "PCEPILFE",  # Core PCE (excl. food & energy)
+            "PPI": "PPIACO",  # Producer Price Index
         }
 
         return self.get_multiple_series(list(series_ids.values()), start_date)
@@ -172,14 +168,14 @@ class FREDDataLoader:
         Returns:
             DataFrame with labor market data
         """
-        start_date = start_date or '1960-01-01'
+        start_date = start_date or "1960-01-01"
 
         series_ids = {
-            'UNRATE': 'UNRATE',         # Unemployment Rate
-            'PAYEMS': 'PAYEMS',         # Nonfarm Payrolls
-            'CIVPART': 'CIVPART',       # Labor Force Participation
-            'AWHAE': 'AWHAE',           # Average Weekly Hours
-            'CES0500000003': 'CES0500000003'  # Average Hourly Earnings
+            "UNRATE": "UNRATE",  # Unemployment Rate
+            "PAYEMS": "PAYEMS",  # Nonfarm Payrolls
+            "CIVPART": "CIVPART",  # Labor Force Participation
+            "AWHAE": "AWHAE",  # Average Weekly Hours
+            "CES0500000003": "CES0500000003",  # Average Hourly Earnings
         }
 
         return self.get_multiple_series(list(series_ids.values()), start_date)
@@ -194,15 +190,15 @@ class FREDDataLoader:
         Returns:
             DataFrame with financial indicators
         """
-        start_date = start_date or '1960-01-01'
+        start_date = start_date or "1960-01-01"
 
         series_ids = {
-            'FEDFUNDS': 'FEDFUNDS',   # Federal Funds Rate
-            'DGS10': 'DGS10',         # 10-Year Treasury
-            'DGS2': 'DGS2',           # 2-Year Treasury
-            'DGS3MO': 'DGS3MO',       # 3-Month Treasury
-            'BAMLH0A0HYM2': 'BAMLH0A0HYM2',  # High Yield Spread
-            'VIXCLS': 'VIXCLS'        # VIX
+            "FEDFUNDS": "FEDFUNDS",  # Federal Funds Rate
+            "DGS10": "DGS10",  # 10-Year Treasury
+            "DGS2": "DGS2",  # 2-Year Treasury
+            "DGS3MO": "DGS3MO",  # 3-Month Treasury
+            "BAMLH0A0HYM2": "BAMLH0A0HYM2",  # High Yield Spread
+            "VIXCLS": "VIXCLS",  # VIX
         }
 
         return self.get_multiple_series(list(series_ids.values()), start_date)
@@ -219,14 +215,14 @@ class WorldBankDataLoader:
             bucket_name: S3 bucket for caching data
         """
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3') if bucket_name else None
+        self.s3_client = boto3.client("s3") if bucket_name else None
 
     def get_indicator(
         self,
         indicator: str,
-        countries: Union[str, List[str]] = 'all',
+        countries: Union[str, list[str]] = "all",
         start_year: Optional[int] = None,
-        end_year: Optional[int] = None
+        end_year: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Get World Bank indicator data.
@@ -248,13 +244,13 @@ class WorldBankDataLoader:
             countries,
             time=range(start_year or 1960, end_year or datetime.now().year + 1),
             skipBlanks=True,
-            labels=True
+            labels=True,
         )
 
         # Cache to S3
         if self.bucket_name:
             try:
-                s3_path = f's3://{self.bucket_name}/worldbank/{indicator}.parquet'
+                s3_path = f"s3://{self.bucket_name}/worldbank/{indicator}.parquet"
                 wr.s3.to_parquet(df=df, path=s3_path)
                 logger.info(f"Cached {indicator} to S3")
             except Exception as e:
@@ -263,9 +259,7 @@ class WorldBankDataLoader:
         return df
 
     def get_gdp_data(
-        self,
-        countries: Union[str, List[str]] = 'all',
-        start_year: Optional[int] = None
+        self, countries: Union[str, list[str]] = "all", start_year: Optional[int] = None
     ) -> pd.DataFrame:
         """
         Get GDP data for countries.
@@ -278,15 +272,13 @@ class WorldBankDataLoader:
             DataFrame with GDP data
         """
         return self.get_indicator(
-            'NY.GDP.MKTP.CD',  # GDP (current US$)
+            "NY.GDP.MKTP.CD",  # GDP (current US$)
             countries,
-            start_year
+            start_year,
         )
 
     def get_gdp_growth(
-        self,
-        countries: Union[str, List[str]] = 'all',
-        start_year: Optional[int] = None
+        self, countries: Union[str, list[str]] = "all", start_year: Optional[int] = None
     ) -> pd.DataFrame:
         """
         Get GDP growth rate data.
@@ -299,12 +291,12 @@ class WorldBankDataLoader:
             DataFrame with GDP growth rates
         """
         return self.get_indicator(
-            'NY.GDP.MKTP.KD.ZG',  # GDP growth (annual %)
+            "NY.GDP.MKTP.KD.ZG",  # GDP growth (annual %)
             countries,
-            start_year
+            start_year,
         )
 
-    def get_g7_indicators(self, start_year: Optional[int] = None) -> Dict[str, pd.DataFrame]:
+    def get_g7_indicators(self, start_year: Optional[int] = None) -> dict[str, pd.DataFrame]:
         """
         Get major indicators for G7 countries.
 
@@ -314,14 +306,14 @@ class WorldBankDataLoader:
         Returns:
             Dictionary of DataFrames for each indicator
         """
-        g7_countries = ['USA', 'CAN', 'GBR', 'FRA', 'DEU', 'ITA', 'JPN']
+        g7_countries = ["USA", "CAN", "GBR", "FRA", "DEU", "ITA", "JPN"]
 
         indicators = {
-            'gdp': 'NY.GDP.MKTP.CD',
-            'gdp_growth': 'NY.GDP.MKTP.KD.ZG',
-            'inflation': 'FP.CPI.TOTL.ZG',
-            'unemployment': 'SL.UEM.TOTL.ZS',
-            'trade_balance': 'NE.RSB.GNFS.CD'
+            "gdp": "NY.GDP.MKTP.CD",
+            "gdp_growth": "NY.GDP.MKTP.KD.ZG",
+            "inflation": "FP.CPI.TOTL.ZG",
+            "unemployment": "SL.UEM.TOTL.ZS",
+            "trade_balance": "NE.RSB.GNFS.CD",
         }
 
         results = {}
@@ -337,11 +329,7 @@ class EconomicDataPipeline:
     Combined pipeline for ingesting and processing economic data.
     """
 
-    def __init__(
-        self,
-        fred_api_key: Optional[str] = None,
-        bucket_name: Optional[str] = None
-    ):
+    def __init__(self, fred_api_key: Optional[str] = None, bucket_name: Optional[str] = None):
         """
         Initialize data pipeline.
 
@@ -353,10 +341,7 @@ class EconomicDataPipeline:
         self.wb_loader = WorldBankDataLoader(bucket_name)
         self.bucket_name = bucket_name
 
-    def build_us_macro_dataset(
-        self,
-        start_date: str = '2000-01-01'
-    ) -> pd.DataFrame:
+    def build_us_macro_dataset(self, start_date: str = "2000-01-01") -> pd.DataFrame:
         """
         Build comprehensive US macroeconomic dataset.
 
@@ -378,17 +363,14 @@ class EconomicDataPipeline:
         df = pd.concat([gdp, inflation, labor, financial], axis=1)
 
         # Forward fill missing values
-        df = df.fillna(method='ffill')
+        df = df.fillna(method="ffill")
 
         logger.info(f"Built dataset with {len(df)} observations and {len(df.columns)} variables")
 
         return df
 
     def export_to_s3(
-        self,
-        df: pd.DataFrame,
-        s3_key: str,
-        partition_cols: Optional[List[str]] = None
+        self, df: pd.DataFrame, s3_key: str, partition_cols: Optional[list[str]] = None
     ) -> str:
         """
         Export DataFrame to S3 in Parquet format.
@@ -404,13 +386,8 @@ class EconomicDataPipeline:
         if not self.bucket_name:
             raise ValueError("bucket_name not set")
 
-        s3_path = f's3://{self.bucket_name}/{s3_key}'
-        wr.s3.to_parquet(
-            df=df,
-            path=s3_path,
-            partition_cols=partition_cols,
-            dataset=True
-        )
+        s3_path = f"s3://{self.bucket_name}/{s3_key}"
+        wr.s3.to_parquet(df=df, path=s3_path, partition_cols=partition_cols, dataset=True)
 
         logger.info(f"Exported data to {s3_path}")
         return s3_path
@@ -422,10 +399,11 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Ingest economic data')
-    parser.add_argument('--bucket', type=str, help='S3 bucket name')
-    parser.add_argument('--start-date', type=str, default='2000-01-01',
-                       help='Start date (YYYY-MM-DD)')
+    parser = argparse.ArgumentParser(description="Ingest economic data")
+    parser.add_argument("--bucket", type=str, help="S3 bucket name")
+    parser.add_argument(
+        "--start-date", type=str, default="2000-01-01", help="Start date (YYYY-MM-DD)"
+    )
     args = parser.parse_args()
 
     # Build and export dataset
@@ -433,11 +411,11 @@ def main():
     df = pipeline.build_us_macro_dataset(start_date=args.start_date)
 
     if args.bucket:
-        pipeline.export_to_s3(df, 'processed/us_macro.parquet')
+        pipeline.export_to_s3(df, "processed/us_macro.parquet")
         print(f"Data exported to s3://{args.bucket}/processed/us_macro.parquet")
     else:
         print(df.head())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

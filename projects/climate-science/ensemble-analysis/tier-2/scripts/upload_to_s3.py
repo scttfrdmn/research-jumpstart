@@ -6,19 +6,19 @@ This script handles uploading netCDF files to AWS S3 for processing.
 Supports resumable uploads and progress tracking.
 """
 
+import argparse
+import logging
 import os
 import sys
-import boto3
-import argparse
 from pathlib import Path
-from tqdm import tqdm
+
+import boto3
 from botocore.exceptions import ClientError
-import logging
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class S3Uploader:
     """Upload files to S3 with progress tracking."""
 
-    def __init__(self, bucket_name, region='us-east-1', profile=None):
+    def __init__(self, bucket_name, region="us-east-1", profile=None):
         """
         Initialize S3 uploader.
 
@@ -39,12 +39,9 @@ class S3Uploader:
         self.region = region
 
         # Create session and S3 client
-        if profile:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
 
-        self.s3 = session.client('s3', region_name=region)
+        self.s3 = session.client("s3", region_name=region)
 
         # Verify bucket exists
         try:
@@ -55,7 +52,7 @@ class S3Uploader:
             logger.error(f"  Error: {e}")
             raise
 
-    def upload_file(self, file_path, s3_key, multipart_threshold=100*1024*1024):
+    def upload_file(self, file_path, s3_key, multipart_threshold=100 * 1024 * 1024):
         """
         Upload file to S3 with multipart upload for large files.
 
@@ -74,7 +71,7 @@ class S3Uploader:
             return False
 
         file_size = file_path.stat().st_size
-        logger.info(f"Uploading: {file_path.name} ({file_size/1e9:.2f}GB)")
+        logger.info(f"Uploading: {file_path.name} ({file_size / 1e9:.2f}GB)")
 
         try:
             # Use multipart upload for large files
@@ -95,28 +92,21 @@ class S3Uploader:
 
     def _simple_upload(self, file_path, s3_key):
         """Simple upload for small files."""
-        self.s3.upload_file(
-            str(file_path),
-            self.bucket_name,
-            s3_key
-        )
+        self.s3.upload_file(str(file_path), self.bucket_name, s3_key)
 
     def _multipart_upload(self, file_path, s3_key, file_size):
         """Multipart upload for large files with progress bar."""
-        part_size = 50*1024*1024  # 50MB parts
+        part_size = 50 * 1024 * 1024  # 50MB parts
 
         # Initiate multipart upload
-        mpu = self.s3.create_multipart_upload(
-            Bucket=self.bucket_name,
-            Key=s3_key
-        )
-        upload_id = mpu['UploadId']
+        mpu = self.s3.create_multipart_upload(Bucket=self.bucket_name, Key=s3_key)
+        upload_id = mpu["UploadId"]
 
         try:
             parts = []
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 part_num = 1
-                with tqdm(total=file_size, unit='B', unit_scale=True) as pbar:
+                with tqdm(total=file_size, unit="B", unit_scale=True) as pbar:
                     while True:
                         data = f.read(part_size)
                         if not data:
@@ -127,13 +117,10 @@ class S3Uploader:
                             Bucket=self.bucket_name,
                             Key=s3_key,
                             PartNumber=part_num,
-                            UploadId=upload_id
+                            UploadId=upload_id,
                         )
 
-                        parts.append({
-                            'ETag': response['ETag'],
-                            'PartNumber': part_num
-                        })
+                        parts.append({"ETag": response["ETag"], "PartNumber": part_num})
 
                         pbar.update(len(data))
                         part_num += 1
@@ -143,19 +130,15 @@ class S3Uploader:
                 Bucket=self.bucket_name,
                 Key=s3_key,
                 UploadId=upload_id,
-                MultipartUpload={'Parts': parts}
+                MultipartUpload={"Parts": parts},
             )
 
-        except Exception as e:
+        except Exception:
             # Abort upload on error
-            self.s3.abort_multipart_upload(
-                Bucket=self.bucket_name,
-                Key=s3_key,
-                UploadId=upload_id
-            )
+            self.s3.abort_multipart_upload(Bucket=self.bucket_name, Key=s3_key, UploadId=upload_id)
             raise
 
-    def upload_directory(self, local_dir, s3_prefix='raw/'):
+    def upload_directory(self, local_dir, s3_prefix="raw/"):
         """
         Upload all files in directory to S3.
 
@@ -173,9 +156,11 @@ class S3Uploader:
             return 0, 0
 
         # Find all netCDF and data files
-        files = list(local_dir.glob('**/*.nc')) + \
-                list(local_dir.glob('**/*.nc4')) + \
-                list(local_dir.glob('**/*.zarr'))
+        files = (
+            list(local_dir.glob("**/*.nc"))
+            + list(local_dir.glob("**/*.nc4"))
+            + list(local_dir.glob("**/*.zarr"))
+        )
 
         if not files:
             logger.warning(f"✗ No data files found in {local_dir}")
@@ -189,7 +174,7 @@ class S3Uploader:
         for file_path in files:
             # Create S3 key maintaining directory structure
             relative_path = file_path.relative_to(local_dir)
-            s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, '/')
+            s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, "/")
 
             if self.upload_file(str(file_path), s3_key):
                 successful += 1
@@ -198,35 +183,34 @@ class S3Uploader:
 
         return successful, failed
 
-    def list_uploaded_files(self, prefix='raw/'):
+    def list_uploaded_files(self, prefix="raw/"):
         """List all uploaded files in S3."""
         try:
-            response = self.s3.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            if 'Contents' not in response:
+            if "Contents" not in response:
                 logger.info(f"No files found in s3://{self.bucket_name}/{prefix}")
                 return []
 
             files = []
-            for obj in response['Contents']:
-                size_gb = obj['Size'] / 1e9
-                files.append({
-                    'key': obj['Key'],
-                    'size': obj['Size'],
-                    'size_gb': size_gb,
-                    'modified': obj['LastModified']
-                })
+            for obj in response["Contents"]:
+                size_gb = obj["Size"] / 1e9
+                files.append(
+                    {
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "size_gb": size_gb,
+                        "modified": obj["LastModified"],
+                    }
+                )
 
             logger.info(f"\nUploaded files in {prefix}:")
             total_size = 0
             for f in files:
                 logger.info(f"  {f['key']} ({f['size_gb']:.3f}GB)")
-                total_size += f['size']
+                total_size += f["size"]
 
-            logger.info(f"Total: {total_size/1e9:.3f}GB")
+            logger.info(f"Total: {total_size / 1e9:.3f}GB")
             return files
 
         except ClientError as e:
@@ -234,7 +218,7 @@ class S3Uploader:
             return []
 
 
-def upload_climate_data(bucket_name, data_dir='sample_data', region='us-east-1'):
+def upload_climate_data(bucket_name, data_dir="sample_data", region="us-east-1"):
     """
     Upload climate data from local directory to S3.
 
@@ -257,41 +241,15 @@ def upload_climate_data(bucket_name, data_dir='sample_data', region='us-east-1')
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Upload climate data to S3'
-    )
+    parser = argparse.ArgumentParser(description="Upload climate data to S3")
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
+    parser.add_argument("--data-dir", default="sample_data", help="Local directory with data files")
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--profile", help="AWS profile name")
+    parser.add_argument("--file", help="Upload single file instead of directory")
+    parser.add_argument("--s3-key", default="raw/", help="S3 key/prefix for uploaded files")
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name'
-    )
-    parser.add_argument(
-        '--data-dir',
-        default='sample_data',
-        help='Local directory with data files'
-    )
-    parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
-    parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--file',
-        help='Upload single file instead of directory'
-    )
-    parser.add_argument(
-        '--s3-key',
-        default='raw/',
-        help='S3 key/prefix for uploaded files'
-    )
-    parser.add_argument(
-        '--list-only',
-        action='store_true',
-        help='Only list files without uploading'
+        "--list-only", action="store_true", help="Only list files without uploading"
     )
 
     args = parser.parse_args()
@@ -307,10 +265,7 @@ def main():
             uploader.list_uploaded_files(args.s3_key)
         else:
             # Upload directory
-            successful, failed = uploader.upload_directory(
-                args.data_dir,
-                args.s3_key
-            )
+            successful, failed = uploader.upload_directory(args.data_dir, args.s3_key)
             logger.info(f"\n✓ Upload complete: {successful} successful, {failed} failed")
             uploader.list_uploaded_files(args.s3_key)
 
@@ -321,5 +276,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

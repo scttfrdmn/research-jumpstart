@@ -12,21 +12,19 @@ Usage:
 """
 
 import argparse
-import boto3
-import os
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
-import json
-import csv
+from pathlib import Path
+
+import boto3
 import numpy as np
 import pandas as pd
 
 # AWS S3 client
-s3_client = boto3.client('s3')
+s3_client = boto3.client("s3")
 
 
-def generate_grid_data(days=7, interval_minutes=15, output_dir='./sample_data'):
+def generate_grid_data(days=7, interval_minutes=15, output_dir="./sample_data"):
     """
     Generate synthetic smart grid data for testing.
 
@@ -52,11 +50,10 @@ def generate_grid_data(days=7, interval_minutes=15, output_dir='./sample_data'):
     start_time = start_time - timedelta(days=days)
     intervals = days * 24 * (60 // interval_minutes)
 
-    timestamps = [start_time + timedelta(minutes=i*interval_minutes)
-                  for i in range(intervals)]
+    timestamps = [start_time + timedelta(minutes=i * interval_minutes) for i in range(intervals)]
 
     # Generate data for multiple substations
-    locations = ['substation_001', 'substation_002', 'substation_003']
+    locations = ["substation_001", "substation_002", "substation_003"]
     files_created = []
 
     for location in locations:
@@ -65,7 +62,7 @@ def generate_grid_data(days=7, interval_minutes=15, output_dir='./sample_data'):
         # Use location-specific seed for reproducibility
         np.random.seed(hash(location) % 2**32)
 
-        for i, ts in enumerate(timestamps):
+        for _i, ts in enumerate(timestamps):
             # Hour of day for daily patterns
             hour = ts.hour
             day_of_week = ts.weekday()
@@ -105,17 +102,19 @@ def generate_grid_data(days=7, interval_minutes=15, output_dir='./sample_data'):
             power_factor = 0.90 + np.random.uniform(-0.05, 0.08)
             power_factor = np.clip(power_factor, 0.85, 0.98)
 
-            data.append({
-                'timestamp': ts.isoformat(),
-                'location': location,
-                'load_mw': round(load_mw, 2),
-                'generation_mw': round(generation_mw, 2),
-                'voltage_kv': round(voltage_kv, 3),
-                'frequency_hz': round(frequency_hz, 4),
-                'solar_mw': round(solar_mw, 2),
-                'wind_mw': round(wind_mw, 2),
-                'power_factor': round(power_factor, 3)
-            })
+            data.append(
+                {
+                    "timestamp": ts.isoformat(),
+                    "location": location,
+                    "load_mw": round(load_mw, 2),
+                    "generation_mw": round(generation_mw, 2),
+                    "voltage_kv": round(voltage_kv, 3),
+                    "frequency_hz": round(frequency_hz, 4),
+                    "solar_mw": round(solar_mw, 2),
+                    "wind_mw": round(wind_mw, 2),
+                    "power_factor": round(power_factor, 3),
+                }
+            )
 
         # Save to CSV
         filename = f"grid_data_{location}_{start_time.strftime('%Y%m%d')}.csv"
@@ -133,7 +132,7 @@ def generate_grid_data(days=7, interval_minutes=15, output_dir='./sample_data'):
     return files_created
 
 
-def upload_file_to_s3(bucket_name, file_path, prefix='raw/'):
+def upload_file_to_s3(bucket_name, file_path, prefix="raw/"):
     """
     Upload a single file to S3.
 
@@ -168,11 +167,11 @@ def upload_file_to_s3(bucket_name, file_path, prefix='raw/'):
             str(file_path),
             bucket_name,
             s3_key,
-            ExtraArgs={'ContentType': 'text/csv'},
-            Callback=UploadProgressCallback(file_path)
+            ExtraArgs={"ContentType": "text/csv"},
+            Callback=UploadProgressCallback(file_path),
         )
 
-        print(f"  ✓ Upload successful")
+        print("  ✓ Upload successful")
         return s3_key
 
     except Exception as e:
@@ -180,7 +179,7 @@ def upload_file_to_s3(bucket_name, file_path, prefix='raw/'):
         return None
 
 
-def upload_directory_to_s3(bucket_name, directory, file_pattern='*.csv', prefix='raw/'):
+def upload_directory_to_s3(bucket_name, directory, file_pattern="*.csv", prefix="raw/"):
     """
     Upload all matching files from a directory to S3.
 
@@ -217,27 +216,29 @@ def upload_directory_to_s3(bucket_name, directory, file_pattern='*.csv', prefix=
         s3_key = upload_file_to_s3(bucket_name, file_path, prefix)
 
         if s3_key:
-            uploaded.append({
-                'file': file_path.name,
-                's3_key': s3_key,
-                'size_mb': file_path.stat().st_size / (1024 * 1024)
-            })
+            uploaded.append(
+                {
+                    "file": file_path.name,
+                    "s3_key": s3_key,
+                    "size_mb": file_path.stat().st_size / (1024 * 1024),
+                }
+            )
         else:
             failed.append(file_path.name)
 
     # Summary
     print("\n" + "=" * 60)
-    print(f"Upload Summary")
+    print("Upload Summary")
     print("=" * 60)
     print(f"Successful: {len(uploaded)}/{len(files)}")
     print(f"Failed: {len(failed)}/{len(files)}")
 
     if uploaded:
-        total_size = sum(item['size_mb'] for item in uploaded)
+        total_size = sum(item["size_mb"] for item in uploaded)
         print(f"Total uploaded: {total_size:.2f}MB")
 
     if failed:
-        print(f"\nFailed files:")
+        print("\nFailed files:")
         for filename in failed:
             print(f"  - {filename}")
 
@@ -257,8 +258,8 @@ class UploadProgressCallback:
         percent = (self.uploaded / self.file_size) * 100
         bar_length = 30
         filled = int(bar_length * self.uploaded / self.file_size)
-        bar = '█' * filled + '░' * (bar_length - filled)
-        print(f"  [{bar}] {percent:.1f}%", end='\r')
+        bar = "█" * filled + "░" * (bar_length - filled)
+        print(f"  [{bar}] {percent:.1f}%", end="\r")
 
         # Print newline when complete
         if self.uploaded >= self.file_size:
@@ -280,23 +281,23 @@ def verify_bucket_access(bucket_name):
         return False
 
 
-def list_bucket_contents(bucket_name, prefix='raw/'):
+def list_bucket_contents(bucket_name, prefix="raw/"):
     """List contents of bucket prefix."""
     try:
         response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=100)
 
-        if 'Contents' not in response:
+        if "Contents" not in response:
             print(f"No objects in s3://{bucket_name}/{prefix}")
             return []
 
-        objects = response['Contents']
+        objects = response["Contents"]
         print(f"\nObjects in s3://{bucket_name}/{prefix}:")
         print(f"{'Key':<60} {'Size':<15} {'Last Modified'}")
         print("-" * 90)
 
         for obj in objects:
-            size_mb = obj['Size'] / (1024 * 1024)
-            modified = obj['LastModified'].strftime('%Y-%m-%d %H:%M')
+            size_mb = obj["Size"] / (1024 * 1024)
+            modified = obj["LastModified"].strftime("%Y-%m-%d %H:%M")
             print(f"{obj['Key']:<60} {size_mb:>10.2f} MB  {modified}")
 
         print(f"\nTotal: {len(objects)} objects")
@@ -310,9 +311,9 @@ def list_bucket_contents(bucket_name, prefix='raw/'):
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
-        description='Upload smart grid data to S3 for optimization processing',
+        description="Upload smart grid data to S3 for optimization processing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   # Generate and upload sample data
   python upload_to_s3.py --bucket energy-grid-12345 --generate
@@ -325,47 +326,22 @@ Examples:
 
   # List uploaded files
   python upload_to_s3.py --bucket energy-grid-12345 --list
-        '''
+        """,
     )
 
+    parser.add_argument("--bucket", required=True, help="S3 bucket name (e.g., energy-grid-12345)")
+    parser.add_argument("--file", help="Single file to upload")
+    parser.add_argument("--input", help="Directory containing files to upload")
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name (e.g., energy-grid-12345)'
+        "--generate", action="store_true", help="Generate sample grid data before uploading"
+    )
+    parser.add_argument("--days", type=int, default=7, help="Days of data to generate (default: 7)")
+    parser.add_argument("--list", action="store_true", help="List files in bucket")
+    parser.add_argument(
+        "--pattern", default="*.csv", help="File pattern for directory upload (default: *.csv)"
     )
     parser.add_argument(
-        '--file',
-        help='Single file to upload'
-    )
-    parser.add_argument(
-        '--input',
-        help='Directory containing files to upload'
-    )
-    parser.add_argument(
-        '--generate',
-        action='store_true',
-        help='Generate sample grid data before uploading'
-    )
-    parser.add_argument(
-        '--days',
-        type=int,
-        default=7,
-        help='Days of data to generate (default: 7)'
-    )
-    parser.add_argument(
-        '--list',
-        action='store_true',
-        help='List files in bucket'
-    )
-    parser.add_argument(
-        '--pattern',
-        default='*.csv',
-        help='File pattern for directory upload (default: *.csv)'
-    )
-    parser.add_argument(
-        '--prefix',
-        default='raw/',
-        help='S3 prefix/folder for uploads (default: raw/)'
+        "--prefix", default="raw/", help="S3 prefix/folder for uploads (default: raw/)"
     )
 
     args = parser.parse_args()
@@ -389,7 +365,7 @@ Examples:
         # Upload generated files
         if files:
             print(f"\nUploading {len(files)} generated files...")
-            upload_directory_to_s3(args.bucket, './sample_data', '*.csv', args.prefix)
+            upload_directory_to_s3(args.bucket, "./sample_data", "*.csv", args.prefix)
 
     elif args.file:
         # Upload single file
@@ -406,10 +382,10 @@ Examples:
     print("\n" + "=" * 60)
     print("Upload complete!")
     print("\nNext steps:")
-    print(f"  1. Lambda will process files automatically (if trigger configured)")
-    print(f"  2. Or manually invoke: python scripts/lambda_function.py --test")
+    print("  1. Lambda will process files automatically (if trigger configured)")
+    print("  2. Or manually invoke: python scripts/lambda_function.py --test")
     print(f"  3. Query results: python scripts/query_results.py --bucket {args.bucket}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

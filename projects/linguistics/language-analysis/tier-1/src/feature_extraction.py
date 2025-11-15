@@ -5,16 +5,13 @@ This module provides functions to extract phonetic, lexical, and syntactic
 features from speech and text data for dialect identification.
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
 
 
-def extract_phonetic_features(
-    audio_path: str,
-    sample_rate: int = 16000
-) -> np.ndarray:
+def extract_phonetic_features(audio_path: str, sample_rate: int = 16000) -> np.ndarray:
     """
     Extract phonetic features from audio file.
 
@@ -43,10 +40,7 @@ def extract_phonetic_features(
     return features
 
 
-def extract_lexical_features(
-    text: str,
-    language: str = 'english'
-) -> Dict[str, float]:
+def extract_lexical_features(text: str, language: str = "english") -> dict[str, float]:
     """
     Extract lexical features from text.
 
@@ -63,20 +57,17 @@ def extract_lexical_features(
     # In real implementation, would use NLTK/spaCy
 
     features = {
-        'word_count': len(text.split()),
-        'avg_word_length': np.mean([len(w) for w in text.split()]) if text else 0,
-        'unique_word_ratio': 0.0,  # Would calculate type-token ratio
-        'dialect_markers': 0.0,     # Would count dialect-specific words
-        'spelling_variants': 0.0,   # Would identify regional spellings
+        "word_count": len(text.split()),
+        "avg_word_length": np.mean([len(w) for w in text.split()]) if text else 0,
+        "unique_word_ratio": 0.0,  # Would calculate type-token ratio
+        "dialect_markers": 0.0,  # Would count dialect-specific words
+        "spelling_variants": 0.0,  # Would identify regional spellings
     }
 
     return features
 
 
-def extract_syntactic_features(
-    text: str,
-    language: str = 'english'
-) -> Dict[str, float]:
+def extract_syntactic_features(text: str, language: str = "english") -> dict[str, float]:
     """
     Extract syntactic features from text.
 
@@ -93,20 +84,18 @@ def extract_syntactic_features(
     # In real implementation, would use dependency parsing
 
     features = {
-        'sentence_length': len(text.split()),
-        'clause_complexity': 0.0,    # Would analyze syntactic depth
-        'word_order_patterns': 0.0,  # Would detect dialect-specific ordering
-        'construction_types': 0.0,   # Would identify grammatical constructions
-        'morphological_patterns': 0.0, # Would analyze inflectional patterns
+        "sentence_length": len(text.split()),
+        "clause_complexity": 0.0,  # Would analyze syntactic depth
+        "word_order_patterns": 0.0,  # Would detect dialect-specific ordering
+        "construction_types": 0.0,  # Would identify grammatical constructions
+        "morphological_patterns": 0.0,  # Would analyze inflectional patterns
     }
 
     return features
 
 
 def extract_all_features(
-    audio_path: Optional[str] = None,
-    text: Optional[str] = None,
-    language: str = 'english'
+    audio_path: Optional[str] = None, text: Optional[str] = None, language: str = "english"
 ) -> np.ndarray:
     """
     Extract comprehensive feature vector combining all modalities.
@@ -141,9 +130,8 @@ def extract_all_features(
 
 
 def batch_extract_features(
-    corpus_data: Dict,
-    show_progress: bool = True
-) -> Tuple[np.ndarray, np.ndarray]:
+    corpus_data: dict, show_progress: bool = True
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Extract features for entire corpus.
 
@@ -156,7 +144,7 @@ def batch_extract_features(
     """
     from tqdm import tqdm
 
-    n_samples = len(corpus_data.get('dialects', []))
+    n_samples = len(corpus_data.get("dialects", []))
     features_list = []
     labels_list = []
 
@@ -165,14 +153,12 @@ def batch_extract_features(
         iterator = tqdm(iterator, desc="Extracting features")
 
     for i in iterator:
-        audio_path = corpus_data['audio_paths'][i] if 'audio_paths' in corpus_data else None
-        text = corpus_data['transcriptions'][i] if 'transcriptions' in corpus_data else None
-        dialect = corpus_data['dialects'][i] if 'dialects' in corpus_data else None
+        audio_path = corpus_data["audio_paths"][i] if "audio_paths" in corpus_data else None
+        text = corpus_data["transcriptions"][i] if "transcriptions" in corpus_data else None
+        dialect = corpus_data["dialects"][i] if "dialects" in corpus_data else None
 
         features = extract_all_features(
-            audio_path=audio_path,
-            text=text,
-            language=corpus_data.get('language', 'english')
+            audio_path=audio_path, text=text, language=corpus_data.get("language", "english")
         )
 
         if len(features) > 0:
@@ -185,11 +171,7 @@ def batch_extract_features(
         return np.array([]), np.array([])
 
 
-def save_features(
-    features: np.ndarray,
-    labels: np.ndarray,
-    output_path: Path
-) -> None:
+def save_features(features: np.ndarray, labels: np.ndarray, output_path: Path) -> None:
     """
     Save extracted features to disk.
 
@@ -203,7 +185,7 @@ def save_features(
     print(f"✓ Saved features to {output_path}")
 
 
-def load_features(feature_path: Path) -> Tuple[np.ndarray, np.ndarray]:
+def load_features(feature_path: Path) -> tuple[np.ndarray, np.ndarray]:
     """
     Load previously extracted features.
 
@@ -214,4 +196,4 @@ def load_features(feature_path: Path) -> Tuple[np.ndarray, np.ndarray]:
         Tuple of (features, labels)
     """
     data = np.load(feature_path)
-    return data['features'], data['labels']
+    return data["features"], data["labels"]

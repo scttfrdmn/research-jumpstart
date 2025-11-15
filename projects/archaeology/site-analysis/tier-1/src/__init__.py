@@ -12,16 +12,6 @@ This package provides utilities for multi-site archaeological analysis including
 __version__ = "1.0.0"
 __author__ = "Research Jumpstart Community"
 
-from . import artifact_analysis
-from . import lidar_processing
-from . import geophysical
-from . import data_utils
-from . import visualization
+from . import artifact_analysis, data_utils, geophysical, lidar_processing, visualization
 
-__all__ = [
-    'artifact_analysis',
-    'lidar_processing',
-    'geophysical',
-    'data_utils',
-    'visualization'
-]
+__all__ = ["artifact_analysis", "data_utils", "geophysical", "lidar_processing", "visualization"]

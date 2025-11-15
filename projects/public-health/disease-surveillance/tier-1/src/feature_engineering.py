@@ -5,17 +5,15 @@ Creates lag features, rolling statistics, seasonal decomposition,
 and spatiotemporal features for LSTM training.
 """
 
-import pandas as pd
+from typing import Optional
+
 import numpy as np
-from typing import List, Optional, Dict
+import pandas as pd
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 def create_lag_features(
-    data: pd.DataFrame,
-    target_col: str,
-    lag_periods: List[int],
-    group_col: Optional[str] = None
+    data: pd.DataFrame, target_col: str, lag_periods: list[int], group_col: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Create lagged features for time series forecasting.
@@ -33,19 +31,16 @@ def create_lag_features(
 
     if group_col:
         for lag in lag_periods:
-            df[f'{target_col}_lag_{lag}'] = df.groupby(group_col)[target_col].shift(lag)
+            df[f"{target_col}_lag_{lag}"] = df.groupby(group_col)[target_col].shift(lag)
     else:
         for lag in lag_periods:
-            df[f'{target_col}_lag_{lag}'] = df[target_col].shift(lag)
+            df[f"{target_col}_lag_{lag}"] = df[target_col].shift(lag)
 
     return df
 
 
 def create_rolling_features(
-    data: pd.DataFrame,
-    target_col: str,
-    windows: List[int],
-    group_col: Optional[str] = None
+    data: pd.DataFrame, target_col: str, windows: list[int], group_col: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Create rolling window statistics (mean, std, min, max).
@@ -63,28 +58,25 @@ def create_rolling_features(
 
     for window in windows:
         if group_col:
-            df[f'{target_col}_rolling_mean_{window}'] = \
-                df.groupby(group_col)[target_col].transform(
-                    lambda x: x.rolling(window=window, min_periods=1).mean()
-                )
-            df[f'{target_col}_rolling_std_{window}'] = \
-                df.groupby(group_col)[target_col].transform(
-                    lambda x: x.rolling(window=window, min_periods=1).std()
-                )
+            df[f"{target_col}_rolling_mean_{window}"] = df.groupby(group_col)[target_col].transform(
+                lambda x: x.rolling(window=window, min_periods=1).mean()
+            )
+            df[f"{target_col}_rolling_std_{window}"] = df.groupby(group_col)[target_col].transform(
+                lambda x: x.rolling(window=window, min_periods=1).std()
+            )
         else:
-            df[f'{target_col}_rolling_mean_{window}'] = \
+            df[f"{target_col}_rolling_mean_{window}"] = (
                 df[target_col].rolling(window=window, min_periods=1).mean()
-            df[f'{target_col}_rolling_std_{window}'] = \
+            )
+            df[f"{target_col}_rolling_std_{window}"] = (
                 df[target_col].rolling(window=window, min_periods=1).std()
+            )
 
     return df
 
 
 def seasonal_decomposition(
-    data: pd.DataFrame,
-    target_col: str,
-    period: int = 52,
-    group_col: Optional[str] = None
+    data: pd.DataFrame, target_col: str, period: int = 52, group_col: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Perform seasonal decomposition (trend, seasonal, residual).
@@ -111,10 +103,7 @@ def seasonal_decomposition(
 
             if len(group_data) >= 2 * period:
                 decomp = seasonal_decompose(
-                    group_data,
-                    model='additive',
-                    period=period,
-                    extrapolate_trend='freq'
+                    group_data, model="additive", period=period, extrapolate_trend="freq"
                 )
                 trends.append(decomp.trend)
                 seasonals.append(decomp.seasonal)
@@ -125,25 +114,25 @@ def seasonal_decomposition(
                 seasonals.append(pd.Series([np.nan] * len(group_data), index=group_data.index))
                 residuals.append(pd.Series([np.nan] * len(group_data), index=group_data.index))
 
-        df[f'{target_col}_trend'] = pd.concat(trends)
-        df[f'{target_col}_seasonal'] = pd.concat(seasonals)
-        df[f'{target_col}_residual'] = pd.concat(residuals)
+        df[f"{target_col}_trend"] = pd.concat(trends)
+        df[f"{target_col}_seasonal"] = pd.concat(seasonals)
+        df[f"{target_col}_residual"] = pd.concat(residuals)
     else:
         if len(df) >= 2 * period:
             decomp = seasonal_decompose(
-                df.set_index('Date')[target_col],
-                model='additive',
+                df.set_index("Date")[target_col],
+                model="additive",
                 period=period,
-                extrapolate_trend='freq'
+                extrapolate_trend="freq",
             )
-            df[f'{target_col}_trend'] = decomp.trend.values
-            df[f'{target_col}_seasonal'] = decomp.seasonal.values
-            df[f'{target_col}_residual'] = decomp.resid.values
+            df[f"{target_col}_trend"] = decomp.trend.values
+            df[f"{target_col}_seasonal"] = decomp.seasonal.values
+            df[f"{target_col}_residual"] = decomp.resid.values
 
     return df
 
 
-def create_date_features(data: pd.DataFrame, date_col: str = 'Date') -> pd.DataFrame:
+def create_date_features(data: pd.DataFrame, date_col: str = "Date") -> pd.DataFrame:
     """
     Extract date-based features (week, month, year, holidays).
 
@@ -158,24 +147,24 @@ def create_date_features(data: pd.DataFrame, date_col: str = 'Date') -> pd.DataF
     df[date_col] = pd.to_datetime(df[date_col])
 
     # Basic date features
-    df['year'] = df[date_col].dt.year
-    df['month'] = df[date_col].dt.month
-    df['week_of_year'] = df[date_col].dt.isocalendar().week
-    df['day_of_year'] = df[date_col].dt.dayofyear
+    df["year"] = df[date_col].dt.year
+    df["month"] = df[date_col].dt.month
+    df["week_of_year"] = df[date_col].dt.isocalendar().week
+    df["day_of_year"] = df[date_col].dt.dayofyear
 
     # Cyclic encoding for week of year (to capture cyclical nature)
-    df['week_sin'] = np.sin(2 * np.pi * df['week_of_year'] / 52)
-    df['week_cos'] = np.cos(2 * np.pi * df['week_of_year'] / 52)
+    df["week_sin"] = np.sin(2 * np.pi * df["week_of_year"] / 52)
+    df["week_cos"] = np.cos(2 * np.pi * df["week_of_year"] / 52)
 
     # Month cyclic encoding
-    df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
-    df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
+    df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
+    df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
 
     # Holiday indicators (major US holidays)
-    df['is_holiday_week'] = df[date_col].apply(_is_holiday_week)
+    df["is_holiday_week"] = df[date_col].apply(_is_holiday_week)
 
     # Season
-    df['season'] = df['month'].apply(_get_season)
+    df["season"] = df["month"].apply(_get_season)
 
     return df
 
@@ -183,8 +172,8 @@ def create_date_features(data: pd.DataFrame, date_col: str = 'Date') -> pd.DataF
 def create_growth_rate_features(
     data: pd.DataFrame,
     target_col: str,
-    periods: List[int] = [1, 2, 4],
-    group_col: Optional[str] = None
+    periods: Optional[list[int]] = None,
+    group_col: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Calculate growth rates (percent change) over different periods.
@@ -198,15 +187,17 @@ def create_growth_rate_features(
     Returns:
         DataFrame with growth rate features
     """
+    if periods is None:
+        periods = [1, 2, 4]
     df = data.copy()
 
     for period in periods:
         if group_col:
-            df[f'{target_col}_growth_{period}'] = \
+            df[f"{target_col}_growth_{period}"] = (
                 df.groupby(group_col)[target_col].pct_change(periods=period) * 100
+            )
         else:
-            df[f'{target_col}_growth_{period}'] = \
-                df[target_col].pct_change(periods=period) * 100
+            df[f"{target_col}_growth_{period}"] = df[target_col].pct_change(periods=period) * 100
 
     return df
 
@@ -214,11 +205,11 @@ def create_growth_rate_features(
 def create_spatiotemporal_features(
     data: pd.DataFrame,
     target_col: str,
-    lag_weeks: List[int] = [1, 2, 3, 4],
-    rolling_windows: List[int] = [2, 4, 8],
+    lag_weeks: Optional[list[int]] = None,
+    rolling_windows: Optional[list[int]] = None,
     include_seasonal_decomp: bool = True,
     include_growth_rates: bool = True,
-    group_col: str = 'Region'
+    group_col: str = "Region",
 ) -> pd.DataFrame:
     """
     Create comprehensive spatiotemporal feature set for forecasting.
@@ -235,6 +226,10 @@ def create_spatiotemporal_features(
     Returns:
         DataFrame with full feature set
     """
+    if rolling_windows is None:
+        rolling_windows = [2, 4, 8]
+    if lag_weeks is None:
+        lag_weeks = [1, 2, 3, 4]
     df = data.copy()
 
     print("Creating lag features...")
@@ -256,7 +251,7 @@ def create_spatiotemporal_features(
 
     # Fill NaN values (from lag/rolling operations)
     numeric_cols = df.select_dtypes(include=[np.number]).columns
-    df[numeric_cols] = df[numeric_cols].fillna(method='bfill').fillna(0)
+    df[numeric_cols] = df[numeric_cols].fillna(method="bfill").fillna(0)
 
     print(f"Feature engineering complete. Shape: {df.shape}")
     return df
@@ -264,15 +259,13 @@ def create_spatiotemporal_features(
 
 def _is_holiday_week(date: pd.Timestamp) -> int:
     """Check if date falls within a major US holiday week."""
-    month = date.month
-    day = date.day
 
     # Major holidays that affect healthcare-seeking behavior
     holidays = [
-        (1, 1),   # New Year's Day
-        (7, 4),   # Independence Day
-        (11, 22), # Thanksgiving (approximate)
-        (12, 25), # Christmas
+        (1, 1),  # New Year's Day
+        (7, 4),  # Independence Day
+        (11, 22),  # Thanksgiving (approximate)
+        (12, 25),  # Christmas
     ]
 
     # Check if within 7 days of any holiday
@@ -287,10 +280,10 @@ def _is_holiday_week(date: pd.Timestamp) -> int:
 def _get_season(month: int) -> str:
     """Get season from month."""
     if month in [12, 1, 2]:
-        return 'winter'
+        return "winter"
     elif month in [3, 4, 5]:
-        return 'spring'
+        return "spring"
     elif month in [6, 7, 8]:
-        return 'summer'
+        return "summer"
     else:
-        return 'fall'
+        return "fall"

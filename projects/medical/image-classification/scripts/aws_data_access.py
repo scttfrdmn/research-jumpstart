@@ -24,19 +24,18 @@ AWS Setup:
 """
 
 import os
-import json
+
 import boto3
+import pandas as pd
 from botocore import UNSIGNED
 from botocore.config import Config
-import pandas as pd
-
 
 # AWS Open Data Registry S3 buckets
 BUCKETS = {
-    'nih_chestxray': 'nih-chest-xrays',  # Public
-    'tcia': 'imaging.nci.nih.gov',  # TCIA Cancer Imaging
-    'medical_seg': 'medicalsegmentation',  # Medical Segmentation Decathlon
-    'rsna_pneumonia': 'rsna-pneumonia-detection-challenge'  # RSNA Challenge
+    "nih_chestxray": "nih-chest-xrays",  # Public
+    "tcia": "imaging.nci.nih.gov",  # TCIA Cancer Imaging
+    "medical_seg": "medicalsegmentation",  # Medical Segmentation Decathlon
+    "rsna_pneumonia": "rsna-pneumonia-detection-challenge",  # RSNA Challenge
 }
 
 
@@ -55,9 +54,9 @@ def get_s3_client(anonymous=True):
     """
     if anonymous:
         config = Config(signature_version=UNSIGNED)
-        return boto3.client('s3', config=config)
+        return boto3.client("s3", config=config)
     else:
-        return boto3.client('s3')
+        return boto3.client("s3")
 
 
 def list_nih_chestxray(max_results=100, anonymous=True):
@@ -83,25 +82,25 @@ def list_nih_chestxray(max_results=100, anonymous=True):
         S3 keys for image files
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['nih_chestxray']
+    bucket = BUCKETS["nih_chestxray"]
 
     print(f"Listing NIH Chest X-ray images on s3://{bucket}/")
-    print(f"Dataset: 112,120 images, 14 disease labels")
+    print("Dataset: 112,120 images, 14 disease labels")
 
     try:
         files = []
-        prefix = 'png/'
+        prefix = "png/"
 
-        paginator = s3.get_paginator('list_objects_v2')
+        paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
 
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                if obj['Key'].endswith('.png'):
-                    files.append(obj['Key'])
+            for obj in page["Contents"]:
+                if obj["Key"].endswith(".png"):
+                    files.append(obj["Key"])
 
                 if len(files) >= max_results:
                     break
@@ -119,7 +118,7 @@ def list_nih_chestxray(max_results=100, anonymous=True):
         return []
 
 
-def download_nih_metadata(output_path='data/nih_metadata.csv', anonymous=True):
+def download_nih_metadata(output_path="data/nih_metadata.csv", anonymous=True):
     """
     Download NIH Chest X-ray metadata CSV.
 
@@ -146,12 +145,12 @@ def download_nih_metadata(output_path='data/nih_metadata.csv', anonymous=True):
         Metadata as pandas DataFrame
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['nih_chestxray']
+    bucket = BUCKETS["nih_chestxray"]
 
     # Metadata file location
-    metadata_key = 'Data_Entry_2017.csv'
+    metadata_key = "Data_Entry_2017.csv"
 
-    print(f"Downloading NIH Chest X-ray metadata...")
+    print("Downloading NIH Chest X-ray metadata...")
     print(f"  From: s3://{bucket}/{metadata_key}")
     print(f"    To: {output_path}")
 
@@ -175,8 +174,9 @@ def download_nih_metadata(output_path='data/nih_metadata.csv', anonymous=True):
         return None
 
 
-def download_sample_images(output_dir='data/chest_xrays', n_samples=10,
-                          disease_filter=None, anonymous=True):
+def download_sample_images(
+    output_dir="data/chest_xrays", n_samples=10, disease_filter=None, anonymous=True
+):
     """
     Download sample chest X-ray images.
 
@@ -197,7 +197,7 @@ def download_sample_images(output_dir='data/chest_xrays', n_samples=10,
         Paths to downloaded files
     """
     s3 = get_s3_client(anonymous=anonymous)
-    bucket = BUCKETS['nih_chestxray']
+    bucket = BUCKETS["nih_chestxray"]
 
     print(f"Downloading {n_samples} sample chest X-ray images...")
 
@@ -205,20 +205,19 @@ def download_sample_images(output_dir='data/chest_xrays', n_samples=10,
     if disease_filter:
         print(f"Filtering for disease: {disease_filter}")
         metadata = download_nih_metadata(
-            output_path=os.path.join(output_dir, 'metadata.csv'),
-            anonymous=anonymous
+            output_path=os.path.join(output_dir, "metadata.csv"), anonymous=anonymous
         )
 
         if metadata is not None:
             # Filter by disease
-            filtered = metadata[metadata['Finding Labels'].str.contains(disease_filter, na=False)]
+            filtered = metadata[metadata["Finding Labels"].str.contains(disease_filter, na=False)]
             if len(filtered) == 0:
                 print(f"No images found with disease: {disease_filter}")
                 return []
 
             # Get image filenames
-            image_names = filtered['Image Index'].head(n_samples).tolist()
-            image_keys = [f'png/{name}' for name in image_names]
+            image_names = filtered["Image Index"].head(n_samples).tolist()
+            image_keys = [f"png/{name}" for name in image_names]
         else:
             print("Could not load metadata, downloading random images")
             image_keys = list_nih_chestxray(max_results=n_samples, anonymous=anonymous)
@@ -283,10 +282,10 @@ def list_tcia_collections(anonymous=True):
 
     print("\nExample collections on AWS:")
     collections = [
-        'TCGA-LUAD (Lung Adenocarcinoma)',
-        'TCGA-BRCA (Breast Cancer)',
-        'TCGA-GBM (Glioblastoma)',
-        'LIDC-IDRI (Lung Imaging Database)'
+        "TCGA-LUAD (Lung Adenocarcinoma)",
+        "TCGA-BRCA (Breast Cancer)",
+        "TCGA-GBM (Glioblastoma)",
+        "LIDC-IDRI (Lung Imaging Database)",
     ]
 
     for coll in collections:
@@ -306,56 +305,28 @@ def get_medical_seg_decathlon_info():
     print("=" * 60)
 
     tasks = {
-        'Task01_BrainTumour': {
-            'modality': 'MRI (4 channels)',
-            'size': '484 images',
-            'labels': 'Edema, Non-enhancing tumor, Enhancing tumor'
+        "Task01_BrainTumour": {
+            "modality": "MRI (4 channels)",
+            "size": "484 images",
+            "labels": "Edema, Non-enhancing tumor, Enhancing tumor",
         },
-        'Task02_Heart': {
-            'modality': 'MRI',
-            'size': '20 images',
-            'labels': 'Left Atrium'
+        "Task02_Heart": {"modality": "MRI", "size": "20 images", "labels": "Left Atrium"},
+        "Task03_Liver": {"modality": "CT", "size": "131 images", "labels": "Liver, Tumor"},
+        "Task04_Hippocampus": {
+            "modality": "MRI",
+            "size": "260 images",
+            "labels": "Anterior, Posterior hippocampus",
         },
-        'Task03_Liver': {
-            'modality': 'CT',
-            'size': '131 images',
-            'labels': 'Liver, Tumor'
+        "Task05_Prostate": {
+            "modality": "MRI (2 channels)",
+            "size": "32 images",
+            "labels": "Peripheral zone, Transition zone",
         },
-        'Task04_Hippocampus': {
-            'modality': 'MRI',
-            'size': '260 images',
-            'labels': 'Anterior, Posterior hippocampus'
-        },
-        'Task05_Prostate': {
-            'modality': 'MRI (2 channels)',
-            'size': '32 images',
-            'labels': 'Peripheral zone, Transition zone'
-        },
-        'Task06_Lung': {
-            'modality': 'CT',
-            'size': '64 images',
-            'labels': 'Lung cancer'
-        },
-        'Task07_Pancreas': {
-            'modality': 'CT',
-            'size': '282 images',
-            'labels': 'Pancreas, Tumor'
-        },
-        'Task08_HepaticVessel': {
-            'modality': 'CT',
-            'size': '303 images',
-            'labels': 'Vessel, Tumor'
-        },
-        'Task09_Spleen': {
-            'modality': 'CT',
-            'size': '41 images',
-            'labels': 'Spleen'
-        },
-        'Task10_Colon': {
-            'modality': 'CT',
-            'size': '126 images',
-            'labels': 'Colon cancer'
-        }
+        "Task06_Lung": {"modality": "CT", "size": "64 images", "labels": "Lung cancer"},
+        "Task07_Pancreas": {"modality": "CT", "size": "282 images", "labels": "Pancreas, Tumor"},
+        "Task08_HepaticVessel": {"modality": "CT", "size": "303 images", "labels": "Vessel, Tumor"},
+        "Task09_Spleen": {"modality": "CT", "size": "41 images", "labels": "Spleen"},
+        "Task10_Colon": {"modality": "CT", "size": "126 images", "labels": "Colon cancer"},
     }
 
     print("\n10 Segmentation Tasks:")
@@ -381,33 +352,33 @@ def get_bucket_info():
     print("=" * 70)
 
     datasets = {
-        'NIH Chest X-ray14': {
-            'bucket': 's3://nih-chest-xrays',
-            'description': '112,120 frontal-view chest X-rays',
-            'size': '~45 GB',
-            'labels': '14 disease categories',
-            'access': 'Public, no credentials required',
-            'docs': 'https://registry.opendata.aws/nih-chest-xray/',
-            'paper': 'Wang et al., ChestX-ray8 (2017)'
+        "NIH Chest X-ray14": {
+            "bucket": "s3://nih-chest-xrays",
+            "description": "112,120 frontal-view chest X-rays",
+            "size": "~45 GB",
+            "labels": "14 disease categories",
+            "access": "Public, no credentials required",
+            "docs": "https://registry.opendata.aws/nih-chest-xray/",
+            "paper": "Wang et al., ChestX-ray8 (2017)",
         },
-        'TCIA Collections': {
-            'bucket': 's3://imaging.nci.nih.gov',
-            'description': 'Cancer imaging from clinical trials',
-            'size': 'Multiple TB',
-            'labels': 'Various cancer types and organs',
-            'access': 'Public (some require registration)',
-            'docs': 'https://www.cancerimagingarchive.net/',
-            'paper': 'Various publications'
+        "TCIA Collections": {
+            "bucket": "s3://imaging.nci.nih.gov",
+            "description": "Cancer imaging from clinical trials",
+            "size": "Multiple TB",
+            "labels": "Various cancer types and organs",
+            "access": "Public (some require registration)",
+            "docs": "https://www.cancerimagingarchive.net/",
+            "paper": "Various publications",
         },
-        'Medical Seg Decathlon': {
-            'bucket': 's3://medicalsegmentation',
-            'description': '10 organ segmentation tasks',
-            'size': '~35 GB',
-            'labels': 'Organ and tumor segmentations',
-            'access': 'Public, no credentials required',
-            'docs': 'http://medicaldecathlon.com/',
-            'paper': 'Antonelli et al., Medical Image Analysis (2022)'
-        }
+        "Medical Seg Decathlon": {
+            "bucket": "s3://medicalsegmentation",
+            "description": "10 organ segmentation tasks",
+            "size": "~35 GB",
+            "labels": "Organ and tumor segmentations",
+            "access": "Public, no credentials required",
+            "docs": "http://medicaldecathlon.com/",
+            "paper": "Antonelli et al., Medical Image Analysis (2022)",
+        },
     }
 
     for name, info in datasets.items():
@@ -426,7 +397,7 @@ def get_bucket_info():
     print("  download_sample_images(n_samples=10, disease_filter='Pneumonia')")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("AWS Open Data Access for Medical Imaging")
     print("=" * 70)
 
@@ -449,7 +420,7 @@ if __name__ == '__main__':
 
     # Download metadata
     print("\n2b. Downloading metadata...")
-    metadata = download_nih_metadata(output_path='data/nih_metadata.csv')
+    metadata = download_nih_metadata(output_path="data/nih_metadata.csv")
     if metadata is not None:
         print("\nSample metadata:")
         print(metadata.head(3))
@@ -457,11 +428,12 @@ if __name__ == '__main__':
         print("\nDisease distribution:")
         # Count diseases (split by |)
         all_diseases = []
-        for labels in metadata['Finding Labels']:
-            if pd.notna(labels) and labels != 'No Finding':
-                all_diseases.extend(labels.split('|'))
+        for labels in metadata["Finding Labels"]:
+            if pd.notna(labels) and labels != "No Finding":
+                all_diseases.extend(labels.split("|"))
 
         from collections import Counter
+
         disease_counts = Counter(all_diseases)
         print("Top 5 diseases:")
         for disease, count in disease_counts.most_common(5):

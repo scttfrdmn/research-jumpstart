@@ -4,12 +4,16 @@ Clinical evaluation metrics for medical imaging models.
 Includes AUC-ROC, sensitivity, specificity, Dice coefficient, etc.
 """
 
+
 import numpy as np
 from sklearn.metrics import (
-    roc_auc_score, roc_curve, confusion_matrix,
-    accuracy_score, precision_score, recall_score, f1_score
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
 )
-from typing import Dict, Tuple
 
 
 def calculate_auc_roc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -18,10 +22,8 @@ def calculate_auc_roc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def calculate_sensitivity_specificity(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    threshold: float = 0.5
-) -> Tuple[float, float]:
+    y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5
+) -> tuple[float, float]:
     """
     Calculate sensitivity (recall) and specificity.
 
@@ -59,10 +61,8 @@ def calculate_dice_coefficient(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def evaluate_classification(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    threshold: float = 0.5
-) -> Dict[str, float]:
+    y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5
+) -> dict[str, float]:
     """
     Comprehensive classification evaluation.
 
@@ -72,19 +72,19 @@ def evaluate_classification(
     y_pred_binary = (y_pred >= threshold).astype(int)
 
     metrics = {
-        'auc_roc': roc_auc_score(y_true, y_pred),
-        'accuracy': accuracy_score(y_true, y_pred_binary),
-        'precision': precision_score(y_true, y_pred_binary, zero_division=0),
-        'recall': recall_score(y_true, y_pred_binary, zero_division=0),
-        'f1': f1_score(y_true, y_pred_binary, zero_division=0)
+        "auc_roc": roc_auc_score(y_true, y_pred),
+        "accuracy": accuracy_score(y_true, y_pred_binary),
+        "precision": precision_score(y_true, y_pred_binary, zero_division=0),
+        "recall": recall_score(y_true, y_pred_binary, zero_division=0),
+        "f1": f1_score(y_true, y_pred_binary, zero_division=0),
     }
 
     sensitivity, specificity = calculate_sensitivity_specificity(y_true, y_pred, threshold)
-    metrics['sensitivity'] = sensitivity
-    metrics['specificity'] = specificity
+    metrics["sensitivity"] = sensitivity
+    metrics["specificity"] = specificity
 
     return metrics
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Clinical Evaluation Metrics")

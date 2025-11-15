@@ -2,21 +2,18 @@
 Visualization functions for urban planning analysis.
 """
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.graph_objects as go
-import plotly.express as px
-from typing import List, Dict, Optional
+
 import folium
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import seaborn as sns
 
 
 def plot_urban_growth(
-    imagery_series: List[np.ndarray],
-    years: List[int],
-    city_name: str,
-    figsize: tuple = (15, 5)
+    imagery_series: list[np.ndarray], years: list[int], city_name: str, figsize: tuple = (15, 5)
 ) -> plt.Figure:
     """
     Plot urban growth time series from satellite imagery.
@@ -45,8 +42,8 @@ def plot_urban_growth(
 
     for idx, (img, year) in enumerate(zip(imagery_series, years)):
         axes[idx].imshow(img)
-        axes[idx].set_title(f'{city_name} - {year}')
-        axes[idx].axis('off')
+        axes[idx].set_title(f"{city_name} - {year}")
+        axes[idx].axis("off")
 
     plt.tight_layout()
     return fig
@@ -54,9 +51,9 @@ def plot_urban_growth(
 
 def plot_mobility_heatmap(
     traffic_data: pd.DataFrame,
-    metric: str = 'aadt',
-    title: str = 'Traffic Flow Heatmap',
-    figsize: tuple = (12, 8)
+    metric: str = "aadt",
+    title: str = "Traffic Flow Heatmap",
+    figsize: tuple = (12, 8),
 ) -> plt.Figure:
     """
     Create heatmap of mobility metrics.
@@ -79,19 +76,19 @@ def plot_mobility_heatmap(
     """
     fig, ax = plt.subplots(figsize=figsize)
 
-    if 'x' in traffic_data.columns and 'y' in traffic_data.columns:
+    if "x" in traffic_data.columns and "y" in traffic_data.columns:
         scatter = ax.scatter(
-            traffic_data['x'],
-            traffic_data['y'],
+            traffic_data["x"],
+            traffic_data["y"],
             c=traffic_data[metric],
-            cmap='RdYlGn_r',
+            cmap="RdYlGn_r",
             s=50,
-            alpha=0.6
+            alpha=0.6,
         )
         plt.colorbar(scatter, ax=ax, label=metric.upper())
 
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
     ax.set_title(title)
     plt.tight_layout()
 
@@ -99,8 +96,7 @@ def plot_mobility_heatmap(
 
 
 def create_city_comparison_dashboard(
-    city_data: Dict[str, pd.DataFrame],
-    metrics: List[str]
+    city_data: dict[str, pd.DataFrame], metrics: list[str]
 ) -> go.Figure:
     """
     Create interactive dashboard comparing multiple cities.
@@ -123,12 +119,7 @@ def create_city_comparison_dashboard(
     # Create subplots
     from plotly.subplots import make_subplots
 
-    fig = make_subplots(
-        rows=1,
-        cols=n_metrics,
-        subplot_titles=metrics,
-        horizontal_spacing=0.1
-    )
+    fig = make_subplots(rows=1, cols=n_metrics, subplot_titles=metrics, horizontal_spacing=0.1)
 
     colors = px.colors.qualitative.Set2[:n_cities]
 
@@ -141,27 +132,19 @@ def create_city_comparison_dashboard(
                         x=[city_name],
                         y=[df[metric].mean()],
                         marker_color=colors[city_idx],
-                        showlegend=(col_idx == 1)  # Only show legend once
+                        showlegend=(col_idx == 1),  # Only show legend once
                     ),
                     row=1,
-                    col=col_idx
+                    col=col_idx,
                 )
 
-    fig.update_layout(
-        title_text="Multi-City Comparison Dashboard",
-        height=500,
-        showlegend=True
-    )
+    fig.update_layout(title_text="Multi-City Comparison Dashboard", height=500, showlegend=True)
 
     return fig
 
 
 def create_interactive_map(
-    gdf: 'geopandas.GeoDataFrame',
-    metric: str,
-    center: tuple,
-    zoom: int = 10,
-    cmap: str = 'YlOrRd'
+    gdf: "geopandas.GeoDataFrame", metric: str, center: tuple, zoom: int = 10, cmap: str = "YlOrRd"
 ) -> folium.Map:
     """
     Create interactive folium map with metric visualization.
@@ -191,22 +174,22 @@ def create_interactive_map(
         folium.Choropleth(
             geo_data=gdf,
             data=gdf,
-            columns=['id', metric],
-            key_on='feature.properties.id',
+            columns=["id", metric],
+            key_on="feature.properties.id",
             fill_color=cmap,
             fill_opacity=0.7,
             line_opacity=0.2,
-            legend_name=metric
+            legend_name=metric,
         ).add_to(m)
 
     return m
 
 
 def plot_time_series_comparison(
-    data_dict: Dict[str, pd.Series],
+    data_dict: dict[str, pd.Series],
     title: str = "Time Series Comparison",
     ylabel: str = "Value",
-    figsize: tuple = (12, 6)
+    figsize: tuple = (12, 6),
 ) -> plt.Figure:
     """
     Plot multiple time series on same axes.
@@ -230,9 +213,9 @@ def plot_time_series_comparison(
     fig, ax = plt.subplots(figsize=figsize)
 
     for name, series in data_dict.items():
-        ax.plot(series.index, series.values, label=name, marker='o', linewidth=2)
+        ax.plot(series.index, series.values, label=name, marker="o", linewidth=2)
 
-    ax.set_xlabel('Time')
+    ax.set_xlabel("Time")
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     ax.legend()
@@ -243,9 +226,7 @@ def plot_time_series_comparison(
 
 
 def plot_correlation_matrix(
-    df: pd.DataFrame,
-    title: str = "Feature Correlations",
-    figsize: tuple = (10, 8)
+    df: pd.DataFrame, title: str = "Feature Correlations", figsize: tuple = (10, 8)
 ) -> plt.Figure:
     """
     Plot correlation matrix heatmap.
@@ -271,14 +252,7 @@ def plot_correlation_matrix(
 
     # Create heatmap
     sns.heatmap(
-        corr,
-        annot=True,
-        fmt='.2f',
-        cmap='coolwarm',
-        center=0,
-        square=True,
-        linewidths=1,
-        ax=ax
+        corr, annot=True, fmt=".2f", cmap="coolwarm", center=0, square=True, linewidths=1, ax=ax
     )
 
     ax.set_title(title)

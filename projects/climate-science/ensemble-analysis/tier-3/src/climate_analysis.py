@@ -5,20 +5,18 @@ This module provides functions for common climate analysis tasks including
 regional averaging, anomaly calculation, and temporal processing.
 """
 
+import logging
+from typing import Optional
+
 import numpy as np
 import xarray as xr
-from typing import Dict, Tuple, Optional
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def calculate_regional_mean(
-    ds: xr.Dataset,
-    variable: str,
-    region: Dict[str, float],
-    weights: str = 'cosine'
+    ds: xr.Dataset, variable: str, region: dict[str, float], weights: str = "cosine"
 ) -> xr.DataArray:
     """
     Calculate area-weighted regional mean.
@@ -52,34 +50,34 @@ def calculate_regional_mean(
 
     # Spatial subset
     data_region = data.sel(
-        lat=slice(region['lat_min'], region['lat_max']),
-        lon=slice(region['lon_min'], region['lon_max'])
+        lat=slice(region["lat_min"], region["lat_max"]),
+        lon=slice(region["lon_min"], region["lon_max"]),
     )
 
     # Calculate weights
-    if weights == 'cosine':
+    if weights == "cosine":
         # Cosine of latitude (accounts for grid convergence at poles)
         lat_weights = np.cos(np.deg2rad(data_region.lat))
         weighted_data = data_region.weighted(lat_weights)
-    elif weights == 'area':
+    elif weights == "area":
         # True grid cell area (requires bounds or calculation)
-        if 'cell_area' in ds:
-            area_weights = ds['cell_area'].sel(
-                lat=slice(region['lat_min'], region['lat_max']),
-                lon=slice(region['lon_min'], region['lon_max'])
+        if "cell_area" in ds:
+            area_weights = ds["cell_area"].sel(
+                lat=slice(region["lat_min"], region["lat_max"]),
+                lon=slice(region["lon_min"], region["lon_max"]),
             )
             weighted_data = data_region.weighted(area_weights)
         else:
             logger.warning("Cell area not found, falling back to cosine weighting")
             lat_weights = np.cos(np.deg2rad(data_region.lat))
             weighted_data = data_region.weighted(lat_weights)
-    elif weights == 'none':
+    elif weights == "none":
         weighted_data = data_region
     else:
         raise ValueError(f"Unknown weighting method: {weights}")
 
     # Calculate mean over spatial dimensions
-    regional_mean = weighted_data.mean(['lat', 'lon'])
+    regional_mean = weighted_data.mean(["lat", "lon"])
 
     logger.info(
         f"Regional mean calculated for "
@@ -91,9 +89,7 @@ def calculate_regional_mean(
 
 
 def calculate_anomaly(
-    data: xr.DataArray,
-    baseline_period: Tuple[str, str],
-    method: str = 'difference'
+    data: xr.DataArray, baseline_period: tuple[str, str], method: str = "difference"
 ) -> xr.DataArray:
     """
     Calculate anomaly relative to baseline period.
@@ -123,12 +119,12 @@ def calculate_anomaly(
     baseline = data.sel(time=slice(baseline_period[0], baseline_period[1]))
 
     # Calculate baseline climatology
-    baseline_mean = baseline.mean('time')
+    baseline_mean = baseline.mean("time")
 
     # Calculate anomaly
-    if method == 'difference':
+    if method == "difference":
         anomaly = data - baseline_mean
-    elif method == 'percent':
+    elif method == "percent":
         anomaly = (data - baseline_mean) / baseline_mean * 100
     else:
         raise ValueError(f"Unknown anomaly method: {method}")
@@ -159,20 +155,17 @@ def annual_mean(data: xr.DataArray) -> xr.DataArray:
     logger.info("Calculating annual means")
 
     # Group by year and calculate mean
-    annual_data = data.groupby('time.year').mean('time')
+    annual_data = data.groupby("time.year").mean("time")
 
     # Rename 'year' coordinate to 'time' for consistency
-    annual_data = annual_data.rename({'year': 'time'})
+    annual_data = annual_data.rename({"year": "time"})
 
     logger.info(f"Resampled to {len(annual_data.time)} years")
 
     return annual_data
 
 
-def seasonal_mean(
-    data: xr.DataArray,
-    season: str = 'DJF'
-) -> xr.DataArray:
+def seasonal_mean(data: xr.DataArray, season: str = "DJF") -> xr.DataArray:
     """
     Calculate seasonal mean.
 
@@ -195,7 +188,7 @@ def seasonal_mean(
     logger.info(f"Calculating {season} seasonal means")
 
     # Group by season and calculate mean
-    seasonal_data = data.groupby('time.season').mean('time')
+    seasonal_data = data.groupby("time.season").mean("time")
 
     # Select requested season
     seasonal_data = seasonal_data.sel(season=season)
@@ -206,9 +199,8 @@ def seasonal_mean(
 
 
 def calculate_trend(
-    data: xr.DataArray,
-    time_period: Optional[Tuple[str, str]] = None
-) -> Tuple[float, float]:
+    data: xr.DataArray, time_period: Optional[tuple[str, str]] = None
+) -> tuple[float, float]:
     """
     Calculate linear trend using least squares regression.
 
@@ -233,7 +225,7 @@ def calculate_trend(
         data = data.sel(time=slice(time_period[0], time_period[1]))
 
     # Convert time to years since start for regression
-    time_years = (data.time - data.time[0]) / np.timedelta64(365, 'D')
+    time_years = (data.time - data.time[0]) / np.timedelta64(365, "D")
 
     # Remove NaN values
     valid_mask = ~np.isnan(data.values)
@@ -248,11 +240,7 @@ def calculate_trend(
     return float(slope), float(intercept)
 
 
-def running_mean(
-    data: xr.DataArray,
-    window: int = 10,
-    center: bool = True
-) -> xr.DataArray:
+def running_mean(data: xr.DataArray, window: int = 10, center: bool = True) -> xr.DataArray:
     """
     Calculate running mean (moving average).
 
@@ -281,10 +269,7 @@ def running_mean(
     return smoothed
 
 
-def detrend(
-    data: xr.DataArray,
-    method: str = 'linear'
-) -> xr.DataArray:
+def detrend(data: xr.DataArray, method: str = "linear") -> xr.DataArray:
     """
     Remove linear or quadratic trend from time series.
 
@@ -307,7 +292,7 @@ def detrend(
     logger.info(f"Detrending using {method} method")
 
     # Convert time to numeric for fitting
-    time_numeric = (data.time - data.time[0]) / np.timedelta64(1, 'D')
+    time_numeric = (data.time - data.time[0]) / np.timedelta64(1, "D")
 
     # Remove NaN values for fitting
     valid_mask = ~np.isnan(data.values)
@@ -315,9 +300,9 @@ def detrend(
     y = data.values[valid_mask]
 
     # Fit polynomial
-    if method == 'linear':
+    if method == "linear":
         coeffs = np.polyfit(x, y, 1)
-    elif method == 'quadratic':
+    elif method == "quadratic":
         coeffs = np.polyfit(x, y, 2)
     else:
         raise ValueError(f"Unknown detrending method: {method}")
@@ -332,9 +317,7 @@ def detrend(
 
 
 def calculate_climatology(
-    data: xr.DataArray,
-    period: Optional[Tuple[str, str]] = None,
-    groupby: str = 'month'
+    data: xr.DataArray, period: Optional[tuple[str, str]] = None, groupby: str = "month"
 ) -> xr.DataArray:
     """
     Calculate climatological mean (seasonal cycle).
@@ -363,12 +346,12 @@ def calculate_climatology(
         data = data.sel(time=slice(period[0], period[1]))
 
     # Group by time component and calculate mean
-    if groupby == 'month':
-        climatology = data.groupby('time.month').mean('time')
-    elif groupby == 'dayofyear':
-        climatology = data.groupby('time.dayofyear').mean('time')
-    elif groupby == 'season':
-        climatology = data.groupby('time.season').mean('time')
+    if groupby == "month":
+        climatology = data.groupby("time.month").mean("time")
+    elif groupby == "dayofyear":
+        climatology = data.groupby("time.dayofyear").mean("time")
+    elif groupby == "season":
+        climatology = data.groupby("time.season").mean("time")
     else:
         raise ValueError(f"Unknown groupby: {groupby}")
 
@@ -377,11 +360,7 @@ def calculate_climatology(
     return climatology
 
 
-def convert_units(
-    data: xr.DataArray,
-    from_unit: str,
-    to_unit: str
-) -> xr.DataArray:
+def convert_units(data: xr.DataArray, from_unit: str, to_unit: str) -> xr.DataArray:
     """
     Convert between common climate variable units.
 
@@ -406,15 +385,15 @@ def convert_units(
     logger.info(f"Converting from {from_unit} to {to_unit}")
 
     # Temperature conversions
-    if from_unit == 'K' and to_unit in ['degC', 'C']:
+    if from_unit == "K" and to_unit in ["degC", "C"]:
         converted = data - 273.15
-    elif from_unit in ['degC', 'C'] and to_unit == 'K':
+    elif from_unit in ["degC", "C"] and to_unit == "K":
         converted = data + 273.15
 
     # Precipitation conversions
-    elif from_unit == 'kg/m2/s' and to_unit == 'mm/day':
+    elif from_unit == "kg/m2/s" and to_unit == "mm/day":
         converted = data * 86400  # seconds per day
-    elif from_unit == 'mm/day' and to_unit == 'kg/m2/s':
+    elif from_unit == "mm/day" and to_unit == "kg/m2/s":
         converted = data / 86400
 
     else:
@@ -422,6 +401,6 @@ def convert_units(
 
     # Update attributes
     converted.attrs = data.attrs.copy()
-    converted.attrs['units'] = to_unit
+    converted.attrs["units"] = to_unit
 
     return converted

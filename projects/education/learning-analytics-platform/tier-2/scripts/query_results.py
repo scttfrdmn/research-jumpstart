@@ -22,33 +22,28 @@ Usage:
     python scripts/query_results.py --export results.csv
 """
 
+import argparse
+import logging
 import os
 import sys
-import argparse
-import json
-from typing import List, Dict, Optional
-from datetime import datetime
-import logging
+from typing import Optional
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
-from botocore.exceptions import ClientError
 import pandas as pd
-from tabulate import tabulate
+from boto3.dynamodb.conditions import Attr
+from botocore.exceptions import ClientError
 from dotenv import load_dotenv
+from tabulate import tabulate
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 # AWS clients
-dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+dynamodb = boto3.resource("dynamodb", region_name=os.getenv("AWS_REGION", "us-east-1"))
 
 
 class StudentAnalyticsQuery:
@@ -65,7 +60,7 @@ class StudentAnalyticsQuery:
         self.table = dynamodb.Table(table_name)
         logger.info(f"Connected to DynamoDB table: {table_name}")
 
-    def query_by_risk_level(self, risk_level: str, limit: int = 100) -> List[Dict]:
+    def query_by_risk_level(self, risk_level: str, limit: int = 100) -> list[dict]:
         """
         Query students by risk level.
 
@@ -78,11 +73,10 @@ class StudentAnalyticsQuery:
         """
         try:
             response = self.table.scan(
-                FilterExpression=Attr('risk_level').eq(risk_level),
-                Limit=limit
+                FilterExpression=Attr("risk_level").eq(risk_level), Limit=limit
             )
 
-            items = response.get('Items', [])
+            items = response.get("Items", [])
             logger.info(f"Found {len(items)} students with risk level: {risk_level}")
             return items
 
@@ -90,7 +84,7 @@ class StudentAnalyticsQuery:
             logger.error(f"Error querying DynamoDB: {e}")
             return []
 
-    def query_by_course(self, course_id: str) -> List[Dict]:
+    def query_by_course(self, course_id: str) -> list[dict]:
         """
         Query all students in a course.
 
@@ -101,11 +95,9 @@ class StudentAnalyticsQuery:
             List of student records
         """
         try:
-            response = self.table.scan(
-                FilterExpression=Attr('course_id').eq(course_id)
-            )
+            response = self.table.scan(FilterExpression=Attr("course_id").eq(course_id))
 
-            items = response.get('Items', [])
+            items = response.get("Items", [])
             logger.info(f"Found {len(items)} students in course: {course_id}")
             return items
 
@@ -113,7 +105,7 @@ class StudentAnalyticsQuery:
             logger.error(f"Error querying DynamoDB: {e}")
             return []
 
-    def query_by_grade_range(self, min_grade: float, max_grade: float) -> List[Dict]:
+    def query_by_grade_range(self, min_grade: float, max_grade: float) -> list[dict]:
         """
         Query students by grade range.
 
@@ -126,10 +118,10 @@ class StudentAnalyticsQuery:
         """
         try:
             response = self.table.scan(
-                FilterExpression=Attr('avg_grade').between(min_grade, max_grade)
+                FilterExpression=Attr("avg_grade").between(min_grade, max_grade)
             )
 
-            items = response.get('Items', [])
+            items = response.get("Items", [])
             logger.info(f"Found {len(items)} students with grades {min_grade}-{max_grade}")
             return items
 
@@ -137,7 +129,7 @@ class StudentAnalyticsQuery:
             logger.error(f"Error querying DynamoDB: {e}")
             return []
 
-    def get_all_students(self, limit: Optional[int] = None) -> List[Dict]:
+    def get_all_students(self, limit: Optional[int] = None) -> list[dict]:
         """
         Get all student records.
 
@@ -148,19 +140,14 @@ class StudentAnalyticsQuery:
             List of student records
         """
         try:
-            if limit:
-                response = self.table.scan(Limit=limit)
-            else:
-                response = self.table.scan()
+            response = self.table.scan(Limit=limit) if limit else self.table.scan()
 
-            items = response.get('Items', [])
+            items = response.get("Items", [])
 
             # Handle pagination if no limit
-            while 'LastEvaluatedKey' in response and not limit:
-                response = self.table.scan(
-                    ExclusiveStartKey=response['LastEvaluatedKey']
-                )
-                items.extend(response.get('Items', []))
+            while "LastEvaluatedKey" in response and not limit:
+                response = self.table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+                items.extend(response.get("Items", []))
 
             logger.info(f"Retrieved {len(items)} student records")
             return items
@@ -169,7 +156,7 @@ class StudentAnalyticsQuery:
             logger.error(f"Error scanning DynamoDB: {e}")
             return []
 
-    def calculate_class_statistics(self, students: List[Dict]) -> Dict:
+    def calculate_class_statistics(self, students: list[dict]) -> dict:
         """
         Calculate aggregate class-level statistics.
 
@@ -185,21 +172,25 @@ class StudentAnalyticsQuery:
         df = pd.DataFrame(students)
 
         stats = {
-            'total_students': len(df),
-            'avg_grade_mean': float(df['avg_grade'].mean()),
-            'avg_grade_median': float(df['avg_grade'].median()),
-            'avg_grade_std': float(df['avg_grade'].std()),
-            'completion_rate_mean': float(df['completion_rate'].mean()),
-            'engagement_score_mean': float(df['engagement_score'].mean()),
-            'risk_distribution': df['risk_level'].value_counts().to_dict(),
-            'courses': df['course_id'].nunique(),
-            'at_risk_count': len(df[df['risk_level'].isin(['high', 'medium'])]),
-            'mastery_level_mean': float(df['mastery_level'].mean()) if 'mastery_level' in df else 0.0
+            "total_students": len(df),
+            "avg_grade_mean": float(df["avg_grade"].mean()),
+            "avg_grade_median": float(df["avg_grade"].median()),
+            "avg_grade_std": float(df["avg_grade"].std()),
+            "completion_rate_mean": float(df["completion_rate"].mean()),
+            "engagement_score_mean": float(df["engagement_score"].mean()),
+            "risk_distribution": df["risk_level"].value_counts().to_dict(),
+            "courses": df["course_id"].nunique(),
+            "at_risk_count": len(df[df["risk_level"].isin(["high", "medium"])]),
+            "mastery_level_mean": float(df["mastery_level"].mean())
+            if "mastery_level" in df
+            else 0.0,
         }
 
         return stats
 
-    def format_results_table(self, students: List[Dict], columns: Optional[List[str]] = None) -> str:
+    def format_results_table(
+        self, students: list[dict], columns: Optional[list[str]] = None
+    ) -> str:
         """
         Format results as a table.
 
@@ -218,77 +209,60 @@ class StudentAnalyticsQuery:
         # Default columns
         if columns is None:
             columns = [
-                'student_id', 'course_id', 'avg_grade', 'completion_rate',
-                'engagement_score', 'risk_level'
+                "student_id",
+                "course_id",
+                "avg_grade",
+                "completion_rate",
+                "engagement_score",
+                "risk_level",
             ]
 
         # Filter to available columns
         columns = [col for col in columns if col in df.columns]
 
         # Truncate student_id for display
-        if 'student_id' in df.columns:
-            df['student_id'] = df['student_id'].str[:8] + '...'
+        if "student_id" in df.columns:
+            df["student_id"] = df["student_id"].str[:8] + "..."
 
-        return tabulate(df[columns].head(20), headers='keys', tablefmt='grid', showindex=False)
+        return tabulate(df[columns].head(20), headers="keys", tablefmt="grid", showindex=False)
 
 
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Query student analytics from DynamoDB',
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Query student analytics from DynamoDB",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.add_argument(
-        '--table-name',
+        "--table-name",
         type=str,
-        default=os.getenv('DYNAMODB_TABLE', 'StudentAnalytics'),
-        help='DynamoDB table name (default: StudentAnalytics)'
+        default=os.getenv("DYNAMODB_TABLE", "StudentAnalytics"),
+        help="DynamoDB table name (default: StudentAnalytics)",
     )
 
     parser.add_argument(
-        '--risk-level',
+        "--risk-level",
         type=str,
-        choices=['high', 'medium', 'low', 'none'],
-        help='Filter by risk level'
+        choices=["high", "medium", "low", "none"],
+        help="Filter by risk level",
+    )
+
+    parser.add_argument("--course-id", type=str, help="Filter by course ID")
+
+    parser.add_argument("--min-grade", type=float, help="Minimum average grade")
+
+    parser.add_argument("--max-grade", type=float, help="Maximum average grade")
+
+    parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum number of results (default: 100)"
     )
 
     parser.add_argument(
-        '--course-id',
-        type=str,
-        help='Filter by course ID'
+        "--class-stats", action="store_true", help="Calculate and display class statistics"
     )
 
-    parser.add_argument(
-        '--min-grade',
-        type=float,
-        help='Minimum average grade'
-    )
-
-    parser.add_argument(
-        '--max-grade',
-        type=float,
-        help='Maximum average grade'
-    )
-
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=100,
-        help='Maximum number of results (default: 100)'
-    )
-
-    parser.add_argument(
-        '--class-stats',
-        action='store_true',
-        help='Calculate and display class statistics'
-    )
-
-    parser.add_argument(
-        '--export',
-        type=str,
-        help='Export results to CSV file'
-    )
+    parser.add_argument("--export", type=str, help="Export results to CSV file")
 
     args = parser.parse_args()
 
@@ -321,15 +295,19 @@ def main():
             stats = query.calculate_class_statistics(students)
 
             print(f"Total Students:      {stats['total_students']}")
-            print(f"Average Grade:       {stats['avg_grade_mean']:.2f} ± {stats['avg_grade_std']:.2f}")
+            print(
+                f"Average Grade:       {stats['avg_grade_mean']:.2f} ± {stats['avg_grade_std']:.2f}"
+            )
             print(f"Median Grade:        {stats['avg_grade_median']:.2f}")
             print(f"Completion Rate:     {stats['completion_rate_mean']:.2f}%")
             print(f"Engagement Score:    {stats['engagement_score_mean']:.2f}")
             print(f"Mastery Level:       {stats['mastery_level_mean']:.2f}%")
-            print(f"At-Risk Students:    {stats['at_risk_count']} ({stats['at_risk_count']/stats['total_students']*100:.1f}%)")
+            print(
+                f"At-Risk Students:    {stats['at_risk_count']} ({stats['at_risk_count'] / stats['total_students'] * 100:.1f}%)"
+            )
             print("\nRisk Distribution:")
-            for level, count in sorted(stats['risk_distribution'].items()):
-                print(f"  {level:10s}: {count:3d} ({count/stats['total_students']*100:.1f}%)")
+            for level, count in sorted(stats["risk_distribution"].items()):
+                print(f"  {level:10s}: {count:3d} ({count / stats['total_students'] * 100:.1f}%)")
 
         # Export to CSV if requested
         if args.export:
@@ -343,5 +321,5 @@ def main():
     sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -13,7 +13,7 @@ Usage:
 """
 
 import numpy as np
-from scipy import interpolate, stats
+from scipy import interpolate
 
 
 class QuantileMapper:
@@ -25,7 +25,7 @@ class QuantileMapper:
     the same transformation to future projections.
     """
 
-    def __init__(self, n_quantiles=1000, extrapolate='constant'):
+    def __init__(self, n_quantiles=1000, extrapolate="constant"):
         """
         Parameters:
         -----------
@@ -62,17 +62,13 @@ class QuantileMapper:
         obs_quantiles = np.quantile(obs_reference, quantiles)
 
         # Create interpolation function
-        if self.extrapolate == 'constant':
+        if self.extrapolate == "constant":
             fill_value = (obs_quantiles[0], obs_quantiles[-1])
         else:
-            fill_value = 'extrapolate'
+            fill_value = "extrapolate"
 
         self.transfer_func = interpolate.interp1d(
-            model_quantiles,
-            obs_quantiles,
-            kind='linear',
-            bounds_error=False,
-            fill_value=fill_value
+            model_quantiles, obs_quantiles, kind="linear", bounds_error=False, fill_value=fill_value
         )
 
         return self
@@ -126,7 +122,7 @@ class SeasonalQuantileMapper(QuantileMapper):
     in bias characteristics.
     """
 
-    def __init__(self, n_quantiles=1000, extrapolate='constant'):
+    def __init__(self, n_quantiles=1000, extrapolate="constant"):
         super().__init__(n_quantiles, extrapolate)
         self.seasonal_funcs = {}
 
@@ -144,12 +140,7 @@ class SeasonalQuantileMapper(QuantileMapper):
             Month numbers (1-12) for reference period
         """
         # Define seasons
-        seasons = {
-            'DJF': [12, 1, 2],
-            'MAM': [3, 4, 5],
-            'JJA': [6, 7, 8],
-            'SON': [9, 10, 11]
-        }
+        seasons = {"DJF": [12, 1, 2], "MAM": [3, 4, 5], "JJA": [6, 7, 8], "SON": [9, 10, 11]}
 
         # Fit each season separately
         for season_name, season_months in seasons.items():
@@ -183,19 +174,12 @@ class SeasonalQuantileMapper(QuantileMapper):
 
         corrected = np.empty_like(model_data)
 
-        seasons = {
-            'DJF': [12, 1, 2],
-            'MAM': [3, 4, 5],
-            'JJA': [6, 7, 8],
-            'SON': [9, 10, 11]
-        }
+        seasons = {"DJF": [12, 1, 2], "MAM": [3, 4, 5], "JJA": [6, 7, 8], "SON": [9, 10, 11]}
 
         for season_name, season_months in seasons.items():
             mask = np.isin(months_target, season_months)
             if mask.sum() > 0 and season_name in self.seasonal_funcs:
-                corrected[mask] = self.seasonal_funcs[season_name].transform(
-                    model_data[mask]
-                )
+                corrected[mask] = self.seasonal_funcs[season_name].transform(model_data[mask])
 
         return corrected
 
@@ -208,7 +192,7 @@ class DeltaMethod:
     preserving observed characteristics while incorporating projected changes.
     """
 
-    def __init__(self, method='additive'):
+    def __init__(self, method="additive"):
         """
         Parameters:
         -----------
@@ -216,7 +200,7 @@ class DeltaMethod:
             'additive' for temperature (absolute changes)
             'multiplicative' for precipitation (relative changes)
         """
-        if method not in ['additive', 'multiplicative']:
+        if method not in ["additive", "multiplicative"]:
             raise ValueError("method must be 'additive' or 'multiplicative'")
         self.method = method
         self.reference_mean = None
@@ -254,7 +238,7 @@ class DeltaMethod:
 
         model_ref_mean = np.mean(model_reference)
 
-        if self.method == 'additive':
+        if self.method == "additive":
             # For temperature: add change signal
             delta = model_target - model_ref_mean
             corrected = self.reference_mean + delta
@@ -295,20 +279,20 @@ def validate_correction(obs, model_raw, model_corrected):
     metrics = {}
 
     # Mean bias
-    metrics['raw_bias'] = np.mean(model_raw - obs)
-    metrics['corrected_bias'] = np.mean(model_corrected - obs)
+    metrics["raw_bias"] = np.mean(model_raw - obs)
+    metrics["corrected_bias"] = np.mean(model_corrected - obs)
 
     # RMSE
-    metrics['raw_rmse'] = np.sqrt(np.mean((model_raw - obs)**2))
-    metrics['corrected_rmse'] = np.sqrt(np.mean((model_corrected - obs)**2))
+    metrics["raw_rmse"] = np.sqrt(np.mean((model_raw - obs) ** 2))
+    metrics["corrected_rmse"] = np.sqrt(np.mean((model_corrected - obs) ** 2))
 
     # Correlation
-    metrics['raw_corr'] = np.corrcoef(obs, model_raw)[0, 1]
-    metrics['corrected_corr'] = np.corrcoef(obs, model_corrected)[0, 1]
+    metrics["raw_corr"] = np.corrcoef(obs, model_raw)[0, 1]
+    metrics["corrected_corr"] = np.corrcoef(obs, model_corrected)[0, 1]
 
     # Standard deviation ratio
-    metrics['raw_std_ratio'] = np.std(model_raw) / np.std(obs)
-    metrics['corrected_std_ratio'] = np.std(model_corrected) / np.std(obs)
+    metrics["raw_std_ratio"] = np.std(model_raw) / np.std(obs)
+    metrics["corrected_std_ratio"] = np.std(model_corrected) / np.std(obs)
 
     # Percentile comparison (5th, 50th, 95th)
     for p in [5, 50, 95]:
@@ -316,8 +300,8 @@ def validate_correction(obs, model_raw, model_corrected):
         raw_p = np.percentile(model_raw, p)
         corr_p = np.percentile(model_corrected, p)
 
-        metrics[f'raw_p{p}_bias'] = raw_p - obs_p
-        metrics[f'corrected_p{p}_bias'] = corr_p - obs_p
+        metrics[f"raw_p{p}_bias"] = raw_p - obs_p
+        metrics[f"corrected_p{p}_bias"] = corr_p - obs_p
 
     return metrics
 
@@ -347,16 +331,16 @@ def preserve_change_signal(model_hist, model_fut, corrected_fut):
     corrected_signal = np.mean(corrected_fut) - np.mean(model_hist)
 
     analysis = {
-        'raw_signal': raw_signal,
-        'corrected_signal': corrected_signal,
-        'signal_preserved': np.abs(raw_signal - corrected_signal) < 0.1,
-        'signal_difference': corrected_signal - raw_signal
+        "raw_signal": raw_signal,
+        "corrected_signal": corrected_signal,
+        "signal_preserved": np.abs(raw_signal - corrected_signal) < 0.1,
+        "signal_difference": corrected_signal - raw_signal,
     }
 
     return analysis
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Bias Correction Methods")
     print("=" * 50)
@@ -384,7 +368,7 @@ if __name__ == '__main__':
 
     # Apply delta method
     print("\n2. Delta Method")
-    delta = DeltaMethod(method='additive')
+    delta = DeltaMethod(method="additive")
     corrected_delta = delta.fit_transform(obs, model_hist, model_fut)
 
     print(f"   Corrected mean: {np.mean(corrected_delta):.2f}")

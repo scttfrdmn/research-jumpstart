@@ -14,13 +14,14 @@ Output: Forecasts in DynamoDB table
 
 import json
 import os
-import boto3
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Tuple
 import tempfile
 import traceback
+from datetime import datetime
+from typing import Any
+
+import boto3
+import numpy as np
+import pandas as pd
 
 # Import forecasting libraries
 try:
@@ -33,11 +34,11 @@ except ImportError as e:
 
 
 # Initialize AWS clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Main Lambda handler for economic forecasting.
 
@@ -75,25 +76,25 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     try:
         # Parse event (S3 trigger or direct invocation)
-        if 'Records' in event:
+        if "Records" in event:
             # S3 event trigger
-            record = event['Records'][0]
-            bucket = record['s3']['bucket']['name']
-            key = record['s3']['object']['key']
+            record = event["Records"][0]
+            bucket = record["s3"]["bucket"]["name"]
+            key = record["s3"]["object"]["key"]
 
             # Extract indicator and country from key
             # Example: raw/gdp/usa_gdp_quarterly.csv → GDP, USA
-            parts = key.split('/')
+            parts = key.split("/")
             indicator = parts[1].upper() if len(parts) > 1 else "UNKNOWN"
             filename = parts[-1] if len(parts) > 0 else ""
-            country = filename.split('_')[0].upper() if '_' in filename else "UNKNOWN"
+            country = filename.split("_")[0].upper() if "_" in filename else "UNKNOWN"
 
         else:
             # Direct invocation
-            bucket = event.get('bucket')
-            key = event.get('key')
-            indicator = event.get('indicator', 'UNKNOWN')
-            country = event.get('country', 'UNKNOWN')
+            bucket = event.get("bucket")
+            key = event.get("key")
+            indicator = event.get("indicator", "UNKNOWN")
+            country = event.get("country", "UNKNOWN")
 
         if not bucket or not key:
             raise ValueError("Missing required parameters: bucket, key")
@@ -102,16 +103,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         print(f"Indicator: {indicator}, Country: {country}")
 
         # Download CSV from S3
-        with tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".csv", delete=False) as tmp:
             tmp_path = tmp.name
 
-        print(f"Downloading from S3...")
+        print("Downloading from S3...")
         s3_client.download_file(bucket, key, tmp_path)
 
         # Load time series data
         df = pd.read_csv(tmp_path)
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values('date')
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date")
 
         print(f"Loaded {len(df)} data points")
         print(f"Date range: {df['date'].min()} to {df['date'].max()}")
@@ -121,7 +122,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             raise ValueError(f"Insufficient data points: {len(df)} (need at least 10)")
 
         # Prepare time series
-        ts = df.set_index('date')['value']
+        ts = df.set_index("date")["value"]
 
         # Determine frequency (monthly or quarterly)
         freq = infer_frequency(ts)
@@ -134,10 +135,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         try:
             print("Fitting ARIMA model...")
             arima_forecasts = forecast_arima(ts, periods=8)
-            results.append({
-                'model_type': 'ARIMA',
-                'forecasts': arima_forecasts
-            })
+            results.append({"model_type": "ARIMA", "forecasts": arima_forecasts})
             print(f"✓ ARIMA: {len(arima_forecasts)} forecasts generated")
         except Exception as e:
             print(f"✗ ARIMA failed: {e}")
@@ -146,10 +144,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         try:
             print("Fitting Exponential Smoothing model...")
             es_forecasts = forecast_exponential_smoothing(ts, periods=8)
-            results.append({
-                'model_type': 'ExponentialSmoothing',
-                'forecasts': es_forecasts
-            })
+            results.append({"model_type": "ExponentialSmoothing", "forecasts": es_forecasts})
             print(f"✓ Exponential Smoothing: {len(es_forecasts)} forecasts generated")
         except Exception as e:
             print(f"✗ Exponential Smoothing failed: {e}")
@@ -158,32 +153,32 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             raise Exception("All forecasting models failed")
 
         # Store forecasts in DynamoDB
-        table_name = os.environ.get('TABLE_NAME', 'EconomicForecasts')
+        table_name = os.environ.get("TABLE_NAME", "EconomicForecasts")
         table = dynamodb.Table(table_name)
 
         total_stored = 0
         for result in results:
-            model_type = result['model_type']
-            forecasts = result['forecasts']
+            model_type = result["model_type"]
+            forecasts = result["forecasts"]
 
             for forecast in forecasts:
                 item = {
-                    'indicator_country': f"{indicator}_{country}",
-                    'forecast_date': int(forecast['date'].timestamp()),
-                    'indicator': indicator,
-                    'country': country,
-                    'forecast_value': float(forecast['value']),
-                    'confidence_80_lower': float(forecast.get('ci_80_lower', forecast['value'])),
-                    'confidence_80_upper': float(forecast.get('ci_80_upper', forecast['value'])),
-                    'confidence_95_lower': float(forecast.get('ci_95_lower', forecast['value'])),
-                    'confidence_95_upper': float(forecast.get('ci_95_upper', forecast['value'])),
-                    'model_type': model_type,
-                    'model_params': json.dumps(forecast.get('model_params', {})),
-                    'processing_time_ms': int((datetime.now() - start_time).total_seconds() * 1000),
-                    'timestamp': datetime.now().isoformat(),
-                    'data_points': len(df),
-                    'forecast_horizon': 8,
-                    's3_source': f"s3://{bucket}/{key}"
+                    "indicator_country": f"{indicator}_{country}",
+                    "forecast_date": int(forecast["date"].timestamp()),
+                    "indicator": indicator,
+                    "country": country,
+                    "forecast_value": float(forecast["value"]),
+                    "confidence_80_lower": float(forecast.get("ci_80_lower", forecast["value"])),
+                    "confidence_80_upper": float(forecast.get("ci_80_upper", forecast["value"])),
+                    "confidence_95_lower": float(forecast.get("ci_95_lower", forecast["value"])),
+                    "confidence_95_upper": float(forecast.get("ci_95_upper", forecast["value"])),
+                    "model_type": model_type,
+                    "model_params": json.dumps(forecast.get("model_params", {})),
+                    "processing_time_ms": int((datetime.now() - start_time).total_seconds() * 1000),
+                    "timestamp": datetime.now().isoformat(),
+                    "data_points": len(df),
+                    "forecast_horizon": 8,
+                    "s3_source": f"s3://{bucket}/{key}",
                 }
 
                 table.put_item(Item=item)
@@ -196,46 +191,45 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Return success response
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'indicator': indicator,
-                'country': country,
-                'data_points': len(df),
-                'forecasts_stored': total_stored,
-                'models': [r['model_type'] for r in results],
-                'processing_time_ms': int((datetime.now() - start_time).total_seconds() * 1000)
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "indicator": indicator,
+                    "country": country,
+                    "data_points": len(df),
+                    "forecasts_stored": total_stored,
+                    "models": [r["model_type"] for r in results],
+                    "processing_time_ms": int((datetime.now() - start_time).total_seconds() * 1000),
+                }
+            ),
         }
 
     except Exception as e:
-        error_msg = f"Error: {str(e)}\n{traceback.format_exc()}"
+        error_msg = f"Error: {e!s}\n{traceback.format_exc()}"
         print(error_msg)
 
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            })
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e), "traceback": traceback.format_exc()}),
         }
 
 
 def infer_frequency(ts: pd.Series) -> str:
     """Infer time series frequency (monthly or quarterly)."""
     if len(ts) < 2:
-        return 'M'
+        return "M"
 
     # Calculate average time difference
     diffs = ts.index.to_series().diff().dropna()
     avg_days = diffs.mean().days
 
     if avg_days < 45:
-        return 'M'  # Monthly
+        return "M"  # Monthly
     else:
-        return 'Q'  # Quarterly
+        return "Q"  # Quarterly
 
 
-def forecast_arima(ts: pd.Series, periods: int = 8) -> List[Dict]:
+def forecast_arima(ts: pd.Series, periods: int = 8) -> list[dict]:
     """
     Forecast using ARIMA model.
 
@@ -268,29 +262,31 @@ def forecast_arima(ts: pd.Series, periods: int = 8) -> List[Dict]:
 
     forecasts = []
     for i in range(periods):
-        if freq == 'Q':
+        if freq == "Q":
             forecast_date = last_date + pd.DateOffset(months=3 * (i + 1))
         else:
             forecast_date = last_date + pd.DateOffset(months=(i + 1))
 
-        forecasts.append({
-            'date': forecast_date,
-            'value': forecast_result.iloc[i],
-            'ci_95_lower': conf_int_95.iloc[i, 0],
-            'ci_95_upper': conf_int_95.iloc[i, 1],
-            'ci_80_lower': conf_int_80.iloc[i, 0],
-            'ci_80_upper': conf_int_80.iloc[i, 1],
-            'model_params': {
-                'order': order,
-                'aic': float(fitted_model.aic),
-                'bic': float(fitted_model.bic)
+        forecasts.append(
+            {
+                "date": forecast_date,
+                "value": forecast_result.iloc[i],
+                "ci_95_lower": conf_int_95.iloc[i, 0],
+                "ci_95_upper": conf_int_95.iloc[i, 1],
+                "ci_80_lower": conf_int_80.iloc[i, 0],
+                "ci_80_upper": conf_int_80.iloc[i, 1],
+                "model_params": {
+                    "order": order,
+                    "aic": float(fitted_model.aic),
+                    "bic": float(fitted_model.bic),
+                },
             }
-        })
+        )
 
     return forecasts
 
 
-def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> List[Dict]:
+def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> list[dict]:
     """
     Forecast using Exponential Smoothing (Holt-Winters).
 
@@ -303,17 +299,11 @@ def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> List[Dict
     """
     # Determine if data has trend and seasonality
     freq = infer_frequency(ts)
-    seasonal_periods = 12 if freq == 'M' else 4
 
     # Simple Exponential Smoothing (no trend, no seasonality)
     # For production, add trend and seasonality detection
     try:
-        model = ExponentialSmoothing(
-            ts,
-            trend='add',
-            seasonal=None,
-            seasonal_periods=None
-        )
+        model = ExponentialSmoothing(ts, trend="add", seasonal=None, seasonal_periods=None)
         fitted_model = model.fit()
     except:
         # Fallback: simple exponential smoothing
@@ -333,7 +323,7 @@ def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> List[Dict
 
     forecasts = []
     for i in range(periods):
-        if freq == 'Q':
+        if freq == "Q":
             forecast_date = last_date + pd.DateOffset(months=3 * (i + 1))
         else:
             forecast_date = last_date + pd.DateOffset(months=(i + 1))
@@ -343,19 +333,21 @@ def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> List[Dict
         margin_95 = 1.96 * std_error * np.sqrt(i + 1)
         margin_80 = 1.28 * std_error * np.sqrt(i + 1)
 
-        forecasts.append({
-            'date': forecast_date,
-            'value': forecast_value,
-            'ci_95_lower': forecast_value - margin_95,
-            'ci_95_upper': forecast_value + margin_95,
-            'ci_80_lower': forecast_value - margin_80,
-            'ci_80_upper': forecast_value + margin_80,
-            'model_params': {
-                'smoothing_level': float(fitted_model.params.get('smoothing_level', 0.0)),
-                'smoothing_trend': float(fitted_model.params.get('smoothing_trend', 0.0)),
-                'aic': float(fitted_model.aic) if hasattr(fitted_model, 'aic') else None
+        forecasts.append(
+            {
+                "date": forecast_date,
+                "value": forecast_value,
+                "ci_95_lower": forecast_value - margin_95,
+                "ci_95_upper": forecast_value + margin_95,
+                "ci_80_lower": forecast_value - margin_80,
+                "ci_80_upper": forecast_value + margin_80,
+                "model_params": {
+                    "smoothing_level": float(fitted_model.params.get("smoothing_level", 0.0)),
+                    "smoothing_trend": float(fitted_model.params.get("smoothing_trend", 0.0)),
+                    "aic": float(fitted_model.aic) if hasattr(fitted_model, "aic") else None,
+                },
             }
-        })
+        )
 
     return forecasts
 
@@ -367,7 +359,7 @@ if __name__ == "__main__":
         "bucket": "economic-data-test",
         "key": "raw/gdp/usa_gdp_quarterly.csv",
         "indicator": "GDP",
-        "country": "USA"
+        "country": "USA",
     }
 
     class Context:

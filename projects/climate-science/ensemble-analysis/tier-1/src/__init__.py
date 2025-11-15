@@ -7,32 +7,32 @@ Utilities for loading, processing, and analyzing climate datasets.
 __version__ = "1.0.0"
 __author__ = "AWS Research Jumpstart"
 
-from .data_utils import (
-    load_temperature_data,
-    load_co2_data,
-    load_sea_level_data,
-    calculate_anomalies,
-)
 from .analysis import (
+    calculate_correlation_matrix,
     calculate_trend,
     decompose_time_series,
-    calculate_correlation_matrix,
+)
+from .data_utils import (
+    calculate_anomalies,
+    load_co2_data,
+    load_sea_level_data,
+    load_temperature_data,
 )
 from .visualization import (
-    plot_time_series,
-    plot_correlation_heatmap,
     create_interactive_dashboard,
+    plot_correlation_heatmap,
+    plot_time_series,
 )
 
 __all__ = [
-    "load_temperature_data",
+    "calculate_anomalies",
+    "calculate_correlation_matrix",
+    "calculate_trend",
+    "create_interactive_dashboard",
+    "decompose_time_series",
     "load_co2_data",
     "load_sea_level_data",
-    "calculate_anomalies",
-    "calculate_trend",
-    "decompose_time_series",
-    "calculate_correlation_matrix",
-    "plot_time_series",
+    "load_temperature_data",
     "plot_correlation_heatmap",
-    "create_interactive_dashboard",
+    "plot_time_series",
 ]

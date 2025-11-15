@@ -5,4 +5,4 @@ This package contains scripts for uploading, processing, and querying
 behavioral experiment data using AWS services.
 """
 
-__version__ = '1.0.0'
+__version__ = "1.0.0"

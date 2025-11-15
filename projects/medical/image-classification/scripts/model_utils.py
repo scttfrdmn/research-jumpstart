@@ -11,16 +11,15 @@ Usage:
     loss = train_epoch(model, train_loader, optimizer, criterion, device)
 """
 
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
-import timm
 from tqdm.auto import tqdm
 
 
-def create_model(architecture='resnet50', num_classes=2, pretrained=True,
-                freeze_backbone=False):
+def create_model(architecture="resnet50", num_classes=2, pretrained=True, freeze_backbone=False):
     """
     Create a classification model with transfer learning.
 
@@ -42,20 +41,16 @@ def create_model(architecture='resnet50', num_classes=2, pretrained=True,
     """
     # Use timm for wide model selection
     if architecture in timm.list_models():
-        model = timm.create_model(
-            architecture,
-            pretrained=pretrained,
-            num_classes=num_classes
-        )
+        model = timm.create_model(architecture, pretrained=pretrained, num_classes=num_classes)
     else:
         # Fallback to torchvision
-        if architecture == 'resnet50':
+        if architecture == "resnet50":
             model = models.resnet50(pretrained=pretrained)
             model.fc = nn.Linear(model.fc.in_features, num_classes)
-        elif architecture == 'densenet121':
+        elif architecture == "densenet121":
             model = models.densenet121(pretrained=pretrained)
             model.classifier = nn.Linear(model.classifier.in_features, num_classes)
-        elif architecture == 'efficientnet_b0':
+        elif architecture == "efficientnet_b0":
             model = models.efficientnet_b0(pretrained=pretrained)
             model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
         else:
@@ -65,7 +60,7 @@ def create_model(architecture='resnet50', num_classes=2, pretrained=True,
     if freeze_backbone:
         for name, param in model.named_parameters():
             # Keep classifier/fc/head trainable
-            if not any(x in name for x in ['fc', 'classifier', 'head']):
+            if not any(x in name for x in ["fc", "classifier", "head"]):
                 param.requires_grad = False
 
     return model
@@ -96,8 +91,7 @@ class EnsembleModel(nn.Module):
         return torch.stack(outputs).mean(dim=0)
 
 
-def train_epoch(model, dataloader, optimizer, criterion, device,
-               use_amp=False):
+def train_epoch(model, dataloader, optimizer, criterion, device, use_amp=False):
     """
     Train model for one epoch.
 
@@ -131,7 +125,7 @@ def train_epoch(model, dataloader, optimizer, criterion, device,
     # Setup AMP if requested
     scaler = torch.cuda.amp.GradScaler() if use_amp else None
 
-    pbar = tqdm(dataloader, desc='Training')
+    pbar = tqdm(dataloader, desc="Training")
     for images, labels in pbar:
         images, labels = images.to(device), labels.to(device)
 
@@ -162,13 +156,10 @@ def train_epoch(model, dataloader, optimizer, criterion, device,
         correct += predicted.eq(labels).sum().item()
 
         # Update progress bar
-        pbar.set_postfix({
-            'loss': total_loss / (pbar.n + 1),
-            'acc': 100. * correct / total
-        })
+        pbar.set_postfix({"loss": total_loss / (pbar.n + 1), "acc": 100.0 * correct / total})
 
     avg_loss = total_loss / len(dataloader)
-    accuracy = 100. * correct / total
+    accuracy = 100.0 * correct / total
 
     return avg_loss, accuracy
 
@@ -211,7 +202,7 @@ def evaluate(model, dataloader, criterion, device):
     all_labels = []
     all_probs = []
 
-    pbar = tqdm(dataloader, desc='Evaluating')
+    pbar = tqdm(dataloader, desc="Evaluating")
     for images, labels in pbar:
         images, labels = images.to(device), labels.to(device)
 
@@ -233,13 +224,10 @@ def evaluate(model, dataloader, criterion, device):
         all_probs.extend(probs.cpu().numpy())
 
         # Update progress bar
-        pbar.set_postfix({
-            'loss': total_loss / (pbar.n + 1),
-            'acc': 100. * correct / total
-        })
+        pbar.set_postfix({"loss": total_loss / (pbar.n + 1), "acc": 100.0 * correct / total})
 
     avg_loss = total_loss / len(dataloader)
-    accuracy = 100. * correct / total
+    accuracy = 100.0 * correct / total
 
     return avg_loss, accuracy, all_preds, all_labels, all_probs
 
@@ -264,11 +252,11 @@ def save_checkpoint(model, optimizer, epoch, loss, accuracy, filepath):
         Output checkpoint path
     """
     checkpoint = {
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'loss': loss,
-        'accuracy': accuracy
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "loss": loss,
+        "accuracy": accuracy,
     }
     torch.save(checkpoint, filepath)
 
@@ -292,12 +280,12 @@ def load_checkpoint(filepath, model, optimizer=None):
         Epoch of checkpoint
     """
     checkpoint = torch.load(filepath)
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     if optimizer is not None:
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    return checkpoint['epoch']
+    return checkpoint["epoch"]
 
 
 class FocalLoss(nn.Module):
@@ -309,7 +297,7 @@ class FocalLoss(nn.Module):
     Reference: Lin et al., "Focal Loss for Dense Object Detection"
     """
 
-    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+    def __init__(self, alpha=1, gamma=2, reduction="mean"):
         """
         Parameters:
         -----------
@@ -334,20 +322,19 @@ class FocalLoss(nn.Module):
         targets : torch.Tensor
             Ground truth labels, shape [batch_size]
         """
-        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
+        ce_loss = F.cross_entropy(inputs, targets, reduction="none")
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return focal_loss.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return focal_loss.sum()
         else:
             return focal_loss
 
 
-def get_optimizer(model, optimizer_name='adam', learning_rate=1e-3,
-                 weight_decay=1e-4):
+def get_optimizer(model, optimizer_name="adam", learning_rate=1e-3, weight_decay=1e-4):
     """
     Create optimizer.
 
@@ -366,30 +353,19 @@ def get_optimizer(model, optimizer_name='adam', learning_rate=1e-3,
     --------
     optimizer : torch.optim.Optimizer
     """
-    if optimizer_name == 'adam':
-        return torch.optim.Adam(
-            model.parameters(),
-            lr=learning_rate,
-            weight_decay=weight_decay
-        )
-    elif optimizer_name == 'adamw':
-        return torch.optim.AdamW(
-            model.parameters(),
-            lr=learning_rate,
-            weight_decay=weight_decay
-        )
-    elif optimizer_name == 'sgd':
+    if optimizer_name == "adam":
+        return torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    elif optimizer_name == "adamw":
+        return torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    elif optimizer_name == "sgd":
         return torch.optim.SGD(
-            model.parameters(),
-            lr=learning_rate,
-            momentum=0.9,
-            weight_decay=weight_decay
+            model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_decay
         )
     else:
         raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
 
-def get_scheduler(optimizer, scheduler_name='cosine', num_epochs=100):
+def get_scheduler(optimizer, scheduler_name="cosine", num_epochs=100):
     """
     Create learning rate scheduler.
 
@@ -406,45 +382,34 @@ def get_scheduler(optimizer, scheduler_name='cosine', num_epochs=100):
     --------
     scheduler : torch.optim.lr_scheduler
     """
-    if scheduler_name == 'cosine':
-        return torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=num_epochs
-        )
-    elif scheduler_name == 'step':
-        return torch.optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=30,
-            gamma=0.1
-        )
-    elif scheduler_name == 'plateau':
+    if scheduler_name == "cosine":
+        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+    elif scheduler_name == "step":
+        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+    elif scheduler_name == "plateau":
         return torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode='min',
-            factor=0.1,
-            patience=10
+            optimizer, mode="min", factor=0.1, patience=10
         )
     else:
         raise ValueError(f"Unknown scheduler: {scheduler_name}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Medical Image Classification Model Utilities")
     print("=" * 50)
 
     # Check available models
     print("\n1. Available architectures:")
-    popular_models = ['resnet50', 'efficientnet_b0', 'densenet121',
-                     'vit_base_patch16_224']
+    popular_models = ["resnet50", "efficientnet_b0", "densenet121", "vit_base_patch16_224"]
     for arch in popular_models:
         available = arch in timm.list_models()
         print(f"   {arch}: {'✓' if available else '✗'}")
 
     # Create model
     print("\n2. Creating model...")
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = create_model('resnet50', num_classes=2, pretrained=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = create_model("resnet50", num_classes=2, pretrained=True)
     model = model.to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
@@ -462,8 +427,8 @@ if __name__ == '__main__':
 
     # Create optimizer and scheduler
     print("\n4. Creating optimizer and scheduler...")
-    optimizer = get_optimizer(model, 'adam', learning_rate=1e-3)
-    scheduler = get_scheduler(optimizer, 'cosine', num_epochs=50)
+    optimizer = get_optimizer(model, "adam", learning_rate=1e-3)
+    scheduler = get_scheduler(optimizer, "cosine", num_epochs=50)
     print(f"   Optimizer: {type(optimizer).__name__}")
     print(f"   Scheduler: {type(scheduler).__name__}")
 

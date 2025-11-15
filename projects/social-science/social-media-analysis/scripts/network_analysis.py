@@ -12,13 +12,14 @@ Usage:
     communities = detect_communities(G, method='louvain')
 """
 
-import numpy as np
-import networkx as nx
-import community as community_louvain
 from collections import defaultdict
 
+import community as community_louvain
+import networkx as nx
+import numpy as np
 
-def compute_centrality(G, method='degree', top_k=None):
+
+def compute_centrality(G, method="degree", top_k=None):
     """
     Compute node centrality measures.
 
@@ -37,21 +38,21 @@ def compute_centrality(G, method='degree', top_k=None):
     centrality : dict
         Node -> centrality score mapping
     """
-    if method == 'degree':
+    if method == "degree":
         centrality = dict(G.degree())
-    elif method == 'betweenness':
+    elif method == "betweenness":
         centrality = nx.betweenness_centrality(G)
-    elif method == 'closeness':
+    elif method == "closeness":
         centrality = nx.closeness_centrality(G)
-    elif method == 'eigenvector':
+    elif method == "eigenvector":
         try:
             centrality = nx.eigenvector_centrality(G, max_iter=1000)
         except nx.PowerIterationFailedConvergence:
             # Fallback to eigenvector centrality with numpy
             centrality = nx.eigenvector_centrality_numpy(G)
-    elif method == 'pagerank':
+    elif method == "pagerank":
         centrality = nx.pagerank(G)
-    elif method == 'katz':
+    elif method == "katz":
         centrality = nx.katz_centrality(G)
     else:
         raise ValueError(f"Unknown centrality method: {method}")
@@ -63,7 +64,7 @@ def compute_centrality(G, method='degree', top_k=None):
     return centrality
 
 
-def detect_communities(G, method='louvain', resolution=1.0):
+def detect_communities(G, method="louvain", resolution=1.0):
     """
     Detect communities in a network.
 
@@ -82,17 +83,17 @@ def detect_communities(G, method='louvain', resolution=1.0):
     communities : dict
         Node -> community ID mapping
     """
-    if method == 'louvain':
+    if method == "louvain":
         communities = community_louvain.best_partition(G, resolution=resolution)
 
-    elif method == 'label_propagation':
+    elif method == "label_propagation":
         communities_gen = nx.community.label_propagation_communities(G)
         communities = {}
         for i, comm in enumerate(communities_gen):
             for node in comm:
                 communities[node] = i
 
-    elif method == 'greedy_modularity':
+    elif method == "greedy_modularity":
         communities_gen = nx.community.greedy_modularity_communities(G)
         communities = {}
         for i, comm in enumerate(communities_gen):
@@ -148,19 +149,19 @@ def compute_network_metrics(G):
         Network metrics
     """
     metrics = {
-        'num_nodes': G.number_of_nodes(),
-        'num_edges': G.number_of_edges(),
-        'density': nx.density(G),
-        'is_connected': nx.is_connected(G) if not G.is_directed() else nx.is_weakly_connected(G),
+        "num_nodes": G.number_of_nodes(),
+        "num_edges": G.number_of_edges(),
+        "density": nx.density(G),
+        "is_connected": nx.is_connected(G) if not G.is_directed() else nx.is_weakly_connected(G),
     }
 
     # Average clustering coefficient
-    metrics['avg_clustering'] = nx.average_clustering(G)
+    metrics["avg_clustering"] = nx.average_clustering(G)
 
     # Diameter (only if connected)
-    if metrics['is_connected']:
-        metrics['diameter'] = nx.diameter(G)
-        metrics['avg_shortest_path'] = nx.average_shortest_path_length(G)
+    if metrics["is_connected"]:
+        metrics["diameter"] = nx.diameter(G)
+        metrics["avg_shortest_path"] = nx.average_shortest_path_length(G)
     else:
         # Use largest connected component
         if G.is_directed():
@@ -169,21 +170,20 @@ def compute_network_metrics(G):
             largest_cc = max(nx.connected_components(G), key=len)
 
         G_cc = G.subgraph(largest_cc)
-        metrics['diameter'] = nx.diameter(G_cc)
-        metrics['avg_shortest_path'] = nx.average_shortest_path_length(G_cc)
-        metrics['largest_cc_size'] = len(largest_cc)
+        metrics["diameter"] = nx.diameter(G_cc)
+        metrics["avg_shortest_path"] = nx.average_shortest_path_length(G_cc)
+        metrics["largest_cc_size"] = len(largest_cc)
 
     # Degree statistics
     degrees = [d for n, d in G.degree()]
-    metrics['avg_degree'] = np.mean(degrees)
-    metrics['max_degree'] = np.max(degrees)
-    metrics['min_degree'] = np.min(degrees)
+    metrics["avg_degree"] = np.mean(degrees)
+    metrics["max_degree"] = np.max(degrees)
+    metrics["min_degree"] = np.min(degrees)
 
     return metrics
 
 
-def identify_influencers(G, methods=['pagerank', 'betweenness', 'degree'],
-                        top_k=10):
+def identify_influencers(G, methods=None, top_k=10):
     """
     Identify influential nodes using multiple metrics.
 
@@ -201,6 +201,8 @@ def identify_influencers(G, methods=['pagerank', 'betweenness', 'degree'],
     influencers : dict
         Method -> list of (node, score) tuples
     """
+    if methods is None:
+        methods = ["pagerank", "betweenness", "degree"]
     influencers = {}
 
     for method in methods:
@@ -211,8 +213,7 @@ def identify_influencers(G, methods=['pagerank', 'betweenness', 'degree'],
     return influencers
 
 
-def simulate_information_diffusion(G, seed_nodes, threshold=0.3,
-                                   max_iterations=100):
+def simulate_information_diffusion(G, seed_nodes, threshold=0.3, max_iterations=100):
     """
     Simulate information diffusion using threshold model.
 
@@ -237,7 +238,7 @@ def simulate_information_diffusion(G, seed_nodes, threshold=0.3,
     adopters = set(seed_nodes)
     adoption_history = [adopters.copy()]
 
-    for iteration in range(max_iterations):
+    for _iteration in range(max_iterations):
         new_adopters = set()
 
         for node in G.nodes():
@@ -380,8 +381,7 @@ def compute_ego_network(G, node, radius=1):
     return nx.ego_graph(G, node, radius=radius)
 
 
-def rank_nodes_by_influence(G, seed_nodes, method='independent_cascade',
-                            n_simulations=100):
+def rank_nodes_by_influence(G, seed_nodes, method="independent_cascade", n_simulations=100):
     """
     Rank nodes by their influence in information diffusion.
 
@@ -407,7 +407,7 @@ def rank_nodes_by_influence(G, seed_nodes, method='independent_cascade',
         spreads = []
 
         for _ in range(n_simulations):
-            if method == 'independent_cascade':
+            if method == "independent_cascade":
                 # Simplified IC model
                 adopters = {seed}
                 for _ in range(10):  # Max hops
@@ -432,7 +432,7 @@ def rank_nodes_by_influence(G, seed_nodes, method='independent_cascade',
     return rankings
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Social Network Analysis Utilities")
     print("=" * 60)
@@ -453,14 +453,14 @@ if __name__ == '__main__':
 
     # Centrality analysis
     print("\n3. Analyzing centrality...")
-    pagerank = compute_centrality(G, method='pagerank', top_k=3)
+    pagerank = compute_centrality(G, method="pagerank", top_k=3)
     print("   Top 3 nodes by PageRank:")
     for node, score in pagerank.items():
         print(f"     Node {node}: {score:.4f}")
 
     # Community detection
     print("\n4. Detecting communities...")
-    communities = detect_communities(G, method='louvain')
+    communities = detect_communities(G, method="louvain")
     modularity = compute_modularity(G, communities)
     n_communities = len(set(communities.values()))
     print(f"   Communities found: {n_communities}")

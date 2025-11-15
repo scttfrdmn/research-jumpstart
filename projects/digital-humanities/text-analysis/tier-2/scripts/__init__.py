@@ -7,4 +7,4 @@ This package contains scripts for:
 - Querying results from DynamoDB
 """
 
-__version__ = '1.0.0'
+__version__ = "1.0.0"

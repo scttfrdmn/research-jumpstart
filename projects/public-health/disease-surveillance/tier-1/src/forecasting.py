@@ -5,17 +5,18 @@ Provides functions to train single models and ensembles,
 generate forecasts, and create probabilistic predictions.
 """
 
-import numpy as np
-import pandas as pd
-from typing import List, Tuple, Optional, Dict
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
 
 try:
     import tensorflow as tf
     from tensorflow import keras
-    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
     from tensorflow.keras.layers import LSTM, Dense, Dropout
-    from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+    from tensorflow.keras.models import Sequential
+
     TF_AVAILABLE = True
 except ImportError:
     TF_AVAILABLE = False
@@ -23,10 +24,8 @@ except ImportError:
 
 
 def prepare_sequences(
-    data: np.ndarray,
-    lookback_weeks: int,
-    forecast_horizon: int
-) -> Tuple[np.ndarray, np.ndarray]:
+    data: np.ndarray, lookback_weeks: int, forecast_horizon: int
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Prepare sequences for LSTM training.
 
@@ -41,18 +40,18 @@ def prepare_sequences(
     X, y = [], []
 
     for i in range(len(data) - lookback_weeks - forecast_horizon + 1):
-        X.append(data[i:i + lookback_weeks])
-        y.append(data[i + lookback_weeks:i + lookback_weeks + forecast_horizon])
+        X.append(data[i : i + lookback_weeks])
+        y.append(data[i + lookback_weeks : i + lookback_weeks + forecast_horizon])
 
     return np.array(X), np.array(y)
 
 
 def create_lstm_model(
-    input_shape: Tuple[int, int],
+    input_shape: tuple[int, int],
     forecast_horizon: int,
-    lstm_units: List[int] = [128, 64],
+    lstm_units: Optional[list[int]] = None,
     dense_units: int = 32,
-    dropout_rate: float = 0.2
+    dropout_rate: float = 0.2,
 ) -> keras.Model:
     """
     Create LSTM model architecture.
@@ -67,17 +66,15 @@ def create_lstm_model(
     Returns:
         Compiled Keras model
     """
+    if lstm_units is None:
+        lstm_units = [128, 64]
     if not TF_AVAILABLE:
         raise ImportError("TensorFlow is required for LSTM models")
 
     model = Sequential()
 
     # First LSTM layer
-    model.add(LSTM(
-        lstm_units[0],
-        return_sequences=len(lstm_units) > 1,
-        input_shape=input_shape
-    ))
+    model.add(LSTM(lstm_units[0], return_sequences=len(lstm_units) > 1, input_shape=input_shape))
     model.add(Dropout(dropout_rate))
 
     # Additional LSTM layers
@@ -87,18 +84,14 @@ def create_lstm_model(
         model.add(Dropout(dropout_rate))
 
     # Dense layers
-    model.add(Dense(dense_units, activation='relu'))
+    model.add(Dense(dense_units, activation="relu"))
     model.add(Dropout(dropout_rate))
 
     # Output layer
     model.add(Dense(forecast_horizon))
 
     # Compile
-    model.compile(
-        optimizer='adam',
-        loss='mse',
-        metrics=['mae']
-    )
+    model.compile(optimizer="adam", loss="mse", metrics=["mae"])
 
     return model
 
@@ -112,7 +105,7 @@ def train_lstm_model(
     epochs: int = 50,
     batch_size: int = 32,
     checkpoint_path: Optional[Path] = None,
-    verbose: int = 1
+    verbose: int = 1,
 ) -> keras.Model:
     """
     Train LSTM forecasting model.
@@ -147,30 +140,31 @@ def train_lstm_model(
             ModelCheckpoint(
                 filepath=str(checkpoint_path),
                 save_best_only=True,
-                monitor='val_loss' if X_val is not None else 'loss',
-                verbose=verbose
+                monitor="val_loss" if X_val is not None else "loss",
+                verbose=verbose,
             )
         )
 
     callbacks.append(
         EarlyStopping(
-            monitor='val_loss' if X_val is not None else 'loss',
+            monitor="val_loss" if X_val is not None else "loss",
             patience=10,
             restore_best_weights=True,
-            verbose=verbose
+            verbose=verbose,
         )
     )
 
     # Train
     validation_data = (X_val, y_val) if X_val is not None else None
 
-    history = model.fit(
-        X_train, y_train,
+    model.fit(
+        X_train,
+        y_train,
         validation_data=validation_data,
         epochs=epochs,
         batch_size=batch_size,
         callbacks=callbacks,
-        verbose=verbose
+        verbose=verbose,
     )
 
     return model
@@ -185,8 +179,8 @@ def train_lstm_ensemble(
     forecast_horizon: int = 4,
     epochs: int = 50,
     checkpoint_dir: Optional[Path] = None,
-    verbose: int = 1
-) -> List[keras.Model]:
+    verbose: int = 1,
+) -> list[keras.Model]:
     """
     Train ensemble of LSTM models with different initializations.
 
@@ -207,19 +201,21 @@ def train_lstm_ensemble(
     models = []
 
     for i in range(n_models):
-        print(f"\nTraining model {i+1}/{n_models}...")
+        print(f"\nTraining model {i + 1}/{n_models}...")
 
         checkpoint_path = None
         if checkpoint_dir:
-            checkpoint_path = checkpoint_dir / f"model_{i+1}.h5"
+            checkpoint_path = checkpoint_dir / f"model_{i + 1}.h5"
 
         model = train_lstm_model(
-            X_train, y_train,
-            X_val, y_val,
+            X_train,
+            y_train,
+            X_val,
+            y_val,
             forecast_horizon=forecast_horizon,
             epochs=epochs,
             checkpoint_path=checkpoint_path,
-            verbose=verbose
+            verbose=verbose,
         )
 
         models.append(model)
@@ -227,10 +223,7 @@ def train_lstm_ensemble(
     return models
 
 
-def generate_forecast(
-    model: keras.Model,
-    last_sequence: np.ndarray
-) -> np.ndarray:
+def generate_forecast(model: keras.Model, last_sequence: np.ndarray) -> np.ndarray:
     """
     Generate forecast using trained model.
 
@@ -254,9 +247,8 @@ def generate_forecast(
 
 
 def generate_probabilistic_forecast(
-    models: List[keras.Model],
-    last_sequence: np.ndarray
-) -> Dict[str, np.ndarray]:
+    models: list[keras.Model], last_sequence: np.ndarray
+) -> dict[str, np.ndarray]:
     """
     Generate probabilistic forecast from ensemble.
 
@@ -277,18 +269,18 @@ def generate_probabilistic_forecast(
 
     # Calculate statistics
     return {
-        'mean': np.mean(forecasts, axis=0),
-        'median': np.median(forecasts, axis=0),
-        'std': np.std(forecasts, axis=0),
-        'q05': np.percentile(forecasts, 5, axis=0),
-        'q25': np.percentile(forecasts, 25, axis=0),
-        'q75': np.percentile(forecasts, 75, axis=0),
-        'q95': np.percentile(forecasts, 95, axis=0),
-        'all_forecasts': forecasts
+        "mean": np.mean(forecasts, axis=0),
+        "median": np.median(forecasts, axis=0),
+        "std": np.std(forecasts, axis=0),
+        "q05": np.percentile(forecasts, 5, axis=0),
+        "q25": np.percentile(forecasts, 25, axis=0),
+        "q75": np.percentile(forecasts, 75, axis=0),
+        "q95": np.percentile(forecasts, 95, axis=0),
+        "all_forecasts": forecasts,
     }
 
 
-def save_ensemble(models: List[keras.Model], save_dir: Path):
+def save_ensemble(models: list[keras.Model], save_dir: Path):
     """Save ensemble models to directory."""
     if not TF_AVAILABLE:
         raise ImportError("TensorFlow is required")
@@ -296,12 +288,12 @@ def save_ensemble(models: List[keras.Model], save_dir: Path):
     save_dir.mkdir(parents=True, exist_ok=True)
 
     for i, model in enumerate(models):
-        model.save(save_dir / f"model_{i+1}.h5")
+        model.save(save_dir / f"model_{i + 1}.h5")
 
     print(f"Saved {len(models)} models to {save_dir}")
 
 
-def load_ensemble(load_dir: Path) -> List[keras.Model]:
+def load_ensemble(load_dir: Path) -> list[keras.Model]:
     """Load ensemble models from directory."""
     if not TF_AVAILABLE:
         raise ImportError("TensorFlow is required")

@@ -8,14 +8,18 @@ try:
     import torch
     import torch.nn as nn
     import torch.nn.functional as F
-    from torch_geometric.nn import SAGEConv, GATConv, GCNConv
+    from torch_geometric.nn import GATConv, GCNConv, SAGEConv
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    print("Warning: PyTorch and PyTorch Geometric not available. Install with: pip install torch torch-geometric")
+    print(
+        "Warning: PyTorch and PyTorch Geometric not available. Install with: pip install torch torch-geometric"
+    )
 
 
 if TORCH_AVAILABLE:
+
     class GraphSAGE(nn.Module):
         """
         GraphSAGE model for node embedding and influence prediction.
@@ -33,9 +37,9 @@ if TORCH_AVAILABLE:
             hidden_channels: int = 256,
             out_channels: int = 128,
             num_layers: int = 2,
-            dropout: float = 0.5
+            dropout: float = 0.5,
         ):
-            super(GraphSAGE, self).__init__()
+            super().__init__()
 
             self.num_layers = num_layers
             self.dropout = dropout
@@ -56,7 +60,6 @@ if TORCH_AVAILABLE:
                     x = F.dropout(x, p=self.dropout, training=self.training)
             return x
 
-
     class GAT(nn.Module):
         """
         Graph Attention Network for learning node importance.
@@ -71,9 +74,9 @@ if TORCH_AVAILABLE:
             out_channels: int = 128,
             num_layers: int = 2,
             heads: int = 8,
-            dropout: float = 0.5
+            dropout: float = 0.5,
         ):
-            super(GAT, self).__init__()
+            super().__init__()
 
             self.num_layers = num_layers
             self.dropout = dropout
@@ -81,9 +84,7 @@ if TORCH_AVAILABLE:
             self.convs = nn.ModuleList()
 
             # First layer
-            self.convs.append(
-                GATConv(in_channels, hidden_channels, heads=heads, dropout=dropout)
-            )
+            self.convs.append(GATConv(in_channels, hidden_channels, heads=heads, dropout=dropout))
 
             # Hidden layers
             for _ in range(num_layers - 2):
@@ -93,7 +94,9 @@ if TORCH_AVAILABLE:
 
             # Output layer
             self.convs.append(
-                GATConv(hidden_channels * heads, out_channels, heads=1, concat=False, dropout=dropout)
+                GATConv(
+                    hidden_channels * heads, out_channels, heads=1, concat=False, dropout=dropout
+                )
             )
 
         def forward(self, x, edge_index):
@@ -103,7 +106,6 @@ if TORCH_AVAILABLE:
                 if i < len(self.convs) - 1:
                     x = F.elu(x)
             return x
-
 
     class TemporalGNN(nn.Module):
         """
@@ -118,9 +120,9 @@ if TORCH_AVAILABLE:
             hidden_channels: int = 256,
             out_channels: int = 128,
             num_layers: int = 2,
-            dropout: float = 0.5
+            dropout: float = 0.5,
         ):
-            super(TemporalGNN, self).__init__()
+            super().__init__()
 
             self.num_layers = num_layers
             self.dropout = dropout
@@ -136,9 +138,7 @@ if TORCH_AVAILABLE:
 
             # Temporal attention
             self.temporal_attention = nn.MultiheadAttention(
-                embed_dim=out_channels,
-                num_heads=4,
-                dropout=dropout
+                embed_dim=out_channels, num_heads=4, dropout=dropout
             )
 
         def forward(self, x, edge_index, temporal_snapshots=None):
@@ -165,18 +165,17 @@ if TORCH_AVAILABLE:
             if temporal_snapshots is not None:
                 # Stack current and past snapshots
                 # Shape: [num_snapshots, num_nodes, out_channels]
-                temporal_seq = torch.stack(temporal_snapshots + [x], dim=0)
+                temporal_seq = torch.stack([*temporal_snapshots, x], dim=0)
 
                 # Apply temporal attention
                 x_attended, _ = self.temporal_attention(
                     temporal_seq[-1:],  # Query: current snapshot
-                    temporal_seq,       # Key/Value: all snapshots
-                    temporal_seq
+                    temporal_seq,  # Key/Value: all snapshots
+                    temporal_seq,
                 )
                 x = x_attended.squeeze(0)
 
             return x
-
 
     class InfluencePredictionHead(nn.Module):
         """
@@ -185,13 +184,8 @@ if TORCH_AVAILABLE:
         Takes node embeddings and predicts influence scores.
         """
 
-        def __init__(
-            self,
-            embedding_dim: int,
-            hidden_dim: int = 128,
-            dropout: float = 0.3
-        ):
-            super(InfluencePredictionHead, self).__init__()
+        def __init__(self, embedding_dim: int, hidden_dim: int = 128, dropout: float = 0.3):
+            super().__init__()
 
             self.fc1 = nn.Linear(embedding_dim, hidden_dim)
             self.fc2 = nn.Linear(hidden_dim, hidden_dim // 2)
@@ -220,14 +214,7 @@ if TORCH_AVAILABLE:
             x = self.fc3(x)
             return x.squeeze(-1)
 
-
-    def train_gnn_model(
-        model,
-        data,
-        optimizer,
-        criterion,
-        device='cpu'
-    ):
+    def train_gnn_model(model, data, optimizer, criterion, device="cpu"):
         """
         Single training step for GNN model.
 
@@ -255,7 +242,7 @@ if TORCH_AVAILABLE:
         out = model(data.x.to(device), data.edge_index.to(device))
 
         # Compute loss (assuming node classification task)
-        if hasattr(data, 'y') and hasattr(data, 'train_mask'):
+        if hasattr(data, "y") and hasattr(data, "train_mask"):
             loss = criterion(out[data.train_mask], data.y[data.train_mask])
         else:
             # If no labels, use reconstruction loss
@@ -267,14 +254,8 @@ if TORCH_AVAILABLE:
 
         return loss.item()
 
-
     @torch.no_grad()
-    def evaluate_gnn_model(
-        model,
-        data,
-        criterion,
-        device='cpu'
-    ):
+    def evaluate_gnn_model(model, data, criterion, device="cpu"):
         """
         Evaluate GNN model.
 
@@ -286,7 +267,7 @@ if TORCH_AVAILABLE:
 
         out = model(data.x.to(device), data.edge_index.to(device))
 
-        if hasattr(data, 'y') and hasattr(data, 'val_mask'):
+        if hasattr(data, "y") and hasattr(data, "val_mask"):
             loss = criterion(out[data.val_mask], data.y[data.val_mask])
         else:
             loss = F.mse_loss(out, data.x.to(device))
@@ -297,12 +278,18 @@ else:
     # Placeholder classes if PyTorch not available
     class GraphSAGE:
         def __init__(self, *args, **kwargs):
-            raise ImportError("PyTorch not available. Install with: pip install torch torch-geometric")
+            raise ImportError(
+                "PyTorch not available. Install with: pip install torch torch-geometric"
+            )
 
     class GAT:
         def __init__(self, *args, **kwargs):
-            raise ImportError("PyTorch not available. Install with: pip install torch torch-geometric")
+            raise ImportError(
+                "PyTorch not available. Install with: pip install torch torch-geometric"
+            )
 
     class TemporalGNN:
         def __init__(self, *args, **kwargs):
-            raise ImportError("PyTorch not available. Install with: pip install torch torch-geometric")
+            raise ImportError(
+                "PyTorch not available. Install with: pip install torch torch-geometric"
+            )

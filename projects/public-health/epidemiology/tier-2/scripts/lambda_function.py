@@ -25,14 +25,12 @@ Environment Variables:
 Author: Research Jumpstart
 """
 
-import json
-import os
 import io
-import time
+import json
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Tuple, Optional
-from collections import defaultdict
+from typing import Any, Optional
 
 import boto3
 import numpy as np
@@ -44,16 +42,16 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # AWS clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
-sns_client = boto3.client('sns')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
+sns_client = boto3.client("sns")
 
 # Environment variables
-S3_BUCKET = os.environ.get('S3_BUCKET_NAME')
-DYNAMODB_TABLE_NAME = os.environ.get('DYNAMODB_TABLE', 'DiseaseReports')
-SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
-OUTBREAK_THRESHOLD = float(os.environ.get('OUTBREAK_THRESHOLD', '2.0'))
-POPULATION_SIZE = int(os.environ.get('POPULATION_SIZE', '100000'))
+S3_BUCKET = os.environ.get("S3_BUCKET_NAME")
+DYNAMODB_TABLE_NAME = os.environ.get("DYNAMODB_TABLE", "DiseaseReports")
+SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN")
+OUTBREAK_THRESHOLD = float(os.environ.get("OUTBREAK_THRESHOLD", "2.0"))
+POPULATION_SIZE = int(os.environ.get("POPULATION_SIZE", "100000"))
 
 # Constants
 MIN_CASES_FOR_R0 = 10  # Minimum cases needed for R0 estimation
@@ -76,9 +74,9 @@ def lambda_handler(event, context):
 
     try:
         # Extract S3 bucket and key from event
-        record = event['Records'][0]
-        bucket = record['s3']['bucket']['name']
-        key = record['s3']['object']['key']
+        record = event["Records"][0]
+        bucket = record["s3"]["bucket"]["name"]
+        key = record["s3"]["object"]["key"]
 
         logger.info(f"Processing: s3://{bucket}/{key}")
 
@@ -87,10 +85,7 @@ def lambda_handler(event, context):
 
         if case_data.empty:
             logger.warning("No case data found in CSV")
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'No data to process'})
-            }
+            return {"statusCode": 400, "body": json.dumps({"error": "No data to process"})}
 
         logger.info(f"Loaded {len(case_data)} case records")
 
@@ -114,27 +109,26 @@ def lambda_handler(event, context):
         store_results(case_data, metrics, outbreak_signals, r0_estimate, epi_curve)
 
         # Send SNS alert if outbreak detected
-        if outbreak_signals['outbreak_detected']:
+        if outbreak_signals["outbreak_detected"]:
             send_outbreak_alert(outbreak_signals, metrics, r0_estimate)
 
         # Return success
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Analysis complete',
-                'cases_processed': len(case_data),
-                'outbreak_detected': outbreak_signals['outbreak_detected'],
-                'metrics': metrics,
-                'r0_estimate': r0_estimate
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Analysis complete",
+                    "cases_processed": len(case_data),
+                    "outbreak_detected": outbreak_signals["outbreak_detected"],
+                    "metrics": metrics,
+                    "r0_estimate": r0_estimate,
+                }
+            ),
         }
 
     except Exception as e:
-        logger.error(f"Error processing data: {str(e)}", exc_info=True)
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        logger.error(f"Error processing data: {e!s}", exc_info=True)
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
 
 
 def download_and_parse_csv(bucket: str, key: str) -> pd.DataFrame:
@@ -151,29 +145,29 @@ def download_and_parse_csv(bucket: str, key: str) -> pd.DataFrame:
     try:
         # Download file
         response = s3_client.get_object(Bucket=bucket, Key=key)
-        csv_content = response['Body'].read().decode('utf-8')
+        csv_content = response["Body"].read().decode("utf-8")
 
         # Parse CSV
         df = pd.read_csv(io.StringIO(csv_content))
 
         # Convert date columns
-        if 'report_date' in df.columns:
-            df['report_date'] = pd.to_datetime(df['report_date'])
+        if "report_date" in df.columns:
+            df["report_date"] = pd.to_datetime(df["report_date"])
 
-        if 'symptom_onset_date' in df.columns:
-            df['symptom_onset_date'] = pd.to_datetime(df['symptom_onset_date'], errors='coerce')
+        if "symptom_onset_date" in df.columns:
+            df["symptom_onset_date"] = pd.to_datetime(df["symptom_onset_date"], errors="coerce")
 
         # Sort by date
-        df = df.sort_values('report_date')
+        df = df.sort_values("report_date")
 
         return df
 
     except Exception as e:
-        logger.error(f"Error downloading/parsing CSV: {str(e)}")
+        logger.error(f"Error downloading/parsing CSV: {e!s}")
         raise
 
 
-def calculate_epi_metrics(df: pd.DataFrame) -> Dict[str, Any]:
+def calculate_epi_metrics(df: pd.DataFrame) -> dict[str, Any]:
     """
     Calculate key epidemiological metrics.
 
@@ -186,59 +180,61 @@ def calculate_epi_metrics(df: pd.DataFrame) -> Dict[str, Any]:
     metrics = {}
 
     total_cases = len(df)
-    metrics['total_cases'] = total_cases
+    metrics["total_cases"] = total_cases
 
     # Incidence rate (per 100,000 population)
-    time_span_days = (df['report_date'].max() - df['report_date'].min()).days + 1
-    metrics['incidence_rate'] = (total_cases / POPULATION_SIZE) * 100000
-    metrics['time_span_days'] = time_span_days
+    time_span_days = (df["report_date"].max() - df["report_date"].min()).days + 1
+    metrics["incidence_rate"] = (total_cases / POPULATION_SIZE) * 100000
+    metrics["time_span_days"] = time_span_days
 
     # Prevalence (active cases per 100 population)
     # Assume active if reported in last 14 days
-    recent_cutoff = df['report_date'].max() - timedelta(days=14)
-    active_cases = len(df[df['report_date'] >= recent_cutoff])
-    metrics['prevalence'] = (active_cases / POPULATION_SIZE) * 100
-    metrics['active_cases'] = active_cases
+    recent_cutoff = df["report_date"].max() - timedelta(days=14)
+    active_cases = len(df[df["report_date"] >= recent_cutoff])
+    metrics["prevalence"] = (active_cases / POPULATION_SIZE) * 100
+    metrics["active_cases"] = active_cases
 
     # Case fatality rate (CFR)
-    if 'outcome' in df.columns:
-        fatal_cases = len(df[df['outcome'] == 'fatal'])
-        metrics['case_fatality_rate'] = (fatal_cases / total_cases) * 100 if total_cases > 0 else 0
-        metrics['fatal_cases'] = fatal_cases
+    if "outcome" in df.columns:
+        fatal_cases = len(df[df["outcome"] == "fatal"])
+        metrics["case_fatality_rate"] = (fatal_cases / total_cases) * 100 if total_cases > 0 else 0
+        metrics["fatal_cases"] = fatal_cases
 
         # Hospitalization rate
-        hospitalized = len(df[df['outcome'].isin(['hospitalized', 'icu'])])
-        metrics['hospitalization_rate'] = (hospitalized / total_cases) * 100 if total_cases > 0 else 0
-        metrics['hospitalized_cases'] = hospitalized
+        hospitalized = len(df[df["outcome"].isin(["hospitalized", "icu"])])
+        metrics["hospitalization_rate"] = (
+            (hospitalized / total_cases) * 100 if total_cases > 0 else 0
+        )
+        metrics["hospitalized_cases"] = hospitalized
 
     # Attack rate by region
-    if 'region' in df.columns:
+    if "region" in df.columns:
         attack_rates = {}
-        for region in df['region'].unique():
-            region_cases = len(df[df['region'] == region])
+        for region in df["region"].unique():
+            region_cases = len(df[df["region"] == region])
             attack_rates[str(region)] = (region_cases / POPULATION_SIZE) * 100
 
-        metrics['attack_rate_by_region'] = attack_rates
+        metrics["attack_rate_by_region"] = attack_rates
 
     # Demographics
-    if 'age_group' in df.columns:
-        age_distribution = df['age_group'].value_counts().to_dict()
-        metrics['age_distribution'] = {str(k): int(v) for k, v in age_distribution.items()}
+    if "age_group" in df.columns:
+        age_distribution = df["age_group"].value_counts().to_dict()
+        metrics["age_distribution"] = {str(k): int(v) for k, v in age_distribution.items()}
 
-    if 'sex' in df.columns:
-        sex_distribution = df['sex'].value_counts().to_dict()
-        metrics['sex_distribution'] = {str(k): int(v) for k, v in sex_distribution.items()}
+    if "sex" in df.columns:
+        sex_distribution = df["sex"].value_counts().to_dict()
+        metrics["sex_distribution"] = {str(k): int(v) for k, v in sex_distribution.items()}
 
     # Daily case rate
-    daily_cases = df.groupby(df['report_date'].dt.date).size()
-    metrics['avg_daily_cases'] = float(daily_cases.mean())
-    metrics['max_daily_cases'] = int(daily_cases.max())
-    metrics['min_daily_cases'] = int(daily_cases.min())
+    daily_cases = df.groupby(df["report_date"].dt.date).size()
+    metrics["avg_daily_cases"] = float(daily_cases.mean())
+    metrics["max_daily_cases"] = int(daily_cases.max())
+    metrics["min_daily_cases"] = int(daily_cases.min())
 
     return metrics
 
 
-def detect_outbreak(df: pd.DataFrame) -> Dict[str, Any]:
+def detect_outbreak(df: pd.DataFrame) -> dict[str, Any]:
     """
     Detect outbreak signals using statistical methods.
 
@@ -249,19 +245,19 @@ def detect_outbreak(df: pd.DataFrame) -> Dict[str, Any]:
         Dictionary with outbreak detection results
     """
     outbreak_signals = {
-        'outbreak_detected': False,
-        'confidence': 'none',
-        'reasons': [],
-        'detection_method': []
+        "outbreak_detected": False,
+        "confidence": "none",
+        "reasons": [],
+        "detection_method": [],
     }
 
     # Need minimum data for detection
     if len(df) < 7:
-        outbreak_signals['reasons'].append('Insufficient data for outbreak detection')
+        outbreak_signals["reasons"].append("Insufficient data for outbreak detection")
         return outbreak_signals
 
     # Method 1: Moving average threshold
-    daily_cases = df.groupby(df['report_date'].dt.date).size()
+    daily_cases = df.groupby(df["report_date"].dt.date).size()
 
     if len(daily_cases) >= 7:
         # Calculate 7-day moving average
@@ -279,12 +275,12 @@ def detect_outbreak(df: pd.DataFrame) -> Dict[str, Any]:
             z_score = (current_avg - baseline) / baseline_std
 
             if z_score > OUTBREAK_THRESHOLD:
-                outbreak_signals['outbreak_detected'] = True
-                outbreak_signals['detection_method'].append('moving_average')
-                outbreak_signals['reasons'].append(
-                    f'Cases exceed baseline by {z_score:.1f} standard deviations'
+                outbreak_signals["outbreak_detected"] = True
+                outbreak_signals["detection_method"].append("moving_average")
+                outbreak_signals["reasons"].append(
+                    f"Cases exceed baseline by {z_score:.1f} standard deviations"
                 )
-                outbreak_signals['z_score'] = float(z_score)
+                outbreak_signals["z_score"] = float(z_score)
 
     # Method 2: Rapid growth detection
     if len(daily_cases) >= 3:
@@ -293,16 +289,16 @@ def detect_outbreak(df: pd.DataFrame) -> Dict[str, Any]:
             growth_rate = (recent_trend[-1] - recent_trend[0]) / (recent_trend[0] + 1)
 
             if growth_rate > 0.5:  # 50% increase
-                outbreak_signals['outbreak_detected'] = True
-                outbreak_signals['detection_method'].append('rapid_growth')
-                outbreak_signals['reasons'].append(
-                    f'Rapid growth detected: {growth_rate*100:.1f}% increase'
+                outbreak_signals["outbreak_detected"] = True
+                outbreak_signals["detection_method"].append("rapid_growth")
+                outbreak_signals["reasons"].append(
+                    f"Rapid growth detected: {growth_rate * 100:.1f}% increase"
                 )
-                outbreak_signals['growth_rate'] = float(growth_rate)
+                outbreak_signals["growth_rate"] = float(growth_rate)
 
     # Method 3: Geographic clustering
-    if 'region' in df.columns:
-        region_counts = df['region'].value_counts()
+    if "region" in df.columns:
+        region_counts = df["region"].value_counts()
 
         # Check if one region has disproportionate cases
         total_regions = len(region_counts)
@@ -311,27 +307,27 @@ def detect_outbreak(df: pd.DataFrame) -> Dict[str, Any]:
             expected_per_region = len(df) / total_regions
 
             if max_region_cases > expected_per_region * 2:
-                outbreak_signals['outbreak_detected'] = True
-                outbreak_signals['detection_method'].append('geographic_clustering')
-                outbreak_signals['reasons'].append(
-                    f'Geographic clustering in {region_counts.index[0]}'
+                outbreak_signals["outbreak_detected"] = True
+                outbreak_signals["detection_method"].append("geographic_clustering")
+                outbreak_signals["reasons"].append(
+                    f"Geographic clustering in {region_counts.index[0]}"
                 )
-                outbreak_signals['hotspot_region'] = str(region_counts.index[0])
+                outbreak_signals["hotspot_region"] = str(region_counts.index[0])
 
     # Set confidence level
-    if outbreak_signals['outbreak_detected']:
-        detection_count = len(outbreak_signals['detection_method'])
+    if outbreak_signals["outbreak_detected"]:
+        detection_count = len(outbreak_signals["detection_method"])
         if detection_count >= 2:
-            outbreak_signals['confidence'] = 'high'
+            outbreak_signals["confidence"] = "high"
         elif detection_count == 1:
-            outbreak_signals['confidence'] = 'medium'
+            outbreak_signals["confidence"] = "medium"
     else:
-        outbreak_signals['reasons'] = ['No outbreak signals detected']
+        outbreak_signals["reasons"] = ["No outbreak signals detected"]
 
     return outbreak_signals
 
 
-def estimate_r0(df: pd.DataFrame) -> Optional[Dict[str, float]]:
+def estimate_r0(df: pd.DataFrame) -> Optional[dict[str, float]]:
     """
     Estimate basic reproductive number (R0).
 
@@ -351,7 +347,7 @@ def estimate_r0(df: pd.DataFrame) -> Optional[Dict[str, float]]:
 
     try:
         # Use symptom onset date if available, otherwise report date
-        date_col = 'symptom_onset_date' if 'symptom_onset_date' in df.columns else 'report_date'
+        date_col = "symptom_onset_date" if "symptom_onset_date" in df.columns else "report_date"
 
         # Daily case counts
         daily_cases = df.groupby(df[date_col].dt.date).size()
@@ -374,7 +370,7 @@ def estimate_r0(df: pd.DataFrame) -> Optional[Dict[str, float]]:
         y = np.log(early_cases_nonzero.values)
 
         # Linear regression
-        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        slope, _intercept, r_value, _p_value, std_err = stats.linregress(x, y)
 
         # Growth rate per day
         growth_rate = slope
@@ -387,20 +383,20 @@ def estimate_r0(df: pd.DataFrame) -> Optional[Dict[str, float]]:
         r0_upper = 1 + ((growth_rate + 1.96 * std_err) * SERIAL_INTERVAL)
 
         return {
-            'r0': float(max(0, r0)),  # R0 cannot be negative
-            'r0_lower': float(max(0, r0_lower)),
-            'r0_upper': float(max(0, r0_upper)),
-            'growth_rate': float(growth_rate),
-            'r_squared': float(r_value ** 2),
-            'method': 'exponential_growth'
+            "r0": float(max(0, r0)),  # R0 cannot be negative
+            "r0_lower": float(max(0, r0_lower)),
+            "r0_upper": float(max(0, r0_upper)),
+            "growth_rate": float(growth_rate),
+            "r_squared": float(r_value**2),
+            "method": "exponential_growth",
         }
 
     except Exception as e:
-        logger.warning(f"Error estimating R0: {str(e)}")
+        logger.warning(f"Error estimating R0: {e!s}")
         return None
 
 
-def generate_epidemic_curve(df: pd.DataFrame) -> List[Dict[str, Any]]:
+def generate_epidemic_curve(df: pd.DataFrame) -> list[dict[str, Any]]:
     """
     Generate epidemic curve data (cases by date).
 
@@ -410,27 +406,21 @@ def generate_epidemic_curve(df: pd.DataFrame) -> List[Dict[str, Any]]:
     Returns:
         List of dicts with date and case count
     """
-    date_col = 'symptom_onset_date' if 'symptom_onset_date' in df.columns else 'report_date'
+    date_col = "symptom_onset_date" if "symptom_onset_date" in df.columns else "report_date"
 
     daily_cases = df.groupby(df[date_col].dt.date).size()
 
-    epi_curve = [
-        {
-            'date': str(date),
-            'cases': int(count)
-        }
-        for date, count in daily_cases.items()
-    ]
+    epi_curve = [{"date": str(date), "cases": int(count)} for date, count in daily_cases.items()]
 
     return epi_curve
 
 
 def store_results(
     df: pd.DataFrame,
-    metrics: Dict,
-    outbreak_signals: Dict,
-    r0_estimate: Optional[Dict],
-    epi_curve: List[Dict]
+    metrics: dict,
+    outbreak_signals: dict,
+    r0_estimate: Optional[dict],
+    epi_curve: list[dict],
 ):
     """
     Store analysis results in DynamoDB.
@@ -447,37 +437,37 @@ def store_results(
 
         # Store summary record
         summary_item = {
-            'case_id': f"SUMMARY_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
-            'report_date': datetime.utcnow().isoformat(),
-            'record_type': 'summary',
-            'total_cases': metrics['total_cases'],
-            'incidence_rate': metrics['incidence_rate'],
-            'outbreak_detected': outbreak_signals['outbreak_detected'],
-            'outbreak_confidence': outbreak_signals['confidence'],
-            'metrics': json.dumps(metrics),
-            'outbreak_signals': json.dumps(outbreak_signals),
-            'epi_curve': json.dumps(epi_curve)
+            "case_id": f"SUMMARY_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            "report_date": datetime.utcnow().isoformat(),
+            "record_type": "summary",
+            "total_cases": metrics["total_cases"],
+            "incidence_rate": metrics["incidence_rate"],
+            "outbreak_detected": outbreak_signals["outbreak_detected"],
+            "outbreak_confidence": outbreak_signals["confidence"],
+            "metrics": json.dumps(metrics),
+            "outbreak_signals": json.dumps(outbreak_signals),
+            "epi_curve": json.dumps(epi_curve),
         }
 
         if r0_estimate:
-            summary_item['r0_estimate'] = r0_estimate['r0']
-            summary_item['r0_details'] = json.dumps(r0_estimate)
+            summary_item["r0_estimate"] = r0_estimate["r0"]
+            summary_item["r0_details"] = json.dumps(r0_estimate)
 
         table.put_item(Item=summary_item)
         logger.info("✓ Stored summary in DynamoDB")
 
         # Store individual case records (sample for large datasets)
         max_individual_records = 100
-        for idx, row in df.head(max_individual_records).iterrows():
+        for _idx, row in df.head(max_individual_records).iterrows():
             case_item = {
-                'case_id': str(row['case_id']),
-                'report_date': row['report_date'].isoformat(),
-                'record_type': 'case',
-                'disease': str(row.get('disease', 'unknown')),
-                'region': str(row.get('region', 'unknown')),
-                'age_group': str(row.get('age_group', 'unknown')),
-                'sex': str(row.get('sex', 'unknown')),
-                'outcome': str(row.get('outcome', 'unknown'))
+                "case_id": str(row["case_id"]),
+                "report_date": row["report_date"].isoformat(),
+                "record_type": "case",
+                "disease": str(row.get("disease", "unknown")),
+                "region": str(row.get("region", "unknown")),
+                "age_group": str(row.get("age_group", "unknown")),
+                "sex": str(row.get("sex", "unknown")),
+                "outcome": str(row.get("outcome", "unknown")),
             }
 
             table.put_item(Item=case_item)
@@ -485,15 +475,11 @@ def store_results(
         logger.info(f"✓ Stored {min(len(df), max_individual_records)} case records in DynamoDB")
 
     except Exception as e:
-        logger.error(f"Error storing results in DynamoDB: {str(e)}")
+        logger.error(f"Error storing results in DynamoDB: {e!s}")
         raise
 
 
-def send_outbreak_alert(
-    outbreak_signals: Dict,
-    metrics: Dict,
-    r0_estimate: Optional[Dict]
-):
+def send_outbreak_alert(outbreak_signals: dict, metrics: dict, r0_estimate: Optional[dict]):
     """
     Send SNS alert for detected outbreak.
 
@@ -522,52 +508,49 @@ def send_outbreak_alert(
             "Detection Methods:",
         ]
 
-        for method in outbreak_signals['detection_method']:
+        for method in outbreak_signals["detection_method"]:
             message_lines.append(f"  • {method}")
 
         message_lines.append("")
         message_lines.append("Reasons:")
-        for reason in outbreak_signals['reasons']:
+        for reason in outbreak_signals["reasons"]:
             message_lines.append(f"  • {reason}")
 
         if r0_estimate:
-            message_lines.extend([
-                "",
-                "Reproductive Number (R0):",
-                f"  R0 estimate: {r0_estimate['r0']:.2f}",
-                f"  95% CI: [{r0_estimate['r0_lower']:.2f}, {r0_estimate['r0_upper']:.2f}]",
-                f"  Growth rate: {r0_estimate['growth_rate']:.3f} per day"
-            ])
+            message_lines.extend(
+                [
+                    "",
+                    "Reproductive Number (R0):",
+                    f"  R0 estimate: {r0_estimate['r0']:.2f}",
+                    f"  95% CI: [{r0_estimate['r0_lower']:.2f}, {r0_estimate['r0_upper']:.2f}]",
+                    f"  Growth rate: {r0_estimate['growth_rate']:.3f} per day",
+                ]
+            )
 
-        if 'hotspot_region' in outbreak_signals:
-            message_lines.extend([
-                "",
-                f"Hotspot Region: {outbreak_signals['hotspot_region']}"
-            ])
+        if "hotspot_region" in outbreak_signals:
+            message_lines.extend(["", f"Hotspot Region: {outbreak_signals['hotspot_region']}"])
 
-        message_lines.extend([
-            "",
-            "=" * 50,
-            f"Generated: {datetime.utcnow().isoformat()} UTC",
-            "",
-            "RECOMMENDED ACTIONS:",
-            "1. Verify case data and outbreak signal",
-            "2. Coordinate with regional health authorities",
-            "3. Increase surveillance in affected areas",
-            "4. Review intervention protocols"
-        ])
+        message_lines.extend(
+            [
+                "",
+                "=" * 50,
+                f"Generated: {datetime.utcnow().isoformat()} UTC",
+                "",
+                "RECOMMENDED ACTIONS:",
+                "1. Verify case data and outbreak signal",
+                "2. Coordinate with regional health authorities",
+                "3. Increase surveillance in affected areas",
+                "4. Review intervention protocols",
+            ]
+        )
 
         message = "\n".join(message_lines)
 
         # Send SNS notification
-        response = sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject=subject,
-            Message=message
-        )
+        response = sns_client.publish(TopicArn=SNS_TOPIC_ARN, Subject=subject, Message=message)
 
         logger.info(f"✓ Sent outbreak alert via SNS: {response['MessageId']}")
 
     except Exception as e:
-        logger.error(f"Error sending SNS alert: {str(e)}")
+        logger.error(f"Error sending SNS alert: {e!s}")
         # Don't raise - this is non-critical

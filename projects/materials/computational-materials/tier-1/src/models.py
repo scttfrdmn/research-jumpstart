@@ -4,11 +4,9 @@ Graph Neural Network models for materials property prediction.
 Implementations of CGCNN, ALIGNN-style, and MEGNet-style architectures.
 """
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import CGConv, GATConv, NNConv, global_mean_pool, global_add_pool
-from typing import Optional
+from torch_geometric.nn import CGConv, GATConv, NNConv, global_mean_pool
 
 
 class CGCNN(nn.Module):
@@ -25,19 +23,19 @@ class CGCNN(nn.Module):
         edge_features: int = 8,
         hidden_dim: int = 128,
         num_conv_layers: int = 4,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
-        super(CGCNN, self).__init__()
+        super().__init__()
 
         self.node_embedding = nn.Linear(node_features, hidden_dim)
 
-        self.conv_layers = nn.ModuleList([
-            CGConv(hidden_dim, edge_features) for _ in range(num_conv_layers)
-        ])
+        self.conv_layers = nn.ModuleList(
+            [CGConv(hidden_dim, edge_features) for _ in range(num_conv_layers)]
+        )
 
-        self.batch_norms = nn.ModuleList([
-            nn.BatchNorm1d(hidden_dim) for _ in range(num_conv_layers)
-        ])
+        self.batch_norms = nn.ModuleList(
+            [nn.BatchNorm1d(hidden_dim) for _ in range(num_conv_layers)]
+        )
 
         # Prediction heads
         self.fc1 = nn.Linear(hidden_dim, 64)
@@ -98,21 +96,21 @@ class ALIGNNStyle(nn.Module):
         hidden_dim: int = 128,
         num_layers: int = 4,
         num_heads: int = 4,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
-        super(ALIGNNStyle, self).__init__()
+        super().__init__()
 
         self.node_embedding = nn.Linear(node_features, hidden_dim)
         self.edge_embedding = nn.Linear(edge_features, hidden_dim)
 
-        self.gat_layers = nn.ModuleList([
-            GATConv(hidden_dim, hidden_dim // num_heads, heads=num_heads, dropout=dropout)
-            for _ in range(num_layers)
-        ])
+        self.gat_layers = nn.ModuleList(
+            [
+                GATConv(hidden_dim, hidden_dim // num_heads, heads=num_heads, dropout=dropout)
+                for _ in range(num_layers)
+            ]
+        )
 
-        self.batch_norms = nn.ModuleList([
-            nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)
-        ])
+        self.batch_norms = nn.ModuleList([nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)])
 
         # Prediction heads
         self.fc1 = nn.Linear(hidden_dim, 64)
@@ -170,31 +168,30 @@ class MEGNetStyle(nn.Module):
         edge_features: int = 8,
         hidden_dim: int = 128,
         num_layers: int = 3,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
-        super(MEGNetStyle, self).__init__()
+        super().__init__()
 
         self.node_embedding = nn.Linear(node_features, hidden_dim)
         self.edge_embedding = nn.Linear(edge_features, hidden_dim)
 
         # Edge network (for NNConv)
-        self.edge_networks = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.ReLU(),
-                nn.Linear(hidden_dim, hidden_dim * hidden_dim)
-            )
-            for _ in range(num_layers)
-        ])
+        self.edge_networks = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(hidden_dim, hidden_dim),
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, hidden_dim * hidden_dim),
+                )
+                for _ in range(num_layers)
+            ]
+        )
 
-        self.conv_layers = nn.ModuleList([
-            NNConv(hidden_dim, hidden_dim, self.edge_networks[i])
-            for i in range(num_layers)
-        ])
+        self.conv_layers = nn.ModuleList(
+            [NNConv(hidden_dim, hidden_dim, self.edge_networks[i]) for i in range(num_layers)]
+        )
 
-        self.batch_norms = nn.ModuleList([
-            nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)
-        ])
+        self.batch_norms = nn.ModuleList([nn.BatchNorm1d(hidden_dim) for _ in range(num_layers)])
 
         # Prediction heads
         self.fc1 = nn.Linear(hidden_dim, 64)
@@ -246,7 +243,7 @@ def create_model(
     node_features: int = 16,
     edge_features: int = 8,
     hidden_dim: int = 128,
-    **kwargs
+    **kwargs,
 ):
     """
     Factory function to create models.

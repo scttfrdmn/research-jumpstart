@@ -12,15 +12,15 @@ Usage:
     python query_results.py --quality-filter 30 --output results.csv
 """
 
+import argparse
 import os
 import sys
-import argparse
+from pathlib import Path
+from typing import Optional
+
 import boto3
 import pandas as pd
-from pathlib import Path
 from dotenv import load_dotenv
-from typing import List, Dict, Optional
-import json
 
 
 def load_config() -> dict:
@@ -28,22 +28,19 @@ def load_config() -> dict:
     load_dotenv()
 
     config = {
-        'bucket_results': os.getenv('BUCKET_RESULTS'),
-        'region': os.getenv('AWS_REGION', 'us-east-1'),
-        'table_name': os.getenv('TABLE_NAME', 'variant-metadata'),
+        "bucket_results": os.getenv("BUCKET_RESULTS"),
+        "region": os.getenv("AWS_REGION", "us-east-1"),
+        "table_name": os.getenv("TABLE_NAME", "variant-metadata"),
     }
 
-    if not config['bucket_results']:
+    if not config["bucket_results"]:
         raise ValueError("BUCKET_RESULTS not set in .env file")
 
     return config
 
 
 def query_dynamodb_by_sample(
-    table_name: str,
-    sample_id: str,
-    region: str = 'us-east-1',
-    min_quality: Optional[int] = None
+    table_name: str, sample_id: str, region: str = "us-east-1", min_quality: Optional[int] = None
 ) -> pd.DataFrame:
     """
     Query DynamoDB for variants from a specific sample.
@@ -58,7 +55,7 @@ def query_dynamodb_by_sample(
         DataFrame with variant data
     """
 
-    dynamodb = boto3.resource('dynamodb', region_name=region)
+    dynamodb = boto3.resource("dynamodb", region_name=region)
     table = dynamodb.Table(table_name)
 
     print(f"Querying DynamoDB table '{table_name}' for sample '{sample_id}'")
@@ -66,20 +63,19 @@ def query_dynamodb_by_sample(
     try:
         # Use Scan with filter expression
         response = table.scan(
-            FilterExpression='sample_id = :sample',
-            ExpressionAttributeValues={':sample': sample_id}
+            FilterExpression="sample_id = :sample", ExpressionAttributeValues={":sample": sample_id}
         )
 
-        items = response.get('Items', [])
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
+        while "LastEvaluatedKey" in response:
             response = table.scan(
-                FilterExpression='sample_id = :sample',
-                ExpressionAttributeValues={':sample': sample_id},
-                ExclusiveStartKey=response['LastEvaluatedKey']
+                FilterExpression="sample_id = :sample",
+                ExpressionAttributeValues={":sample": sample_id},
+                ExclusiveStartKey=response["LastEvaluatedKey"],
             )
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
         # Convert to DataFrame
         if items:
@@ -88,7 +84,7 @@ def query_dynamodb_by_sample(
 
             # Apply quality filter if specified
             if min_quality:
-                df = df[df['quality'] >= min_quality]
+                df = df[df["quality"] >= min_quality]
                 print(f"✓ Filtered to {len(df)} variants with quality >= {min_quality}")
 
             return df
@@ -97,14 +93,12 @@ def query_dynamodb_by_sample(
             return pd.DataFrame()
 
     except Exception as e:
-        print(f"✗ Query failed: {str(e)}")
+        print(f"✗ Query failed: {e!s}")
         raise
 
 
 def query_dynamodb_by_region(
-    table_name: str,
-    region_str: str,
-    aws_region: str = 'us-east-1'
+    table_name: str, region_str: str, aws_region: str = "us-east-1"
 ) -> pd.DataFrame:
     """
     Query DynamoDB for variants in a specific genomic region.
@@ -118,16 +112,16 @@ def query_dynamodb_by_region(
         DataFrame with variant data
     """
 
-    dynamodb = boto3.resource('dynamodb', region_name=aws_region)
+    dynamodb = boto3.resource("dynamodb", region_name=aws_region)
     table = dynamodb.Table(table_name)
 
     print(f"Querying DynamoDB table '{table_name}' for region '{region_str}'")
 
     try:
         # Parse region
-        if ':' in region_str:
-            chrom, pos_range = region_str.split(':')
-            start, end = map(int, pos_range.split('-'))
+        if ":" in region_str:
+            chrom, pos_range = region_str.split(":")
+            start, end = map(int, pos_range.split("-"))
         else:
             chrom = region_str
             start = None
@@ -135,27 +129,23 @@ def query_dynamodb_by_region(
 
         # Scan with filters
         response = table.scan(
-            FilterExpression='chromosome = :chrom',
-            ExpressionAttributeValues={':chrom': chrom}
+            FilterExpression="chromosome = :chrom", ExpressionAttributeValues={":chrom": chrom}
         )
 
-        items = response.get('Items', [])
+        items = response.get("Items", [])
 
         # Handle pagination
-        while 'LastEvaluatedKey' in response:
+        while "LastEvaluatedKey" in response:
             response = table.scan(
-                FilterExpression='chromosome = :chrom',
-                ExpressionAttributeValues={':chrom': chrom},
-                ExclusiveStartKey=response['LastEvaluatedKey']
+                FilterExpression="chromosome = :chrom",
+                ExpressionAttributeValues={":chrom": chrom},
+                ExclusiveStartKey=response["LastEvaluatedKey"],
             )
-            items.extend(response.get('Items', []))
+            items.extend(response.get("Items", []))
 
         # Filter by position if specified
         if start and end:
-            items = [
-                item for item in items
-                if start <= item.get('position', 0) <= end
-            ]
+            items = [item for item in items if start <= item.get("position", 0) <= end]
 
         if items:
             df = pd.DataFrame(items)
@@ -166,15 +156,12 @@ def query_dynamodb_by_region(
             return pd.DataFrame()
 
     except Exception as e:
-        print(f"✗ Query failed: {str(e)}")
+        print(f"✗ Query failed: {e!s}")
         raise
 
 
 def download_vcf_from_s3(
-    bucket: str,
-    vcf_key: str,
-    local_path: str,
-    region: str = 'us-east-1'
+    bucket: str, vcf_key: str, local_path: str, region: str = "us-east-1"
 ) -> None:
     """
     Download VCF file from S3.
@@ -186,7 +173,7 @@ def download_vcf_from_s3(
         region: AWS region
     """
 
-    s3 = boto3.client('s3', region_name=region)
+    s3 = boto3.client("s3", region_name=region)
 
     print(f"Downloading VCF from s3://{bucket}/{vcf_key}")
 
@@ -195,15 +182,11 @@ def download_vcf_from_s3(
         file_size = os.path.getsize(local_path) / 1024
         print(f"✓ Downloaded: {local_path} ({file_size:.2f} KB)")
     except Exception as e:
-        print(f"✗ Download failed: {str(e)}")
+        print(f"✗ Download failed: {e!s}")
         raise
 
 
-def list_vcf_files(
-    bucket: str,
-    prefix: str = 'results/',
-    region: str = 'us-east-1'
-) -> List[str]:
+def list_vcf_files(bucket: str, prefix: str = "results/", region: str = "us-east-1") -> list[str]:
     """
     List all VCF files in S3 bucket.
 
@@ -216,7 +199,7 @@ def list_vcf_files(
         List of S3 keys for VCF files
     """
 
-    s3 = boto3.client('s3', region_name=region)
+    s3 = boto3.client("s3", region_name=region)
 
     print(f"Listing VCF files in s3://{bucket}/{prefix}")
 
@@ -224,10 +207,10 @@ def list_vcf_files(
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
         vcf_files = []
-        if 'Contents' in response:
-            for obj in response['Contents']:
-                if obj['Key'].endswith('.vcf') or obj['Key'].endswith('.vcf.gz'):
-                    vcf_files.append(obj['Key'])
+        if "Contents" in response:
+            for obj in response["Contents"]:
+                if obj["Key"].endswith(".vcf") or obj["Key"].endswith(".vcf.gz"):
+                    vcf_files.append(obj["Key"])
 
         print(f"✓ Found {len(vcf_files)} VCF files")
         for vcf in vcf_files:
@@ -236,11 +219,11 @@ def list_vcf_files(
         return vcf_files
 
     except Exception as e:
-        print(f"✗ Listing failed: {str(e)}")
+        print(f"✗ Listing failed: {e!s}")
         raise
 
 
-def generate_summary_statistics(df: pd.DataFrame) -> Dict:
+def generate_summary_statistics(df: pd.DataFrame) -> dict:
     """
     Generate summary statistics for variants.
 
@@ -255,26 +238,25 @@ def generate_summary_statistics(df: pd.DataFrame) -> Dict:
         return {}
 
     stats = {
-        'total_variants': len(df),
-        'chromosomes': df['chromosome'].nunique() if 'chromosome' in df else 0,
-        'avg_quality': float(df['quality'].mean()) if 'quality' in df else 0,
-        'avg_depth': float(df['depth'].mean()) if 'depth' in df else 0,
-        'avg_allele_freq': float(df['allele_freq'].mean()) if 'allele_freq' in df else 0,
+        "total_variants": len(df),
+        "chromosomes": df["chromosome"].nunique() if "chromosome" in df else 0,
+        "avg_quality": float(df["quality"].mean()) if "quality" in df else 0,
+        "avg_depth": float(df["depth"].mean()) if "depth" in df else 0,
+        "avg_allele_freq": float(df["allele_freq"].mean()) if "allele_freq" in df else 0,
     }
 
     # Count variant types
-    if 'ref' in df and 'alt' in df:
-        df['var_type'] = df.apply(
-            lambda x: 'SNP' if len(x['ref']) == len(x['alt']) else 'INDEL',
-            axis=1
+    if "ref" in df and "alt" in df:
+        df["var_type"] = df.apply(
+            lambda x: "SNP" if len(x["ref"]) == len(x["alt"]) else "INDEL", axis=1
         )
-        stats['snp_count'] = int((df['var_type'] == 'SNP').sum())
-        stats['indel_count'] = int((df['var_type'] == 'INDEL').sum())
+        stats["snp_count"] = int((df["var_type"] == "SNP").sum())
+        stats["indel_count"] = int((df["var_type"] == "INDEL").sum())
 
     return stats
 
 
-def print_summary_statistics(stats: Dict) -> None:
+def print_summary_statistics(stats: dict) -> None:
     """Print summary statistics in human-readable format."""
 
     print("\n" + "=" * 60)
@@ -301,42 +283,22 @@ def export_to_csv(df: pd.DataFrame, output_path: str) -> None:
 def export_to_json(df: pd.DataFrame, output_path: str) -> None:
     """Export variant data to JSON."""
 
-    df.to_json(output_path, orient='records', indent=2)
+    df.to_json(output_path, orient="records", indent=2)
     print(f"✓ Exported {len(df)} variants to {output_path}")
 
 
 def main():
     """Main entry point."""
 
-    parser = argparse.ArgumentParser(
-        description='Query variant results from DynamoDB and S3'
-    )
+    parser = argparse.ArgumentParser(description="Query variant results from DynamoDB and S3")
+    parser.add_argument("--sample", help="Sample ID to query")
+    parser.add_argument("--region", help="Genomic region (e.g., chr20:1000000-1010000)")
+    parser.add_argument("--quality-filter", type=int, help="Minimum quality threshold")
     parser.add_argument(
-        '--sample',
-        help='Sample ID to query'
+        "--list-vcf", action="store_true", help="List all VCF files in results bucket"
     )
-    parser.add_argument(
-        '--region',
-        help='Genomic region (e.g., chr20:1000000-1010000)'
-    )
-    parser.add_argument(
-        '--quality-filter',
-        type=int,
-        help='Minimum quality threshold'
-    )
-    parser.add_argument(
-        '--list-vcf',
-        action='store_true',
-        help='List all VCF files in results bucket'
-    )
-    parser.add_argument(
-        '--download-vcf',
-        help='Download VCF file (specify S3 key)'
-    )
-    parser.add_argument(
-        '--output',
-        help='Output file path (CSV or JSON based on extension)'
-    )
+    parser.add_argument("--download-vcf", help="Download VCF file (specify S3 key)")
+    parser.add_argument("--output", help="Output file path (CSV or JSON based on extension)")
 
     args = parser.parse_args()
 
@@ -353,20 +315,14 @@ def main():
     try:
         # List VCF files
         if args.list_vcf:
-            vcf_files = list_vcf_files(
-                config['bucket_results'],
-                region=config['region']
-            )
+            list_vcf_files(config["bucket_results"], region=config["region"])
             print()
 
         # Download VCF
         if args.download_vcf:
             output_path = args.output or Path(args.download_vcf).name
             download_vcf_from_s3(
-                config['bucket_results'],
-                args.download_vcf,
-                output_path,
-                region=config['region']
+                config["bucket_results"], args.download_vcf, output_path, region=config["region"]
             )
             print()
 
@@ -375,16 +331,14 @@ def main():
 
         if args.sample:
             df = query_dynamodb_by_sample(
-                config['table_name'],
+                config["table_name"],
                 args.sample,
-                region=config['region'],
-                min_quality=args.quality_filter
+                region=config["region"],
+                min_quality=args.quality_filter,
             )
         elif args.region:
             df = query_dynamodb_by_region(
-                config['table_name'],
-                args.region,
-                aws_region=config['region']
+                config["table_name"], args.region, aws_region=config["region"]
             )
 
         # Generate and print statistics
@@ -394,7 +348,7 @@ def main():
 
             # Export results
             if args.output:
-                if args.output.endswith('.json'):
+                if args.output.endswith(".json"):
                     export_to_json(df, args.output)
                 else:
                     export_to_csv(df, args.output)
@@ -403,9 +357,9 @@ def main():
         print("✓ Query complete!")
 
     except Exception as e:
-        print(f"\n✗ Error: {str(e)}")
+        print(f"\n✗ Error: {e!s}")
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

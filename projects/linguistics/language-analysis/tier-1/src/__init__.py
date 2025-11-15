@@ -11,43 +11,28 @@ Modules:
     visualization: Plotting and visualization functions
 """
 
-__version__ = '1.0.0'
+__version__ = "1.0.0"
 
-from .data_utils import (
-    load_dialect_corpus,
-    get_data_path,
-    download_corpus
-)
-
+from .analysis import cross_linguistic_comparison, evaluate_model, train_dialect_classifier
+from .data_utils import download_corpus, get_data_path, load_dialect_corpus
 from .feature_extraction import (
-    extract_phonetic_features,
     extract_lexical_features,
-    extract_syntactic_features
+    extract_phonetic_features,
+    extract_syntactic_features,
 )
-
-from .analysis import (
-    train_dialect_classifier,
-    evaluate_model,
-    cross_linguistic_comparison
-)
-
-from .visualization import (
-    plot_dialect_space,
-    plot_confusion_matrix,
-    create_feature_importance_plot
-)
+from .visualization import create_feature_importance_plot, plot_confusion_matrix, plot_dialect_space
 
 __all__ = [
-    'load_dialect_corpus',
-    'get_data_path',
-    'download_corpus',
-    'extract_phonetic_features',
-    'extract_lexical_features',
-    'extract_syntactic_features',
-    'train_dialect_classifier',
-    'evaluate_model',
-    'cross_linguistic_comparison',
-    'plot_dialect_space',
-    'plot_confusion_matrix',
-    'create_feature_importance_plot'
+    "create_feature_importance_plot",
+    "cross_linguistic_comparison",
+    "download_corpus",
+    "evaluate_model",
+    "extract_lexical_features",
+    "extract_phonetic_features",
+    "extract_syntactic_features",
+    "get_data_path",
+    "load_dialect_corpus",
+    "plot_confusion_matrix",
+    "plot_dialect_space",
+    "train_dialect_classifier",
 ]

@@ -12,23 +12,20 @@ Sensor types supported:
 - Soil (moisture, NPK, temperature, pH)
 """
 
-import os
-import sys
-import boto3
 import argparse
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from datetime import datetime, timedelta
-from tqdm import tqdm
-from botocore.exceptions import ClientError
 import logging
-import json
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import boto3
+import numpy as np
+import pandas as pd
+from botocore.exceptions import ClientError
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,15 +37,15 @@ class EnvironmentalDataGenerator:
         """Initialize data generator with random seed."""
         np.random.seed(seed)
         self.locations = [
-            {'id': 'station-01', 'name': 'Downtown', 'lat': 40.7128, 'lon': -74.0060},
-            {'id': 'station-02', 'name': 'Industrial', 'lat': 40.7580, 'lon': -73.9855},
-            {'id': 'station-03', 'name': 'Suburban', 'lat': 40.6782, 'lon': -73.9442},
-            {'id': 'station-04', 'name': 'Park', 'lat': 40.7829, 'lon': -73.9654},
-            {'id': 'station-05', 'name': 'Waterfront', 'lat': 40.7061, 'lon': -74.0134},
+            {"id": "station-01", "name": "Downtown", "lat": 40.7128, "lon": -74.0060},
+            {"id": "station-02", "name": "Industrial", "lat": 40.7580, "lon": -73.9855},
+            {"id": "station-03", "name": "Suburban", "lat": 40.6782, "lon": -73.9442},
+            {"id": "station-04", "name": "Park", "lat": 40.7829, "lon": -73.9654},
+            {"id": "station-05", "name": "Waterfront", "lat": 40.7061, "lon": -74.0134},
         ]
         self.water_locations = [
-            {'id': 'river-01', 'name': 'Main River', 'lat': 40.7500, 'lon': -74.0000},
-            {'id': 'lake-01', 'name': 'City Lake', 'lat': 40.7200, 'lon': -73.9800},
+            {"id": "river-01", "name": "Main River", "lat": 40.7500, "lon": -74.0000},
+            {"id": "lake-01", "name": "City Lake", "lat": 40.7200, "lon": -73.9800},
         ]
 
     def generate_air_quality_data(self, days=7, interval_minutes=15):
@@ -73,7 +70,7 @@ class EnvironmentalDataGenerator:
 
             # Base pollution levels (different by location)
             base_pm25 = np.random.uniform(10, 30)
-            base_pm10 = base_pm25 * 1.8
+            base_pm25 * 1.8
             base_co2 = np.random.uniform(400, 450)
 
             for i in range(total_samples):
@@ -112,22 +109,24 @@ class EnvironmentalDataGenerator:
                     pm25 *= 2.5
                     pm10 *= 2.5
 
-                data.append({
-                    'timestamp': timestamp.isoformat() + 'Z',
-                    'location_id': location['id'],
-                    'location_name': location['name'],
-                    'sensor_type': 'air',
-                    'pm25': round(pm25, 2),
-                    'pm10': round(pm10, 2),
-                    'co2': round(co2, 1),
-                    'no2': round(no2, 2),
-                    'o3': round(o3, 2),
-                    'co': round(co, 3),
-                    'temperature': round(temp, 1),
-                    'humidity': round(humidity, 1),
-                    'latitude': location['lat'],
-                    'longitude': location['lon']
-                })
+                data.append(
+                    {
+                        "timestamp": timestamp.isoformat() + "Z",
+                        "location_id": location["id"],
+                        "location_name": location["name"],
+                        "sensor_type": "air",
+                        "pm25": round(pm25, 2),
+                        "pm10": round(pm10, 2),
+                        "co2": round(co2, 1),
+                        "no2": round(no2, 2),
+                        "o3": round(o3, 2),
+                        "co": round(co, 3),
+                        "temperature": round(temp, 1),
+                        "humidity": round(humidity, 1),
+                        "latitude": location["lat"],
+                        "longitude": location["lon"],
+                    }
+                )
 
         df = pd.DataFrame(data)
         logger.info(f"Generated {len(df)} air quality readings")
@@ -165,10 +164,7 @@ class EnvironmentalDataGenerator:
 
                 # Diurnal variation (photosynthesis affects DO and pH)
                 photosynthesis_factor = 1.0
-                if 6 <= hour <= 18:
-                    photosynthesis_factor = 1.2
-                else:
-                    photosynthesis_factor = 0.9
+                photosynthesis_factor = 1.2 if 6 <= hour <= 18 else 0.9
 
                 # Add noise
                 ph = base_ph + 0.3 * (photosynthesis_factor - 1) + np.random.normal(0, 0.2)
@@ -195,20 +191,22 @@ class EnvironmentalDataGenerator:
                     do *= 0.6
                     turbidity *= 3.0
 
-                data.append({
-                    'timestamp': timestamp.isoformat() + 'Z',
-                    'location_id': location['id'],
-                    'location_name': location['name'],
-                    'sensor_type': 'water',
-                    'ph': round(ph, 2),
-                    'dissolved_oxygen': round(do, 2),
-                    'turbidity': round(turbidity, 2),
-                    'conductivity': round(conductivity, 1),
-                    'temperature': round(water_temp, 1),
-                    'tds': round(tds, 1),
-                    'latitude': location['lat'],
-                    'longitude': location['lon']
-                })
+                data.append(
+                    {
+                        "timestamp": timestamp.isoformat() + "Z",
+                        "location_id": location["id"],
+                        "location_name": location["name"],
+                        "sensor_type": "water",
+                        "ph": round(ph, 2),
+                        "dissolved_oxygen": round(do, 2),
+                        "turbidity": round(turbidity, 2),
+                        "conductivity": round(conductivity, 1),
+                        "temperature": round(water_temp, 1),
+                        "tds": round(tds, 1),
+                        "latitude": location["lat"],
+                        "longitude": location["lon"],
+                    }
+                )
 
         df = pd.DataFrame(data)
         logger.info(f"Generated {len(df)} water quality readings")
@@ -231,8 +229,7 @@ class EnvironmentalDataGenerator:
         total_samples = samples_per_day * days
 
         data = []
-        location = {'id': 'weather-01', 'name': 'Central Station',
-                   'lat': 40.7300, 'lon': -74.0000}
+        location = {"id": "weather-01", "name": "Central Station", "lat": 40.7300, "lon": -74.0000}
 
         start_time = datetime.utcnow() - timedelta(days=days)
         base_temp = 20
@@ -262,20 +259,22 @@ class EnvironmentalDataGenerator:
             if np.random.random() < 0.1:
                 precipitation = np.random.exponential(2.0)
 
-            data.append({
-                'timestamp': timestamp.isoformat() + 'Z',
-                'location_id': location['id'],
-                'location_name': location['name'],
-                'sensor_type': 'weather',
-                'temperature': round(temp, 1),
-                'humidity': round(humidity, 1),
-                'pressure': round(pressure, 1),
-                'wind_speed': round(wind_speed, 1),
-                'wind_direction': round(wind_direction, 1),
-                'precipitation': round(precipitation, 2),
-                'latitude': location['lat'],
-                'longitude': location['lon']
-            })
+            data.append(
+                {
+                    "timestamp": timestamp.isoformat() + "Z",
+                    "location_id": location["id"],
+                    "location_name": location["name"],
+                    "sensor_type": "weather",
+                    "temperature": round(temp, 1),
+                    "humidity": round(humidity, 1),
+                    "pressure": round(pressure, 1),
+                    "wind_speed": round(wind_speed, 1),
+                    "wind_direction": round(wind_direction, 1),
+                    "precipitation": round(precipitation, 2),
+                    "latitude": location["lat"],
+                    "longitude": location["lon"],
+                }
+            )
 
         df = pd.DataFrame(data)
         logger.info(f"Generated {len(df)} weather readings")
@@ -285,7 +284,7 @@ class EnvironmentalDataGenerator:
 class S3Uploader:
     """Upload files to S3 with progress tracking."""
 
-    def __init__(self, bucket_name, region='us-east-1', profile=None):
+    def __init__(self, bucket_name, region="us-east-1", profile=None):
         """
         Initialize S3 uploader.
 
@@ -298,12 +297,9 @@ class S3Uploader:
         self.region = region
 
         # Create session and S3 client
-        if profile:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
 
-        self.s3 = session.client('s3', region_name=region)
+        self.s3 = session.client("s3", region_name=region)
 
         # Verify bucket exists
         try:
@@ -314,7 +310,7 @@ class S3Uploader:
             logger.error(f"Error: {e}")
             raise
 
-    def upload_dataframe(self, df, s3_key, format='csv'):
+    def upload_dataframe(self, df, s3_key, format="csv"):
         """
         Upload DataFrame to S3 as CSV or JSON.
 
@@ -327,20 +323,20 @@ class S3Uploader:
             bool: Success status
         """
         try:
-            if format == 'csv':
+            if format == "csv":
                 body = df.to_csv(index=False)
-                content_type = 'text/csv'
-            elif format == 'json':
-                body = df.to_json(orient='records', indent=2)
-                content_type = 'application/json'
+                content_type = "text/csv"
+            elif format == "json":
+                body = df.to_json(orient="records", indent=2)
+                content_type = "application/json"
             else:
                 raise ValueError(f"Unsupported format: {format}")
 
             self.s3.put_object(
                 Bucket=self.bucket_name,
                 Key=s3_key,
-                Body=body.encode('utf-8'),
-                ContentType=content_type
+                Body=body.encode("utf-8"),
+                ContentType=content_type,
             )
 
             logger.info(f"Uploaded: s3://{self.bucket_name}/{s3_key} ({len(df)} rows)")
@@ -368,14 +364,10 @@ class S3Uploader:
             return False
 
         file_size = file_path.stat().st_size
-        logger.info(f"Uploading: {file_path.name} ({file_size/1e6:.2f}MB)")
+        logger.info(f"Uploading: {file_path.name} ({file_size / 1e6:.2f}MB)")
 
         try:
-            self.s3.upload_file(
-                str(file_path),
-                self.bucket_name,
-                s3_key
-            )
+            self.s3.upload_file(str(file_path), self.bucket_name, s3_key)
             logger.info(f"Uploaded: s3://{self.bucket_name}/{s3_key}")
             return True
 
@@ -383,15 +375,12 @@ class S3Uploader:
             logger.error(f"Upload failed: {e}")
             return False
 
-    def list_uploaded_files(self, prefix='raw/'):
+    def list_uploaded_files(self, prefix="raw/"):
         """List all uploaded files in S3."""
         try:
-            response = self.s3.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            if 'Contents' not in response:
+            if "Contents" not in response:
                 logger.info(f"No files found in s3://{self.bucket_name}/{prefix}")
                 return []
 
@@ -399,18 +388,20 @@ class S3Uploader:
             total_size = 0
 
             logger.info(f"\nUploaded files in {prefix}:")
-            for obj in response['Contents']:
-                size_mb = obj['Size'] / 1e6
-                files.append({
-                    'key': obj['Key'],
-                    'size': obj['Size'],
-                    'size_mb': size_mb,
-                    'modified': obj['LastModified']
-                })
+            for obj in response["Contents"]:
+                size_mb = obj["Size"] / 1e6
+                files.append(
+                    {
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "size_mb": size_mb,
+                        "modified": obj["LastModified"],
+                    }
+                )
                 logger.info(f"  {obj['Key']} ({size_mb:.2f}MB)")
-                total_size += obj['Size']
+                total_size += obj["Size"]
 
-            logger.info(f"Total: {len(files)} files, {total_size/1e6:.2f}MB")
+            logger.info(f"Total: {len(files)} files, {total_size / 1e6:.2f}MB")
             return files
 
         except ClientError as e:
@@ -421,7 +412,7 @@ class S3Uploader:
 def main():
     """Main function for command-line usage."""
     parser = argparse.ArgumentParser(
-        description='Upload environmental sensor data to S3',
+        description="Upload environmental sensor data to S3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -433,52 +424,26 @@ Examples:
 
   # Generate data for specific days
   python upload_to_s3.py --bucket environmental-data-xxxx --generate-sample --days 30
-        """
+        """,
+    )
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
+    parser.add_argument("--region", default="us-east-1", help="AWS region (default: us-east-1)")
+    parser.add_argument("--profile", help="AWS profile name")
+    parser.add_argument(
+        "--generate-sample", action="store_true", help="Generate sample environmental data"
     )
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name'
+        "--days", type=int, default=7, help="Days of sample data to generate (default: 7)"
+    )
+    parser.add_argument("--file", help="Upload single file instead of generating data")
+    parser.add_argument(
+        "--s3-prefix", default="raw/", help="S3 prefix for uploaded files (default: raw/)"
     )
     parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region (default: us-east-1)'
+        "--format", choices=["csv", "json"], default="csv", help="Output format (default: csv)"
     )
     parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--generate-sample',
-        action='store_true',
-        help='Generate sample environmental data'
-    )
-    parser.add_argument(
-        '--days',
-        type=int,
-        default=7,
-        help='Days of sample data to generate (default: 7)'
-    )
-    parser.add_argument(
-        '--file',
-        help='Upload single file instead of generating data'
-    )
-    parser.add_argument(
-        '--s3-prefix',
-        default='raw/',
-        help='S3 prefix for uploaded files (default: raw/)'
-    )
-    parser.add_argument(
-        '--format',
-        choices=['csv', 'json'],
-        default='csv',
-        help='Output format (default: csv)'
-    )
-    parser.add_argument(
-        '--list-only',
-        action='store_true',
-        help='Only list files without uploading'
+        "--list-only", action="store_true", help="Only list files without uploading"
     )
 
     args = parser.parse_args()
@@ -506,7 +471,9 @@ Examples:
 
             # Generate air quality data
             air_data = generator.generate_air_quality_data(days=args.days)
-            s3_key = f"{args.s3_prefix}air_quality_{datetime.utcnow().strftime('%Y%m%d')}.{args.format}"
+            s3_key = (
+                f"{args.s3_prefix}air_quality_{datetime.utcnow().strftime('%Y%m%d')}.{args.format}"
+            )
             uploader.upload_dataframe(air_data, s3_key, format=args.format)
 
             # Generate water quality data
@@ -533,9 +500,10 @@ Examples:
     except Exception as e:
         logger.error(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

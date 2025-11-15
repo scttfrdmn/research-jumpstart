@@ -2,15 +2,14 @@
 Visualization utilities for cross-lingual analysis
 """
 
+from typing import Optional
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
-from typing import Dict, List
 
 
 def create_language_comparison_plot(
-    embeddings_by_language: Dict[str, np.ndarray],
-    language_names: Dict[str, str] = None
+    embeddings_by_language: dict[str, np.ndarray], language_names: Optional[dict[str, str]] = None
 ) -> plt.Figure:
     """
     Create UMAP visualization of cross-lingual embeddings.
@@ -27,9 +26,9 @@ def create_language_comparison_plot(
 
 
 def plot_translation_effects(
-    original_features: Dict[str, float],
-    translated_features: Dict[str, float],
-    feature_names: List[str] = None
+    original_features: dict[str, float],
+    translated_features: dict[str, float],
+    feature_names: Optional[list[str]] = None,
 ) -> plt.Figure:
     """
     Visualize how translation affects stylistic features.
@@ -46,10 +45,7 @@ def plot_translation_effects(
     pass
 
 
-def plot_style_heatmap(
-    distance_matrix: np.ndarray,
-    labels: List[str]
-) -> plt.Figure:
+def plot_style_heatmap(distance_matrix: np.ndarray, labels: list[str]) -> plt.Figure:
     """
     Create heatmap of cross-lingual style distances.
 

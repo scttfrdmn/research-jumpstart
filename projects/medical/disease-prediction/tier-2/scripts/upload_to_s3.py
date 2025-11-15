@@ -15,24 +15,23 @@ Usage:
         --prefix raw-images/
 """
 
-import os
-import sys
 import argparse
 import json
-from pathlib import Path
-from typing import List, Tuple, Dict, Optional
-from datetime import datetime
 import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
 import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from tqdm import tqdm
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Constants
-SUPPORTED_FORMATS = {'.png', '.jpg', '.jpeg', '.dcm', '.nii'}
+SUPPORTED_FORMATS = {".png", ".jpg", ".jpeg", ".dcm", ".nii"}
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
@@ -48,7 +47,7 @@ RETRY_DELAY = 1  # seconds
 class S3ImageUploader:
     """Handle uploading medical images to AWS S3."""
 
-    def __init__(self, bucket_name: str, region: str = 'us-east-1'):
+    def __init__(self, bucket_name: str, region: str = "us-east-1"):
         """
         Initialize S3 uploader.
 
@@ -58,7 +57,7 @@ class S3ImageUploader:
         """
         self.bucket_name = bucket_name
         self.region = region
-        self.s3_client = boto3.client('s3', region_name=region)
+        self.s3_client = boto3.client("s3", region_name=region)
         self.upload_log = []
 
     def validate_bucket_exists(self) -> bool:
@@ -68,16 +67,16 @@ class S3ImageUploader:
             logger.info(f"Bucket '{self.bucket_name}' is accessible")
             return True
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == '404':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
                 logger.error(f"Bucket '{self.bucket_name}' does not exist")
-            elif error_code == '403':
+            elif error_code == "403":
                 logger.error(f"Access denied to bucket '{self.bucket_name}'")
             else:
                 logger.error(f"Error accessing bucket: {error_code}")
             return False
 
-    def get_image_files(self, input_dir: str) -> List[Path]:
+    def get_image_files(self, input_dir: str) -> list[Path]:
         """
         Get list of supported image files from directory.
 
@@ -99,15 +98,16 @@ class S3ImageUploader:
 
         # Find all supported image files
         image_files = []
-        for file_path in input_path.rglob('*'):
+        for file_path in input_path.rglob("*"):
             if file_path.is_file() and file_path.suffix.lower() in SUPPORTED_FORMATS:
                 image_files.append(file_path)
 
         logger.info(f"Found {len(image_files)} image files in '{input_dir}'")
         return sorted(image_files)
 
-    def upload_file(self, file_path: Path, s3_key: str,
-                   extra_args: Optional[Dict] = None) -> Tuple[bool, str]:
+    def upload_file(
+        self, file_path: Path, s3_key: str, extra_args: Optional[dict] = None
+    ) -> tuple[bool, str]:
         """
         Upload single file to S3 with retry logic.
 
@@ -121,21 +121,18 @@ class S3ImageUploader:
         """
         if extra_args is None:
             extra_args = {
-                'ContentType': self._get_content_type(file_path),
-                'Metadata': {
-                    'uploaded_at': datetime.utcnow().isoformat(),
-                    'original_path': str(file_path)
-                }
+                "ContentType": self._get_content_type(file_path),
+                "Metadata": {
+                    "uploaded_at": datetime.utcnow().isoformat(),
+                    "original_path": str(file_path),
+                },
             }
 
         for attempt in range(MAX_RETRIES):
             try:
                 file_size = file_path.stat().st_size
                 self.s3_client.upload_file(
-                    str(file_path),
-                    self.bucket_name,
-                    s3_key,
-                    ExtraArgs=extra_args
+                    str(file_path), self.bucket_name, s3_key, ExtraArgs=extra_args
                 )
 
                 message = f"✓ Uploaded {s3_key} ({file_size} bytes)"
@@ -144,7 +141,7 @@ class S3ImageUploader:
                 return True, message
 
             except (ClientError, BotoCoreError) as e:
-                logger.warning(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for {s3_key}: {str(e)}")
+                logger.warning(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for {s3_key}: {e!s}")
                 if attempt == MAX_RETRIES - 1:
                     error_msg = f"✗ Failed to upload {s3_key} after {MAX_RETRIES} attempts"
                     logger.error(error_msg)
@@ -157,15 +154,15 @@ class S3ImageUploader:
         """Get MIME type for file."""
         suffix = file_path.suffix.lower()
         mime_types = {
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.dcm': 'application/octet-stream',
-            '.nii': 'application/octet-stream'
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".dcm": "application/octet-stream",
+            ".nii": "application/octet-stream",
         }
-        return mime_types.get(suffix, 'application/octet-stream')
+        return mime_types.get(suffix, "application/octet-stream")
 
-    def upload_directory(self, input_dir: str, s3_prefix: str = '') -> Dict:
+    def upload_directory(self, input_dir: str, s3_prefix: str = "") -> dict:
         """
         Upload all images from directory to S3.
 
@@ -179,11 +176,11 @@ class S3ImageUploader:
         # Validate bucket
         if not self.validate_bucket_exists():
             return {
-                'total': 0,
-                'successful': 0,
-                'failed': 0,
-                'total_bytes': 0,
-                'errors': ['Bucket validation failed']
+                "total": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_bytes": 0,
+                "errors": ["Bucket validation failed"],
             }
 
         # Get image files
@@ -191,11 +188,11 @@ class S3ImageUploader:
         if not image_files:
             logger.warning("No image files found to upload")
             return {
-                'total': 0,
-                'successful': 0,
-                'failed': 0,
-                'total_bytes': 0,
-                'errors': ['No image files found']
+                "total": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_bytes": 0,
+                "errors": ["No image files found"],
             }
 
         # Upload with progress bar
@@ -204,13 +201,15 @@ class S3ImageUploader:
         total_bytes = 0
         errors = []
 
-        logger.info(f"Starting upload of {len(image_files)} images to s3://{self.bucket_name}/{s3_prefix}")
+        logger.info(
+            f"Starting upload of {len(image_files)} images to s3://{self.bucket_name}/{s3_prefix}"
+        )
 
         with tqdm(total=len(image_files), desc="Uploading images") as pbar:
             for file_path in image_files:
                 # Build S3 key
                 relative_path = file_path.relative_to(Path(input_dir))
-                s3_key = f"{s3_prefix}{relative_path}".replace('\\', '/')
+                s3_key = f"{s3_prefix}{relative_path}".replace("\\", "/")
 
                 # Upload file
                 success, message = self.upload_file(file_path, s3_key)
@@ -218,23 +217,27 @@ class S3ImageUploader:
                 if success:
                     successful += 1
                     total_bytes += file_path.stat().st_size
-                    self.upload_log.append({
-                        'local_path': str(file_path),
-                        's3_key': s3_key,
-                        'size': file_path.stat().st_size,
-                        'status': 'success',
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
+                    self.upload_log.append(
+                        {
+                            "local_path": str(file_path),
+                            "s3_key": s3_key,
+                            "size": file_path.stat().st_size,
+                            "status": "success",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
                 else:
                     failed += 1
                     errors.append(message)
-                    self.upload_log.append({
-                        'local_path': str(file_path),
-                        's3_key': s3_key,
-                        'status': 'failed',
-                        'error': message,
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
+                    self.upload_log.append(
+                        {
+                            "local_path": str(file_path),
+                            "s3_key": s3_key,
+                            "status": "failed",
+                            "error": message,
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
                 pbar.update(1)
 
@@ -258,17 +261,17 @@ class S3ImageUploader:
                 logger.warning(f"  ... and {len(errors) - 5} more errors")
 
         return {
-            'total': len(image_files),
-            'successful': successful,
-            'failed': failed,
-            'total_bytes': total_bytes,
-            'errors': errors
+            "total": len(image_files),
+            "successful": successful,
+            "failed": failed,
+            "total_bytes": total_bytes,
+            "errors": errors,
         }
 
-    def save_upload_log(self, output_file: str = 'upload_log.json'):
+    def save_upload_log(self, output_file: str = "upload_log.json"):
         """Save upload log to JSON file."""
         try:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(self.upload_log, f, indent=2)
             logger.info(f"Upload log saved to {output_file}")
         except Exception as e:
@@ -278,7 +281,7 @@ class S3ImageUploader:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Upload medical images to AWS S3',
+        description="Upload medical images to AWS S3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -289,43 +292,43 @@ Examples:
 
   # Use environment variables
   python upload_to_s3.py --input-dir ./data
-        """
+        """,
     )
 
     parser.add_argument(
-        '--input-dir',
+        "--input-dir",
         type=str,
-        default=os.getenv('INPUT_DIR', './data'),
-        help='Directory containing medical images (default: ./data)'
+        default=os.getenv("INPUT_DIR", "./data"),
+        help="Directory containing medical images (default: ./data)",
     )
 
     parser.add_argument(
-        '--s3-bucket',
+        "--s3-bucket",
         type=str,
-        default=os.getenv('S3_BUCKET_NAME'),
-        required=not os.getenv('S3_BUCKET_NAME'),
-        help='S3 bucket name (required if S3_BUCKET_NAME env var not set)'
+        default=os.getenv("S3_BUCKET_NAME"),
+        required=not os.getenv("S3_BUCKET_NAME"),
+        help="S3 bucket name (required if S3_BUCKET_NAME env var not set)",
     )
 
     parser.add_argument(
-        '--prefix',
+        "--prefix",
         type=str,
-        default=os.getenv('S3_RAW_PREFIX', 'raw-images/'),
-        help='S3 prefix for uploads (default: raw-images/)'
+        default=os.getenv("S3_RAW_PREFIX", "raw-images/"),
+        help="S3 prefix for uploads (default: raw-images/)",
     )
 
     parser.add_argument(
-        '--region',
+        "--region",
         type=str,
-        default=os.getenv('AWS_REGION', 'us-east-1'),
-        help='AWS region (default: us-east-1)'
+        default=os.getenv("AWS_REGION", "us-east-1"),
+        help="AWS region (default: us-east-1)",
     )
 
     parser.add_argument(
-        '--log-file',
+        "--log-file",
         type=str,
-        default='upload_log.json',
-        help='Output file for upload log (default: upload_log.json)'
+        default="upload_log.json",
+        help="Output file for upload log (default: upload_log.json)",
     )
 
     args = parser.parse_args()
@@ -340,8 +343,8 @@ Examples:
     uploader.save_upload_log(args.log_file)
 
     # Return exit code based on failures
-    sys.exit(0 if results['failed'] == 0 else 1)
+    sys.exit(0 if results["failed"] == 0 else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

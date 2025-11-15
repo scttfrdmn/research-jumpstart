@@ -2,13 +2,13 @@
 Survey query utilities for SDSS, Gaia, 2MASS, and WISE.
 """
 
-import numpy as np
-from astropy.coordinates import SkyCoord
+import warnings
+
 from astropy import units as u
-from astroquery.sdss import SDSS
+from astropy.coordinates import SkyCoord
 from astroquery.gaia import Gaia
 from astroquery.irsa import Irsa
-import warnings
+from astroquery.sdss import SDSS
 
 
 def query_sdss(ra_center, dec_center, radius_deg=1.0, data_release=18):
@@ -35,18 +35,32 @@ def query_sdss(ra_center, dec_center, radius_deg=1.0, data_release=18):
     print(f"  Center: RA={ra_center}, Dec={dec_center}")
     print(f"  Radius: {radius_deg} deg")
 
-    coords = SkyCoord(ra=ra_center*u.deg, dec=dec_center*u.deg)
+    coords = SkyCoord(ra=ra_center * u.deg, dec=dec_center * u.deg)
 
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             result = SDSS.query_region(
                 coords,
-                radius=radius_deg*u.deg,
+                radius=radius_deg * u.deg,
                 data_release=data_release,
-                photoobj_fields=['ra', 'dec', 'u', 'g', 'r', 'i', 'z',
-                                'err_u', 'err_g', 'err_r', 'err_i', 'err_z',
-                                'type', 'petroR50_r', 'petroR90_r']
+                photoobj_fields=[
+                    "ra",
+                    "dec",
+                    "u",
+                    "g",
+                    "r",
+                    "i",
+                    "z",
+                    "err_u",
+                    "err_g",
+                    "err_r",
+                    "err_i",
+                    "err_z",
+                    "type",
+                    "petroR50_r",
+                    "petroR90_r",
+                ],
             )
 
         if result is not None:
@@ -131,14 +145,14 @@ def query_2mass(ra_center, dec_center, radius_deg=1.0):
     print(f"  Center: RA={ra_center}, Dec={dec_center}")
     print(f"  Radius: {radius_deg} deg")
 
-    coords = SkyCoord(ra=ra_center*u.deg, dec=dec_center*u.deg)
+    coords = SkyCoord(ra=ra_center * u.deg, dec=dec_center * u.deg)
 
     try:
         result = Irsa.query_region(
             coords,
-            catalog='fp_psc',  # 2MASS Point Source Catalog
-            spatial='Cone',
-            radius=radius_deg*u.deg
+            catalog="fp_psc",  # 2MASS Point Source Catalog
+            spatial="Cone",
+            radius=radius_deg * u.deg,
         )
 
         if result is not None:
@@ -175,14 +189,14 @@ def query_wise(ra_center, dec_center, radius_deg=1.0):
     print(f"  Center: RA={ra_center}, Dec={dec_center}")
     print(f"  Radius: {radius_deg} deg")
 
-    coords = SkyCoord(ra=ra_center*u.deg, dec=dec_center*u.deg)
+    coords = SkyCoord(ra=ra_center * u.deg, dec=dec_center * u.deg)
 
     try:
         result = Irsa.query_region(
             coords,
-            catalog='allwise_p3as_psd',  # AllWISE Source Catalog
-            spatial='Cone',
-            radius=radius_deg*u.deg
+            catalog="allwise_p3as_psd",  # AllWISE Source Catalog
+            spatial="Cone",
+            radius=radius_deg * u.deg,
         )
 
         if result is not None:
@@ -214,7 +228,7 @@ def save_catalog(catalog, filename):
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
 
     # Save to FITS
-    catalog.write(filename, format='fits', overwrite=True)
+    catalog.write(filename, format="fits", overwrite=True)
     print(f"Saved {len(catalog)} sources to {filename}")
 
 
@@ -234,6 +248,6 @@ def load_catalog(filename):
     """
     from astropy.table import Table
 
-    catalog = Table.read(filename, format='fits')
+    catalog = Table.read(filename, format="fits")
     print(f"Loaded {len(catalog)} sources from {filename}")
     return catalog

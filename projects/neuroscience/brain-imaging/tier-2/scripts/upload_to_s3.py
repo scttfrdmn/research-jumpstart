@@ -9,22 +9,20 @@ Usage:
     python upload_to_s3.py --bucket fmri-input-myname --local-path sample_data/
 """
 
-import boto3
 import argparse
+import logging
 import os
 from pathlib import Path
+
+import boto3
 from tqdm import tqdm
-import logging
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # S3 client
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
 
 def upload_file_to_s3(local_path: str, bucket: str, s3_key: str) -> bool:
@@ -44,18 +42,13 @@ def upload_file_to_s3(local_path: str, bucket: str, s3_key: str) -> bool:
         logger.info(f"Uploading {local_path} ({file_size / 1e9:.2f}GB) to s3://{bucket}/{s3_key}")
 
         # Use progress callback for large files
-        s3.upload_file(
-            local_path,
-            bucket,
-            s3_key,
-            Callback=ProgressPercentage(local_path)
-        )
+        s3.upload_file(local_path, bucket, s3_key, Callback=ProgressPercentage(local_path))
 
         logger.info(f"Successfully uploaded to s3://{bucket}/{s3_key}")
         return True
 
     except Exception as e:
-        logger.error(f"Failed to upload {local_path}: {str(e)}")
+        logger.error(f"Failed to upload {local_path}: {e!s}")
         return False
 
 
@@ -75,14 +68,14 @@ def upload_directory_to_s3(local_dir: str, bucket: str, s3_prefix: str = "") -> 
 
     if not local_path.exists():
         logger.error(f"Directory not found: {local_dir}")
-        return {'uploaded': 0, 'failed': 0, 'files': []}
+        return {"uploaded": 0, "failed": 0, "files": []}
 
     # Find all NIfTI files
-    nifti_files = list(local_path.glob('**/*.nii.gz')) + list(local_path.glob('**/*.nii'))
+    nifti_files = list(local_path.glob("**/*.nii.gz")) + list(local_path.glob("**/*.nii"))
 
     if not nifti_files:
         logger.warning(f"No NIfTI files found in {local_dir}")
-        return {'uploaded': 0, 'failed': 0, 'files': []}
+        return {"uploaded": 0, "failed": 0, "files": []}
 
     logger.info(f"Found {len(nifti_files)} NIfTI files to upload")
 
@@ -104,9 +97,9 @@ def upload_directory_to_s3(local_dir: str, bucket: str, s3_prefix: str = "") -> 
             failed_files.append(str(file_path))
 
     # Print summary
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Upload Summary")
-    logger.info("="*60)
+    logger.info("=" * 60)
     logger.info(f"Total files: {len(nifti_files)}")
     logger.info(f"Uploaded: {len(uploaded_files)}")
     logger.info(f"Failed: {len(failed_files)}")
@@ -117,10 +110,10 @@ def upload_directory_to_s3(local_dir: str, bucket: str, s3_prefix: str = "") -> 
             logger.warning(f"  - {f}")
 
     return {
-        'uploaded': len(uploaded_files),
-        'failed': len(failed_files),
-        'files': uploaded_files,
-        'failed_files': failed_files
+        "uploaded": len(uploaded_files),
+        "failed": len(failed_files),
+        "files": uploaded_files,
+        "failed_files": failed_files,
     }
 
 
@@ -157,7 +150,7 @@ def verify_upload(bucket: str, s3_key: str, local_path: str) -> bool:
     try:
         local_size = os.path.getsize(local_path)
         response = s3.head_object(Bucket=bucket, Key=s3_key)
-        s3_size = response['ContentLength']
+        s3_size = response["ContentLength"]
 
         if local_size == s3_size:
             logger.info(f"Verification passed: {s3_key} ({local_size} bytes)")
@@ -168,7 +161,7 @@ def verify_upload(bucket: str, s3_key: str, local_path: str) -> bool:
             return False
 
     except Exception as e:
-        logger.error(f"Verification error: {str(e)}")
+        logger.error(f"Verification error: {e!s}")
         return False
 
 
@@ -186,16 +179,16 @@ def list_s3_contents(bucket: str, prefix: str = "") -> list:
     try:
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
-        if 'Contents' not in response:
+        if "Contents" not in response:
             logger.warning(f"No objects found in s3://{bucket}/{prefix}")
             return []
 
-        objects = [obj['Key'] for obj in response['Contents']]
+        objects = [obj["Key"] for obj in response["Contents"]]
         logger.info(f"Found {len(objects)} objects in s3://{bucket}/{prefix}")
         return objects
 
     except Exception as e:
-        logger.error(f"Error listing S3 contents: {str(e)}")
+        logger.error(f"Error listing S3 contents: {e!s}")
         return []
 
 
@@ -213,33 +206,14 @@ Examples:
 
   # List S3 contents
   python upload_to_s3.py --bucket fmri-input --list
-        """
+        """,
     )
 
-    parser.add_argument(
-        '--bucket',
-        required=False,
-        help='S3 bucket name'
-    )
-    parser.add_argument(
-        '--local-path',
-        help='Local file or directory path'
-    )
-    parser.add_argument(
-        '--prefix',
-        default="",
-        help='S3 key prefix (optional)'
-    )
-    parser.add_argument(
-        '--verify',
-        action='store_true',
-        help='Verify upload by checking file size'
-    )
-    parser.add_argument(
-        '--list',
-        action='store_true',
-        help='List contents of S3 bucket'
-    )
+    parser.add_argument("--bucket", required=False, help="S3 bucket name")
+    parser.add_argument("--local-path", help="Local file or directory path")
+    parser.add_argument("--prefix", default="", help="S3 key prefix (optional)")
+    parser.add_argument("--verify", action="store_true", help="Verify upload by checking file size")
+    parser.add_argument("--list", action="store_true", help="List contents of S3 bucket")
 
     args = parser.parse_args()
 
@@ -282,9 +256,9 @@ Examples:
         logger.info(f"Uploading directory: {local_path}")
         result = upload_directory_to_s3(local_path, args.bucket, args.prefix)
 
-        if args.verify and result['files']:
+        if args.verify and result["files"]:
             logger.info("Verifying uploads...")
-            for s3_key in result['files'][:5]:  # Verify first 5 files as sample
+            for s3_key in result["files"][:5]:  # Verify first 5 files as sample
                 # Reconstruct local path for verification
                 relative_key = s3_key.replace(args.prefix + "/", "") if args.prefix else s3_key
                 local_file = os.path.join(local_path, relative_key)
@@ -296,5 +270,5 @@ Examples:
         logger.error(f"Path not found: {local_path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

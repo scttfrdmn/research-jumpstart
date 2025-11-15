@@ -5,19 +5,15 @@ This module provides functions to train classification models, evaluate
 performance, and perform cross-linguistic comparisons.
 """
 
+from typing import Any, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple, Any
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 
 
 def train_dialect_classifier(
-    features: np.ndarray,
-    labels: np.ndarray,
-    model_type: str = 'transformer',
-    **kwargs
+    features: np.ndarray, labels: np.ndarray, model_type: str = "transformer", **kwargs
 ) -> Any:
     """
     Train dialect classification model.
@@ -33,7 +29,7 @@ def train_dialect_classifier(
     """
     # Encode labels
     label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(labels)
+    label_encoder.fit_transform(labels)
 
     # Placeholder for actual model training
     # In real implementation, would train transformer/classical ML models
@@ -45,21 +41,18 @@ def train_dialect_classifier(
 
     # Would train actual model here
     model = {
-        'type': model_type,
-        'label_encoder': label_encoder,
-        'n_classes': len(np.unique(labels)),
-        'feature_dim': features.shape[1] if len(features.shape) > 1 else 0
+        "type": model_type,
+        "label_encoder": label_encoder,
+        "n_classes": len(np.unique(labels)),
+        "feature_dim": features.shape[1] if len(features.shape) > 1 else 0,
     }
 
     return model
 
 
 def evaluate_model(
-    model: Any,
-    features: np.ndarray,
-    labels: np.ndarray,
-    detailed: bool = True
-) -> Dict[str, float]:
+    model: Any, features: np.ndarray, labels: np.ndarray, detailed: bool = True
+) -> dict[str, float]:
     """
     Evaluate model performance.
 
@@ -76,10 +69,10 @@ def evaluate_model(
     # In real implementation, would use model.predict()
 
     metrics = {
-        'accuracy': 0.85,  # Placeholder
-        'f1_score': 0.83,  # Placeholder
-        'precision': 0.84,  # Placeholder
-        'recall': 0.82     # Placeholder
+        "accuracy": 0.85,  # Placeholder
+        "f1_score": 0.83,  # Placeholder
+        "precision": 0.84,  # Placeholder
+        "recall": 0.82,  # Placeholder
     }
 
     if detailed:
@@ -92,8 +85,7 @@ def evaluate_model(
 
 
 def cross_linguistic_comparison(
-    models: Dict[str, Any],
-    test_data: Dict[str, Tuple[np.ndarray, np.ndarray]]
+    models: dict[str, Any], test_data: dict[str, tuple[np.ndarray, np.ndarray]]
 ) -> pd.DataFrame:
     """
     Compare model performance across languages.
@@ -110,7 +102,7 @@ def cross_linguistic_comparison(
     for language, (features, labels) in test_data.items():
         if language in models:
             metrics = evaluate_model(models[language], features, labels, detailed=False)
-            metrics['language'] = language
+            metrics["language"] = language
             results.append(metrics)
 
     df = pd.DataFrame(results)
@@ -118,9 +110,7 @@ def cross_linguistic_comparison(
 
 
 def calculate_dialect_distances(
-    features: np.ndarray,
-    labels: np.ndarray,
-    distance_metric: str = 'euclidean'
+    features: np.ndarray, labels: np.ndarray, distance_metric: str = "euclidean"
 ) -> pd.DataFrame:
     """
     Calculate pairwise distances between dialects.
@@ -150,11 +140,7 @@ def calculate_dialect_distances(
     distances = squareform(pdist(centroids, metric=distance_metric))
 
     # Create DataFrame
-    df = pd.DataFrame(
-        distances,
-        index=unique_dialects,
-        columns=unique_dialects
-    )
+    df = pd.DataFrame(distances, index=unique_dialects, columns=unique_dialects)
 
     return df
 
@@ -162,8 +148,8 @@ def calculate_dialect_distances(
 def identify_distinctive_features(
     features: np.ndarray,
     labels: np.ndarray,
-    feature_names: Optional[List[str]] = None,
-    top_k: int = 20
+    feature_names: Optional[list[str]] = None,
+    top_k: int = 20,
 ) -> pd.DataFrame:
     """
     Identify most distinctive features for each dialect.
@@ -187,20 +173,19 @@ def identify_distinctive_features(
 
     # Create DataFrame
     if feature_names is None:
-        feature_names = [f'feature_{i}' for i in range(len(importance))]
+        feature_names = [f"feature_{i}" for i in range(len(importance))]
 
-    df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': importance
-    }).sort_values('importance', ascending=False).head(top_k)
+    df = (
+        pd.DataFrame({"feature": feature_names, "importance": importance})
+        .sort_values("importance", ascending=False)
+        .head(top_k)
+    )
 
     return df
 
 
 def perform_ablation_study(
-    features: np.ndarray,
-    labels: np.ndarray,
-    feature_groups: Dict[str, List[int]]
+    features: np.ndarray, labels: np.ndarray, feature_groups: dict[str, list[int]]
 ) -> pd.DataFrame:
     """
     Perform ablation study to assess feature group importance.
@@ -218,7 +203,7 @@ def perform_ablation_study(
     # Full model performance
     full_model = train_dialect_classifier(features, labels)
     full_metrics = evaluate_model(full_model, features, labels, detailed=False)
-    full_metrics['configuration'] = 'full_model'
+    full_metrics["configuration"] = "full_model"
     results.append(full_metrics)
 
     # Ablate each feature group
@@ -231,18 +216,14 @@ def perform_ablation_study(
         # Train and evaluate
         model = train_dialect_classifier(ablated_features, labels)
         metrics = evaluate_model(model, ablated_features, labels, detailed=False)
-        metrics['configuration'] = f'without_{group_name}'
+        metrics["configuration"] = f"without_{group_name}"
         results.append(metrics)
 
     df = pd.DataFrame(results)
     return df
 
 
-def generate_classification_report(
-    model: Any,
-    features: np.ndarray,
-    labels: np.ndarray
-) -> str:
+def generate_classification_report(model: Any, features: np.ndarray, labels: np.ndarray) -> str:
     """
     Generate detailed classification report.
 
@@ -254,7 +235,6 @@ def generate_classification_report(
     Returns:
         Formatted classification report string
     """
-    from sklearn.metrics import classification_report
 
     # Placeholder for actual predictions
     # In real implementation, would use model.predict()

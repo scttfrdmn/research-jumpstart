@@ -4,18 +4,15 @@ Analysis functions for social network analysis.
 Includes community detection, influence scoring, and diffusion analysis.
 """
 
+from collections import defaultdict
+from typing import Optional
+
 import networkx as nx
 import numpy as np
-from typing import Dict, List, Tuple, Set, Optional
-from collections import defaultdict, Counter
 import pandas as pd
 
 
-def detect_communities(
-    G: nx.Graph,
-    method: str = 'louvain',
-    resolution: float = 1.0
-) -> List[Set]:
+def detect_communities(G: nx.Graph, method: str = "louvain", resolution: float = 1.0) -> list[set]:
     """
     Detect communities in the network.
 
@@ -33,16 +30,14 @@ def detect_communities(
     list : List of sets, each containing nodes in a community
     """
     # Convert to undirected
-    if G.is_directed():
-        G_undirected = G.to_undirected()
-    else:
-        G_undirected = G
+    G_undirected = G.to_undirected() if G.is_directed() else G
 
     print(f"Detecting communities using {method} algorithm...")
 
-    if method == 'louvain':
+    if method == "louvain":
         try:
             import community as community_louvain
+
             partition = community_louvain.best_partition(G_undirected, resolution=resolution)
             # Convert to list of sets
             communities = defaultdict(set)
@@ -52,14 +47,17 @@ def detect_communities(
         except ImportError:
             print("python-louvain not installed, falling back to greedy modularity")
             from networkx.algorithms import community
+
             communities = list(community.greedy_modularity_communities(G_undirected))
 
-    elif method == 'label_propagation':
+    elif method == "label_propagation":
         from networkx.algorithms import community
+
         communities = list(community.label_propagation_communities(G_undirected))
 
-    elif method == 'greedy':
+    elif method == "greedy":
         from networkx.algorithms import community
+
         communities = list(community.greedy_modularity_communities(G_undirected))
 
     else:
@@ -75,10 +73,7 @@ def detect_communities(
     return communities
 
 
-def calculate_influence_scores(
-    G: nx.Graph,
-    methods: Optional[List[str]] = None
-) -> pd.DataFrame:
+def calculate_influence_scores(G: nx.Graph, methods: Optional[list[str]] = None) -> pd.DataFrame:
     """
     Calculate various influence scores for all nodes.
 
@@ -95,49 +90,49 @@ def calculate_influence_scores(
     pd.DataFrame : DataFrame with influence scores for each node
     """
     if methods is None:
-        methods = ['pagerank', 'degree', 'betweenness']
+        methods = ["pagerank", "degree", "betweenness"]
 
     print("Calculating influence scores...")
     scores = {}
 
     # PageRank
-    if 'pagerank' in methods:
+    if "pagerank" in methods:
         print("  Computing PageRank...")
-        scores['pagerank'] = nx.pagerank(G, alpha=0.85)
+        scores["pagerank"] = nx.pagerank(G, alpha=0.85)
 
     # Degree centrality
-    if 'degree' in methods:
+    if "degree" in methods:
         print("  Computing degree centrality...")
         if G.is_directed():
-            scores['in_degree'] = dict(G.in_degree())
-            scores['out_degree'] = dict(G.out_degree())
-            scores['degree_centrality'] = nx.in_degree_centrality(G)
+            scores["in_degree"] = dict(G.in_degree())
+            scores["out_degree"] = dict(G.out_degree())
+            scores["degree_centrality"] = nx.in_degree_centrality(G)
         else:
-            scores['degree'] = dict(G.degree())
-            scores['degree_centrality'] = nx.degree_centrality(G)
+            scores["degree"] = dict(G.degree())
+            scores["degree_centrality"] = nx.degree_centrality(G)
 
     # Betweenness centrality
-    if 'betweenness' in methods:
+    if "betweenness" in methods:
         print("  Computing betweenness centrality (sampling for speed)...")
         k = min(1000, G.number_of_nodes())
-        scores['betweenness'] = nx.betweenness_centrality(G, k=k)
+        scores["betweenness"] = nx.betweenness_centrality(G, k=k)
 
     # Closeness centrality
-    if 'closeness' in methods and G.number_of_nodes() < 10000:
+    if "closeness" in methods and G.number_of_nodes() < 10000:
         print("  Computing closeness centrality...")
-        scores['closeness'] = nx.closeness_centrality(G)
+        scores["closeness"] = nx.closeness_centrality(G)
 
     # Eigenvector centrality
-    if 'eigenvector' in methods and G.number_of_nodes() < 10000:
+    if "eigenvector" in methods and G.number_of_nodes() < 10000:
         print("  Computing eigenvector centrality...")
         try:
-            scores['eigenvector'] = nx.eigenvector_centrality(G, max_iter=100)
+            scores["eigenvector"] = nx.eigenvector_centrality(G, max_iter=100)
         except:
             print("    Warning: Eigenvector centrality failed to converge")
 
     # Convert to DataFrame
     df = pd.DataFrame(scores)
-    df.index.name = 'node'
+    df.index.name = "node"
 
     print(f"✓ Calculated {len(df.columns)} influence metrics for {len(df):,} nodes")
 
@@ -145,11 +140,8 @@ def calculate_influence_scores(
 
 
 def analyze_information_diffusion(
-    G: nx.Graph,
-    seed_nodes: List[str],
-    steps: int = 10,
-    threshold: float = 0.5
-) -> Dict:
+    G: nx.Graph, seed_nodes: list[str], steps: int = 10, threshold: float = 0.5
+) -> dict:
     """
     Simulate information diffusion using Linear Threshold Model.
 
@@ -184,10 +176,7 @@ def analyze_information_diffusion(
                 continue
 
             # Get active neighbors
-            if G.is_directed():
-                neighbors = list(G.predecessors(node))
-            else:
-                neighbors = list(G.neighbors(node))
+            neighbors = list(G.predecessors(node)) if G.is_directed() else list(G.neighbors(node))
 
             if not neighbors:
                 continue
@@ -213,22 +202,20 @@ def analyze_information_diffusion(
     reach_rate = total_reached / G.number_of_nodes()
 
     stats = {
-        'total_reached': total_reached,
-        'reach_rate': reach_rate,
-        'convergence_step': len(active_by_step) - 1,
-        'active_by_step': [len(s) for s in active_by_step],
-        'final_active_nodes': active
+        "total_reached": total_reached,
+        "reach_rate": reach_rate,
+        "convergence_step": len(active_by_step) - 1,
+        "active_by_step": [len(s) for s in active_by_step],
+        "final_active_nodes": active,
     }
 
-    print(f"✓ Diffusion reached {total_reached:,} nodes ({reach_rate*100:.1f}% of network)")
+    print(f"✓ Diffusion reached {total_reached:,} nodes ({reach_rate * 100:.1f}% of network)")
 
     return stats
 
 
 def identify_key_spreaders(
-    G: nx.Graph,
-    influence_scores: pd.DataFrame,
-    top_k: int = 100
+    G: nx.Graph, influence_scores: pd.DataFrame, top_k: int = 100
 ) -> pd.DataFrame:
     """
     Identify key information spreaders combining multiple metrics.
@@ -255,27 +242,22 @@ def identify_key_spreaders(
             df_norm[col] = (df_norm[col] - min_val) / (max_val - min_val)
 
     # Compute combined score (weighted average)
-    weights = {
-        'pagerank': 0.4,
-        'betweenness': 0.3,
-        'degree_centrality': 0.2,
-        'in_degree': 0.1
-    }
+    weights = {"pagerank": 0.4, "betweenness": 0.3, "degree_centrality": 0.2, "in_degree": 0.1}
 
     combined_score = 0
     for metric, weight in weights.items():
         if metric in df_norm.columns:
             combined_score += weight * df_norm[metric]
 
-    df_norm['combined_score'] = combined_score
+    df_norm["combined_score"] = combined_score
 
     # Get top spreaders
-    top_spreaders = df_norm.nlargest(top_k, 'combined_score')
+    top_spreaders = df_norm.nlargest(top_k, "combined_score")
 
     return top_spreaders
 
 
-def compute_network_metrics(G: nx.Graph) -> Dict:
+def compute_network_metrics(G: nx.Graph) -> dict:
     """
     Compute comprehensive network metrics.
 
@@ -288,33 +270,32 @@ def compute_network_metrics(G: nx.Graph) -> Dict:
     metrics = {}
 
     # Basic properties
-    metrics['num_nodes'] = G.number_of_nodes()
-    metrics['num_edges'] = G.number_of_edges()
-    metrics['density'] = nx.density(G)
+    metrics["num_nodes"] = G.number_of_nodes()
+    metrics["num_edges"] = G.number_of_edges()
+    metrics["density"] = nx.density(G)
 
     # Degree statistics
     degrees = dict(G.degree())
     degree_values = list(degrees.values())
-    metrics['avg_degree'] = np.mean(degree_values)
-    metrics['median_degree'] = np.median(degree_values)
-    metrics['max_degree'] = np.max(degree_values)
+    metrics["avg_degree"] = np.mean(degree_values)
+    metrics["median_degree"] = np.median(degree_values)
+    metrics["max_degree"] = np.max(degree_values)
 
     # Clustering
     if not G.is_directed() and G.number_of_nodes() < 10000:
-        metrics['avg_clustering'] = nx.average_clustering(G)
+        metrics["avg_clustering"] = nx.average_clustering(G)
 
     # Connected components
     if G.is_directed():
-        metrics['num_weakly_connected'] = nx.number_weakly_connected_components(G)
-        metrics['num_strongly_connected'] = nx.number_strongly_connected_components(G)
+        metrics["num_weakly_connected"] = nx.number_weakly_connected_components(G)
+        metrics["num_strongly_connected"] = nx.number_strongly_connected_components(G)
     else:
-        metrics['num_connected_components'] = nx.number_connected_components(G)
+        metrics["num_connected_components"] = nx.number_connected_components(G)
 
     # Path length (on sample for large graphs)
-    if G.number_of_nodes() < 10000:
-        if not G.is_directed() and nx.is_connected(G):
-            metrics['avg_shortest_path'] = nx.average_shortest_path_length(G)
-            metrics['diameter'] = nx.diameter(G)
+    if G.number_of_nodes() < 10000 and not G.is_directed() and nx.is_connected(G):
+        metrics["avg_shortest_path"] = nx.average_shortest_path_length(G)
+        metrics["diameter"] = nx.diameter(G)
 
     print("✓ Network metrics computed")
 
@@ -322,10 +303,8 @@ def compute_network_metrics(G: nx.Graph) -> Dict:
 
 
 def detect_coordinated_behavior(
-    G: nx.Graph,
-    time_window: int = 3600,
-    similarity_threshold: float = 0.8
-) -> List[Set]:
+    G: nx.Graph, time_window: int = 3600, similarity_threshold: float = 0.8
+) -> list[set]:
     """
     Detect potentially coordinated behavior (bot networks, manipulation).
 
@@ -352,10 +331,7 @@ def detect_coordinated_behavior(
     suspicious_groups = []
 
     # Find tightly connected clusters
-    if G.is_directed():
-        G_undirected = G.to_undirected()
-    else:
-        G_undirected = G
+    G_undirected = G.to_undirected() if G.is_directed() else G
 
     # Get k-cores (nodes with at least k connections)
     k_cores = nx.k_core(G_undirected, k=5)

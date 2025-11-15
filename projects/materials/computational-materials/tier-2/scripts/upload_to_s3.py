@@ -6,19 +6,19 @@ This script handles uploading CIF and POSCAR files to AWS S3 for processing.
 Supports resumable uploads and progress tracking.
 """
 
+import argparse
+import logging
 import os
 import sys
-import boto3
-import argparse
 from pathlib import Path
-from tqdm import tqdm
+
+import boto3
 from botocore.exceptions import ClientError
-import logging
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class S3Uploader:
     """Upload crystal structure files to S3 with progress tracking."""
 
-    def __init__(self, bucket_name, region='us-east-1', profile=None):
+    def __init__(self, bucket_name, region="us-east-1", profile=None):
         """
         Initialize S3 uploader.
 
@@ -39,12 +39,9 @@ class S3Uploader:
         self.region = region
 
         # Create session and S3 client
-        if profile:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=profile) if profile else boto3.Session()
 
-        self.s3 = session.client('s3', region_name=region)
+        self.s3 = session.client("s3", region_name=region)
 
         # Verify bucket exists
         try:
@@ -80,25 +77,25 @@ class S3Uploader:
             # Prepare metadata
             extra_args = {}
             if metadata:
-                extra_args['Metadata'] = metadata
+                extra_args["Metadata"] = metadata
 
             # Determine content type
             suffix = file_path.suffix.lower()
-            if suffix == '.cif':
-                extra_args['ContentType'] = 'chemical/x-cif'
-            elif suffix in ['.vasp', '.poscar', '.contcar']:
-                extra_args['ContentType'] = 'text/plain'
+            if suffix == ".cif":
+                extra_args["ContentType"] = "chemical/x-cif"
+            elif suffix in [".vasp", ".poscar", ".contcar"]:
+                extra_args["ContentType"] = "text/plain"
 
             logger.info(f"Uploading: {file_path.name} ({file_size_mb:.2f} MB)")
 
             # Upload file with progress bar
-            with tqdm(total=file_size, unit='B', unit_scale=True, desc=file_path.name) as pbar:
+            with tqdm(total=file_size, unit="B", unit_scale=True, desc=file_path.name) as pbar:
                 self.s3.upload_file(
                     str(file_path),
                     self.bucket_name,
                     s3_key,
                     ExtraArgs=extra_args,
-                    Callback=lambda bytes_transferred: pbar.update(bytes_transferred)
+                    Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
                 )
 
             logger.info(f"Uploaded: s3://{self.bucket_name}/{s3_key}")
@@ -111,7 +108,7 @@ class S3Uploader:
             logger.error(f"Unexpected error: {e}")
             return False
 
-    def upload_directory(self, local_dir, s3_prefix='structures/', pattern='*'):
+    def upload_directory(self, local_dir, s3_prefix="structures/", pattern="*"):
         """
         Upload all matching files in directory to S3.
 
@@ -131,10 +128,18 @@ class S3Uploader:
 
         # Find all structure files
         files = []
-        for ext in ['*.cif', '*.CIF', '*.vasp', '*.VASP',
-                    '*POSCAR', '*CONTCAR', '*.poscar', '*.contcar']:
+        for ext in [
+            "*.cif",
+            "*.CIF",
+            "*.vasp",
+            "*.VASP",
+            "*POSCAR",
+            "*CONTCAR",
+            "*.poscar",
+            "*.contcar",
+        ]:
             files.extend(list(local_dir.glob(ext)))
-            files.extend(list(local_dir.glob(f'**/{ext}')))
+            files.extend(list(local_dir.glob(f"**/{ext}")))
 
         # Remove duplicates
         files = list(set(files))
@@ -151,13 +156,13 @@ class S3Uploader:
         for file_path in files:
             # Create S3 key maintaining directory structure
             relative_path = file_path.relative_to(local_dir)
-            s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, '/')
+            s3_key = f"{s3_prefix.rstrip('/')}/{relative_path}".replace(os.sep, "/")
 
             # Add metadata
             metadata = {
-                'original-name': file_path.name,
-                'file-type': file_path.suffix.lower(),
-                'upload-source': 'tier-2-materials'
+                "original-name": file_path.name,
+                "file-type": file_path.suffix.lower(),
+                "upload-source": "tier-2-materials",
             }
 
             if self.upload_file(str(file_path), s3_key, metadata):
@@ -167,35 +172,34 @@ class S3Uploader:
 
         return successful, failed
 
-    def list_uploaded_files(self, prefix='structures/'):
+    def list_uploaded_files(self, prefix="structures/"):
         """List all uploaded files in S3."""
         try:
-            response = self.s3.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            if 'Contents' not in response:
+            if "Contents" not in response:
                 logger.info(f"No files found in s3://{self.bucket_name}/{prefix}")
                 return []
 
             files = []
-            for obj in response['Contents']:
-                size_mb = obj['Size'] / 1e6
-                files.append({
-                    'key': obj['Key'],
-                    'size': obj['Size'],
-                    'size_mb': size_mb,
-                    'modified': obj['LastModified']
-                })
+            for obj in response["Contents"]:
+                size_mb = obj["Size"] / 1e6
+                files.append(
+                    {
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "size_mb": size_mb,
+                        "modified": obj["LastModified"],
+                    }
+                )
 
             logger.info(f"\nUploaded files in {prefix}:")
             total_size = 0
             for f in files:
                 logger.info(f"  {f['key']} ({f['size_mb']:.3f} MB)")
-                total_size += f['size']
+                total_size += f["size"]
 
-            logger.info(f"Total: {len(files)} files, {total_size/1e6:.3f} MB")
+            logger.info(f"Total: {len(files)} files, {total_size / 1e6:.3f} MB")
             return files
 
         except ClientError as e:
@@ -205,13 +209,13 @@ class S3Uploader:
 
 def create_sample_cif():
     """Create a sample CIF file for testing."""
-    sample_dir = Path('sample_data/structures')
+    sample_dir = Path("sample_data/structures")
     sample_dir.mkdir(parents=True, exist_ok=True)
 
     # Silicon structure
-    si_cif = sample_dir / 'Si.cif'
+    si_cif = sample_dir / "Si.cif"
     if not si_cif.exists():
-        with open(si_cif, 'w') as f:
+        with open(si_cif, "w") as f:
             f.write("""data_Si
 _cell_length_a    3.867
 _cell_length_b    3.867
@@ -237,46 +241,20 @@ Si2 Si 0.25 0.25 0.25
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Upload crystal structure files to S3'
+    parser = argparse.ArgumentParser(description="Upload crystal structure files to S3")
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
+    parser.add_argument(
+        "--directory", default="sample_data/structures", help="Local directory with structure files"
+    )
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
+    parser.add_argument("--profile", help="AWS profile name")
+    parser.add_argument("--file", help="Upload single file instead of directory")
+    parser.add_argument("--s3-prefix", default="structures/", help="S3 prefix for uploaded files")
+    parser.add_argument(
+        "--list-only", action="store_true", help="Only list files without uploading"
     )
     parser.add_argument(
-        '--bucket',
-        required=True,
-        help='S3 bucket name'
-    )
-    parser.add_argument(
-        '--directory',
-        default='sample_data/structures',
-        help='Local directory with structure files'
-    )
-    parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
-    parser.add_argument(
-        '--profile',
-        help='AWS profile name'
-    )
-    parser.add_argument(
-        '--file',
-        help='Upload single file instead of directory'
-    )
-    parser.add_argument(
-        '--s3-prefix',
-        default='structures/',
-        help='S3 prefix for uploaded files'
-    )
-    parser.add_argument(
-        '--list-only',
-        action='store_true',
-        help='Only list files without uploading'
-    )
-    parser.add_argument(
-        '--create-sample',
-        action='store_true',
-        help='Create sample CIF file for testing'
+        "--create-sample", action="store_true", help="Create sample CIF file for testing"
     )
 
     args = parser.parse_args()
@@ -300,10 +278,7 @@ def main():
             uploader.list_uploaded_files(args.s3_prefix)
         else:
             # Upload directory
-            successful, failed = uploader.upload_directory(
-                args.directory,
-                args.s3_prefix
-            )
+            successful, failed = uploader.upload_directory(args.directory, args.s3_prefix)
             logger.info(f"\nUpload complete: {successful} successful, {failed} failed")
             uploader.list_uploaded_files(args.s3_prefix)
 
@@ -314,5 +289,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

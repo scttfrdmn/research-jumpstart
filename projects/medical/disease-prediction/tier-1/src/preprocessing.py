@@ -5,31 +5,34 @@ Handles normalization, augmentation, and format conversions.
 """
 
 import numpy as np
-import torch
 import torchvision.transforms as transforms
-from typing import Tuple, Optional
-
 
 # Standard preprocessing for chest X-rays
-xray_train_transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(10),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+xray_train_transform = transforms.Compose(
+    [
+        transforms.Resize(256),
+        transforms.RandomCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
-xray_val_transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+xray_val_transform = transforms.Compose(
+    [
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
 
-def normalize_ct(ct_volume: np.ndarray, window_center: int = 40, window_width: int = 400) -> np.ndarray:
+def normalize_ct(
+    ct_volume: np.ndarray, window_center: int = 40, window_width: int = 400
+) -> np.ndarray:
     """
     Normalize CT scan using windowing.
 
@@ -63,10 +66,7 @@ def normalize_mri(mri_volume: np.ndarray) -> np.ndarray:
     mean = np.mean(mri_volume)
     std = np.std(mri_volume)
 
-    if std > 0:
-        mri_normalized = (mri_volume - mean) / std
-    else:
-        mri_normalized = mri_volume - mean
+    mri_normalized = (mri_volume - mean) / std if std > 0 else mri_volume - mean
 
     return mri_normalized
 
@@ -87,5 +87,5 @@ def augment_3d_volume(volume: np.ndarray, flip: bool = True, rotate: bool = True
     return volume
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Medical Image Preprocessing Utilities")

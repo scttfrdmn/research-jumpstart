@@ -8,8 +8,9 @@ Reads all FITS files from data/raw directory and uploads to S3.
 import os
 import sys
 from pathlib import Path
+
 import boto3
-from botocore.exceptions import NoCredentialsError, ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
 from tqdm import tqdm
 
 # Add parent directory to path
@@ -18,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def get_s3_bucket_name():
     """Get S3 bucket name from environment."""
-    bucket = os.environ.get('BUCKET_RAW')
+    bucket = os.environ.get("BUCKET_RAW")
     if not bucket:
         print("Error: BUCKET_RAW environment variable not set")
         print("Set it with: export BUCKET_RAW=your-bucket-name")
@@ -31,7 +32,7 @@ def upload_fits_to_s3(bucket_name):
 
     # Initialize S3 client
     try:
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
     except NoCredentialsError:
         print("Error: AWS credentials not configured")
         print("Run: aws configure")
@@ -80,25 +81,20 @@ def upload_fits_to_s3(bucket_name):
                     str(filepath),
                     bucket_name,
                     s3_key,
-                    ExtraArgs={'Metadata': {
-                        'original_path': str(filepath),
-                        'source': 'tier-2-astronomy-project'
-                    }}
+                    ExtraArgs={
+                        "Metadata": {
+                            "original_path": str(filepath),
+                            "source": "tier-2-astronomy-project",
+                        }
+                    },
                 )
 
-                uploaded.append({
-                    'file': filepath.name,
-                    'key': s3_key,
-                    'size': file_size
-                })
+                uploaded.append({"file": filepath.name, "key": s3_key, "size": file_size})
                 total_size += file_size
                 pbar.update(1)
 
             except Exception as e:
-                failed.append({
-                    'file': filepath.name,
-                    'error': str(e)
-                })
+                failed.append({"file": filepath.name, "error": str(e)})
                 pbar.update(1)
 
     # Summary
@@ -109,7 +105,7 @@ def upload_fits_to_s3(bucket_name):
     if uploaded:
         print(f"\n✓ Successfully uploaded {len(uploaded)} files:")
         for item in uploaded:
-            size_mb = item['size'] / 1024 / 1024
+            size_mb = item["size"] / 1024 / 1024
             print(f"  • {item['file']} ({size_mb:.1f} MB)")
             print(f"    → s3://{bucket_name}/{item['key']}")
 
@@ -123,17 +119,14 @@ def upload_fits_to_s3(bucket_name):
 
     # Verify upload
     try:
-        response = s3.list_objects_v2(
-            Bucket=bucket_name,
-            Prefix='images/'
-        )
-        count = response.get('KeyCount', 0)
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix="images/")
+        count = response.get("KeyCount", 0)
         print(f"\nVerification: {count} files in s3://{bucket_name}/images/")
     except Exception as e:
         print(f"\nError verifying upload: {e}")
 
     print("\n✓ Ready for source detection!")
-    print(f"  Run: python scripts/invoke_lambda.py")
+    print("  Run: python scripts/invoke_lambda.py")
     print()
 
     return len(failed) == 0
@@ -142,19 +135,16 @@ def upload_fits_to_s3(bucket_name):
 def list_uploaded_files(bucket_name):
     """List files uploaded to S3."""
     try:
-        s3 = boto3.client('s3')
-        response = s3.list_objects_v2(
-            Bucket=bucket_name,
-            Prefix='images/'
-        )
+        s3 = boto3.client("s3")
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix="images/")
 
-        if 'Contents' not in response:
+        if "Contents" not in response:
             print(f"No files in s3://{bucket_name}/images/")
             return
 
         print(f"\nFiles in s3://{bucket_name}/images/:")
-        for obj in response['Contents']:
-            size_mb = obj['Size'] / 1024 / 1024
+        for obj in response["Contents"]:
+            size_mb = obj["Size"] / 1024 / 1024
             print(f"  • {obj['Key']} ({size_mb:.1f} MB)")
 
     except Exception as e:

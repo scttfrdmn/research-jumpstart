@@ -12,15 +12,14 @@ Environment Variables:
     AWS_REGION: AWS region (default: us-east-1)
 """
 
-import os
 import json
+import os
 import re
 from datetime import datetime
-from typing import Dict, List, Tuple, Any, Optional
-import numpy as np
-import boto3
-from botocore.exceptions import ClientError
+from typing import Any, Optional
 
+import boto3
+import numpy as np
 
 # Initialize AWS clients (reused across Lambda invocations)
 s3_client = None
@@ -33,11 +32,11 @@ def get_aws_clients():
     global s3_client, dynamodb, table
 
     if s3_client is None:
-        region = os.environ.get('AWS_REGION', 'us-east-1')
-        s3_client = boto3.client('s3', region_name=region)
-        dynamodb = boto3.resource('dynamodb', region_name=region)
+        region = os.environ.get("AWS_REGION", "us-east-1")
+        s3_client = boto3.client("s3", region_name=region)
+        dynamodb = boto3.resource("dynamodb", region_name=region)
 
-        table_name = os.environ.get('DYNAMODB_TABLE', 'QuantumResults')
+        table_name = os.environ.get("DYNAMODB_TABLE", "QuantumResults")
         table = dynamodb.Table(table_name)
 
     return s3_client, table
@@ -53,17 +52,17 @@ class QuantumCircuitSimulator:
         Args:
             num_qubits: Number of qubits in the circuit
         """
-        if num_qubits > int(os.environ.get('MAX_QUBITS', '10')):
+        if num_qubits > int(os.environ.get("MAX_QUBITS", "10")):
             raise ValueError(f"Maximum {os.environ.get('MAX_QUBITS', '10')} qubits supported")
 
         self.num_qubits = num_qubits
-        self.dim = 2 ** num_qubits
+        self.dim = 2**num_qubits
 
         # Initialize state vector to |00...0⟩
         self.state_vector = np.zeros(self.dim, dtype=complex)
         self.state_vector[0] = 1.0
 
-    def apply_gate(self, gate_name: str, qubits: List[int], params: List[float] = None):
+    def apply_gate(self, gate_name: str, qubits: list[int], params: Optional[list[float]] = None):
         """
         Apply quantum gate to the state vector.
 
@@ -74,33 +73,33 @@ class QuantumCircuitSimulator:
         """
         gate_name = gate_name.lower()
 
-        if gate_name == 'h':
+        if gate_name == "h":
             # Hadamard gate
             self._apply_single_qubit_gate(qubits[0], self._hadamard_matrix())
-        elif gate_name == 'x':
+        elif gate_name == "x":
             # Pauli-X (NOT) gate
             self._apply_single_qubit_gate(qubits[0], self._pauli_x_matrix())
-        elif gate_name == 'y':
+        elif gate_name == "y":
             # Pauli-Y gate
             self._apply_single_qubit_gate(qubits[0], self._pauli_y_matrix())
-        elif gate_name == 'z':
+        elif gate_name == "z":
             # Pauli-Z gate
             self._apply_single_qubit_gate(qubits[0], self._pauli_z_matrix())
-        elif gate_name in ['cx', 'cnot']:
+        elif gate_name in ["cx", "cnot"]:
             # Controlled-NOT gate
             self._apply_cnot(qubits[0], qubits[1])
-        elif gate_name in ['ccx', 'toffoli']:
+        elif gate_name in ["ccx", "toffoli"]:
             # Toffoli (CCNOT) gate
             self._apply_toffoli(qubits[0], qubits[1], qubits[2])
-        elif gate_name in ['rx', 'ry', 'rz']:
+        elif gate_name in ["rx", "ry", "rz"]:
             # Rotation gates
             if params is None or len(params) == 0:
                 params = [0.5]  # Default rotation angle
             self._apply_rotation(qubits[0], gate_name, params[0])
-        elif gate_name == 's':
+        elif gate_name == "s":
             # S gate (phase gate)
             self._apply_single_qubit_gate(qubits[0], self._s_matrix())
-        elif gate_name == 't':
+        elif gate_name == "t":
             # T gate
             self._apply_single_qubit_gate(qubits[0], self._t_matrix())
         else:
@@ -132,21 +131,23 @@ class QuantumCircuitSimulator:
 
     def _rotation_matrix(self, axis: str, angle: float) -> np.ndarray:
         """Rotation gate matrix."""
-        if axis == 'rx':
-            return np.array([
-                [np.cos(angle/2), -1j*np.sin(angle/2)],
-                [-1j*np.sin(angle/2), np.cos(angle/2)]
-            ], dtype=complex)
-        elif axis == 'ry':
-            return np.array([
-                [np.cos(angle/2), -np.sin(angle/2)],
-                [np.sin(angle/2), np.cos(angle/2)]
-            ], dtype=complex)
-        elif axis == 'rz':
-            return np.array([
-                [np.exp(-1j*angle/2), 0],
-                [0, np.exp(1j*angle/2)]
-            ], dtype=complex)
+        if axis == "rx":
+            return np.array(
+                [
+                    [np.cos(angle / 2), -1j * np.sin(angle / 2)],
+                    [-1j * np.sin(angle / 2), np.cos(angle / 2)],
+                ],
+                dtype=complex,
+            )
+        elif axis == "ry":
+            return np.array(
+                [[np.cos(angle / 2), -np.sin(angle / 2)], [np.sin(angle / 2), np.cos(angle / 2)]],
+                dtype=complex,
+            )
+        elif axis == "rz":
+            return np.array(
+                [[np.exp(-1j * angle / 2), 0], [0, np.exp(1j * angle / 2)]], dtype=complex
+            )
 
     def _apply_single_qubit_gate(self, qubit: int, gate_matrix: np.ndarray):
         """Apply single-qubit gate to state vector."""
@@ -200,7 +201,7 @@ class QuantumCircuitSimulator:
         gate_matrix = self._rotation_matrix(axis, angle)
         self._apply_single_qubit_gate(qubit, gate_matrix)
 
-    def get_measurement_probabilities(self) -> Dict[str, float]:
+    def get_measurement_probabilities(self) -> dict[str, float]:
         """
         Calculate measurement probabilities for all basis states.
 
@@ -211,7 +212,7 @@ class QuantumCircuitSimulator:
         for i in range(self.dim):
             prob = abs(self.state_vector[i]) ** 2
             if prob > 1e-10:  # Only include non-negligible probabilities
-                basis_state = format(i, f'0{self.num_qubits}b')
+                basis_state = format(i, f"0{self.num_qubits}b")
                 probs[basis_state] = float(prob)
 
         return probs
@@ -232,7 +233,7 @@ class QuantumCircuitSimulator:
 
         # Calculate fidelity: |⟨ψ|φ⟩|²
         overlap = abs(np.vdot(expected, current))
-        return float(overlap ** 2)
+        return float(overlap**2)
 
     def calculate_entanglement_entropy(self) -> float:
         """
@@ -254,7 +255,7 @@ class QuantumCircuitSimulator:
         return float(entropy)
 
 
-def parse_qasm(qasm_code: str) -> Tuple[int, List[Dict[str, Any]]]:
+def parse_qasm(qasm_code: str) -> tuple[int, list[dict[str, Any]]]:
     """
     Parse QASM code and extract circuit information.
 
@@ -264,7 +265,7 @@ def parse_qasm(qasm_code: str) -> Tuple[int, List[Dict[str, Any]]]:
     Returns:
         Tuple of (num_qubits, gate_list)
     """
-    lines = qasm_code.strip().split('\n')
+    lines = qasm_code.strip().split("\n")
     num_qubits = 0
     gates = []
 
@@ -272,30 +273,30 @@ def parse_qasm(qasm_code: str) -> Tuple[int, List[Dict[str, Any]]]:
         line = line.strip()
 
         # Skip comments and empty lines
-        if not line or line.startswith('//'):
+        if not line or line.startswith("//"):
             continue
 
         # Skip header lines
-        if line.startswith('OPENQASM') or line.startswith('include'):
+        if line.startswith("OPENQASM") or line.startswith("include"):
             continue
 
         # Parse qubit register declaration
-        if line.startswith('qreg'):
-            match = re.search(r'qreg\s+\w+\[(\d+)\]', line)
+        if line.startswith("qreg"):
+            match = re.search(r"qreg\s+\w+\[(\d+)\]", line)
             if match:
                 num_qubits = max(num_qubits, int(match.group(1)))
             continue
 
         # Skip classical register and measurement declarations
-        if line.startswith('creg') or line.startswith('measure'):
+        if line.startswith("creg") or line.startswith("measure"):
             continue
 
         # Skip conditional operations (simplified handling)
-        if line.startswith('if'):
+        if line.startswith("if"):
             continue
 
         # Parse gates
-        gate_match = re.match(r'(\w+)(?:\(([\d.]+)\))?\s+([\w\[\],\s]+)', line)
+        gate_match = re.match(r"(\w+)(?:\(([\d.]+)\))?\s+([\w\[\],\s]+)", line)
         if gate_match:
             gate_name = gate_match.group(1)
             param = gate_match.group(2)
@@ -303,7 +304,7 @@ def parse_qasm(qasm_code: str) -> Tuple[int, List[Dict[str, Any]]]:
 
             # Parse qubit indices
             qubit_indices = []
-            for qubit in re.findall(r'\w+\[(\d+)\]', qubits_str):
+            for qubit in re.findall(r"\w+\[(\d+)\]", qubits_str):
                 qubit_indices.append(int(qubit))
 
             # Parse parameter
@@ -311,16 +312,12 @@ def parse_qasm(qasm_code: str) -> Tuple[int, List[Dict[str, Any]]]:
             if param:
                 params = [float(param)]
 
-            gates.append({
-                'gate': gate_name,
-                'qubits': qubit_indices,
-                'params': params
-            })
+            gates.append({"gate": gate_name, "qubits": qubit_indices, "params": params})
 
     return num_qubits, gates
 
 
-def simulate_circuit(circuit_code: str) -> Dict[str, Any]:
+def simulate_circuit(circuit_code: str) -> dict[str, Any]:
     """
     Simulate quantum circuit.
 
@@ -343,11 +340,7 @@ def simulate_circuit(circuit_code: str) -> Dict[str, Any]:
 
     # Apply gates
     for gate_info in gates:
-        simulator.apply_gate(
-            gate_info['gate'],
-            gate_info['qubits'],
-            gate_info.get('params', [])
-        )
+        simulator.apply_gate(gate_info["gate"], gate_info["qubits"], gate_info.get("params", []))
 
     # Calculate results
     measurement_probs = simulator.get_measurement_probabilities()
@@ -357,12 +350,12 @@ def simulate_circuit(circuit_code: str) -> Dict[str, Any]:
     execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
     return {
-        'num_qubits': num_qubits,
-        'num_gates': len(gates),
-        'measurement_probabilities': measurement_probs,
-        'entanglement': entanglement,
-        'state_vector': simulator.state_vector.tolist() if num_qubits <= 8 else None,
-        'execution_time_ms': execution_time_ms
+        "num_qubits": num_qubits,
+        "num_gates": len(gates),
+        "measurement_probabilities": measurement_probs,
+        "entanglement": entanglement,
+        "state_vector": simulator.state_vector.tolist() if num_qubits <= 8 else None,
+        "execution_time_ms": execution_time_ms,
     }
 
 
@@ -384,60 +377,58 @@ def lambda_handler(event, context):
 
     try:
         # Extract S3 information from event
-        record = event['Records'][0]
-        bucket_name = record['s3']['bucket']['name']
-        object_key = record['s3']['object']['key']
+        record = event["Records"][0]
+        bucket_name = record["s3"]["bucket"]["name"]
+        object_key = record["s3"]["object"]["key"]
 
         print(f"Processing: s3://{bucket_name}/{object_key}")
 
         # Download circuit from S3
         response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        circuit_code = response['Body'].read().decode('utf-8')
+        circuit_code = response["Body"].read().decode("utf-8")
 
         # Extract circuit ID from object key
-        circuit_id = object_key.split('/')[-1].replace('.qasm', '')
+        circuit_id = object_key.split("/")[-1].replace(".qasm", "")
 
         # Extract algorithm type from path
-        algorithm_type = 'unknown'
-        if '/' in object_key:
-            path_parts = object_key.split('/')
+        algorithm_type = "unknown"
+        if "/" in object_key:
+            path_parts = object_key.split("/")
             if len(path_parts) > 1:
-                algorithm_type = path_parts[1] if path_parts[1] != 'circuits' else 'unknown'
+                algorithm_type = path_parts[1] if path_parts[1] != "circuits" else "unknown"
 
         # Simulate circuit
         print(f"Simulating circuit: {circuit_id}")
         results = simulate_circuit(circuit_code)
 
         # Prepare DynamoDB item
-        timestamp = datetime.utcnow().isoformat() + 'Z'
+        timestamp = datetime.utcnow().isoformat() + "Z"
         item = {
-            'CircuitID': circuit_id,
-            'Timestamp': timestamp,
-            'AlgorithmType': algorithm_type,
-            'NumQubits': results['num_qubits'],
-            'NumGates': results['num_gates'],
-            'Fidelity': 1.0,  # Placeholder; would compare with expected state
-            'ExecutionTimeMs': results['execution_time_ms'],
-            'MeasurementProbabilities': results['measurement_probabilities'],
-            'Entanglement': results['entanglement'],
-            'S3Key': object_key
+            "CircuitID": circuit_id,
+            "Timestamp": timestamp,
+            "AlgorithmType": algorithm_type,
+            "NumQubits": results["num_qubits"],
+            "NumGates": results["num_gates"],
+            "Fidelity": 1.0,  # Placeholder; would compare with expected state
+            "ExecutionTimeMs": results["execution_time_ms"],
+            "MeasurementProbabilities": results["measurement_probabilities"],
+            "Entanglement": results["entanglement"],
+            "S3Key": object_key,
         }
 
         # Store state vector in S3 if available
-        if results['state_vector'] is not None:
-            result_key = object_key.replace('circuits/', 'results/').replace('.qasm', '_result.json')
-            result_data = {
-                'circuit_id': circuit_id,
-                'algorithm_type': algorithm_type,
-                **results
-            }
+        if results["state_vector"] is not None:
+            result_key = object_key.replace("circuits/", "results/").replace(
+                ".qasm", "_result.json"
+            )
+            result_data = {"circuit_id": circuit_id, "algorithm_type": algorithm_type, **results}
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=result_key,
                 Body=json.dumps(result_data, indent=2),
-                ContentType='application/json'
+                ContentType="application/json",
             )
-            item['S3ResultsKey'] = result_key
+            item["S3ResultsKey"] = result_key
             print(f"Stored detailed results: s3://{bucket_name}/{result_key}")
 
         # Store in DynamoDB
@@ -445,40 +436,42 @@ def lambda_handler(event, context):
         print(f"Stored results in DynamoDB: {circuit_id}")
 
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Circuit simulated successfully',
-                'circuit_id': circuit_id,
-                'num_qubits': results['num_qubits'],
-                'num_gates': results['num_gates'],
-                'entanglement': results['entanglement']
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Circuit simulated successfully",
+                    "circuit_id": circuit_id,
+                    "num_qubits": results["num_qubits"],
+                    "num_gates": results["num_gates"],
+                    "entanglement": results["entanglement"],
+                }
+            ),
         }
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         import traceback
+
         traceback.print_exc()
 
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': 'Error simulating circuit',
-                'error': str(e)
-            })
+            "statusCode": 500,
+            "body": json.dumps({"message": "Error simulating circuit", "error": str(e)}),
         }
 
 
 # For local testing
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test with sample Bell state circuit
     test_event = {
-        'Records': [{
-            's3': {
-                'bucket': {'name': 'test-bucket'},
-                'object': {'key': 'circuits/bell/bell_state.qasm'}
+        "Records": [
+            {
+                "s3": {
+                    "bucket": {"name": "test-bucket"},
+                    "object": {"key": "circuits/bell/bell_state.qasm"},
+                }
             }
-        }]
+        ]
     }
 
     # Sample QASM code for testing

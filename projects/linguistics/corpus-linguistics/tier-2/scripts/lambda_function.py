@@ -18,23 +18,28 @@ Results are stored in DynamoDB for fast querying.
 import json
 import os
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from urllib.parse import unquote_plus
+
 import boto3
 import nltk
-from nltk import word_tokenize, sent_tokenize, pos_tag
-from nltk.stem import WordNetLemmatizer
-from nltk.collocations import BigramCollocationFinder, TrigramCollocationFinder
-from nltk.collocations import BigramAssocMeasures, TrigramAssocMeasures
+from nltk import pos_tag, sent_tokenize, word_tokenize
+from nltk.collocations import (
+    BigramAssocMeasures,
+    BigramCollocationFinder,
+    TrigramAssocMeasures,
+    TrigramCollocationFinder,
+)
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 # Initialize AWS clients
-s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 
 # Environment variables
-DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE', 'LinguisticAnalysis')
-NLTK_DATA_PATH = os.environ.get('NLTK_DATA', '/var/task/nltk_data')
+DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "LinguisticAnalysis")
+NLTK_DATA_PATH = os.environ.get("NLTK_DATA", "/var/task/nltk_data")
 
 # Set NLTK data path for Lambda
 if NLTK_DATA_PATH:
@@ -42,6 +47,7 @@ if NLTK_DATA_PATH:
 
 # Initialize lemmatizer
 lemmatizer = WordNetLemmatizer()
+
 
 def lambda_handler(event, context):
     """
@@ -57,19 +63,19 @@ def lambda_handler(event, context):
     """
     try:
         # Get S3 bucket and object key from event
-        record = event['Records'][0]
-        bucket = record['s3']['bucket']['name']
-        key = unquote_plus(record['s3']['object']['key'])
+        record = event["Records"][0]
+        bucket = record["s3"]["bucket"]["name"]
+        key = unquote_plus(record["s3"]["object"]["key"])
 
         print(f"Processing file: s3://{bucket}/{key}")
 
         # Download text file from S3
         response = s3_client.get_object(Bucket=bucket, Key=key)
-        text = response['Body'].read().decode('utf-8')
+        text = response["Body"].read().decode("utf-8")
 
         # Extract metadata from S3 key
         metadata = extract_metadata_from_key(key)
-        text_id = metadata['text_id']
+        text_id = metadata["text_id"]
 
         print(f"Text ID: {text_id}")
         print(f"Text length: {len(text)} characters")
@@ -83,25 +89,25 @@ def lambda_handler(event, context):
         print(f"Successfully processed {text_id}")
 
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Successfully processed text',
-                'text_id': text_id,
-                'word_count': analysis_results['word_count']
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": "Successfully processed text",
+                    "text_id": text_id,
+                    "word_count": analysis_results["word_count"],
+                }
+            ),
         }
 
     except Exception as e:
-        print(f"Error processing text: {str(e)}")
+        print(f"Error processing text: {e!s}")
         import traceback
+
         traceback.print_exc()
 
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': 'Error processing text',
-                'error': str(e)
-            })
+            "statusCode": 500,
+            "body": json.dumps({"message": "Error processing text", "error": str(e)}),
         }
 
 
@@ -116,26 +122,26 @@ def extract_metadata_from_key(key):
     Returns:
         dict: Metadata (language, genre, filename, text_id)
     """
-    parts = key.split('/')
+    parts = key.split("/")
 
-    if len(parts) >= 4 and parts[0] == 'raw':
+    if len(parts) >= 4 and parts[0] == "raw":
         language = parts[1]
         genre = parts[2]
-        filename = parts[-1].replace('.txt', '')
+        filename = parts[-1].replace(".txt", "")
     else:
         # Fallback for different structure
-        language = 'unknown'
-        genre = 'unknown'
-        filename = parts[-1].replace('.txt', '')
+        language = "unknown"
+        genre = "unknown"
+        filename = parts[-1].replace(".txt", "")
 
-    text_id = f"{language}_{genre}_{filename}".replace(' ', '_').lower()
+    text_id = f"{language}_{genre}_{filename}".replace(" ", "_").lower()
 
     return {
-        'language': language,
-        'genre': genre,
-        'filename': filename,
-        'text_id': text_id,
-        's3_key': key
+        "language": language,
+        "genre": genre,
+        "filename": filename,
+        "text_id": text_id,
+        "s3_key": key,
     }
 
 
@@ -162,35 +168,35 @@ def analyze_text(text, metadata):
     # Filter out punctuation and numbers
     words = [w for w in words if w.isalpha()]
 
-    results['sentence_count'] = len(sentences)
-    results['word_count'] = len(words)
+    results["sentence_count"] = len(sentences)
+    results["word_count"] = len(words)
 
     # POS tagging
     pos_tags = pos_tag(words)
-    results['pos_distribution'] = get_pos_distribution(pos_tags)
+    results["pos_distribution"] = get_pos_distribution(pos_tags)
 
     # Lemmatization
     lemmas = [lemmatizer.lemmatize(word) for word in words]
-    results['unique_words'] = len(set(words))
-    results['unique_lemmas'] = len(set(lemmas))
+    results["unique_words"] = len(set(words))
+    results["unique_lemmas"] = len(set(lemmas))
 
     # Word frequencies
     word_freq = Counter(words)
     lemma_freq = Counter(lemmas)
-    results['top_words'] = word_freq.most_common(20)
-    results['top_lemmas'] = lemma_freq.most_common(20)
+    results["top_words"] = word_freq.most_common(20)
+    results["top_lemmas"] = lemma_freq.most_common(20)
 
     # Lexical diversity metrics
-    results['lexical_diversity'] = calculate_lexical_diversity(words, sentences)
+    results["lexical_diversity"] = calculate_lexical_diversity(words, sentences)
 
     # N-grams and collocations
-    results['collocations'] = extract_collocations(words)
+    results["collocations"] = extract_collocations(words)
 
     # Syntactic complexity
-    results['syntactic_complexity'] = calculate_syntactic_complexity(sentences, words)
+    results["syntactic_complexity"] = calculate_syntactic_complexity(sentences, words)
 
     # Average word length
-    results['avg_word_length'] = sum(len(w) for w in words) / len(words) if words else 0
+    results["avg_word_length"] = sum(len(w) for w in words) / len(words) if words else 0
 
     return results
 
@@ -206,10 +212,10 @@ def clean_text(text):
         str: Cleaned text
     """
     # Remove excessive whitespace
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
 
     # Remove special characters but keep basic punctuation
-    text = re.sub(r'[^\w\s.,!?;:\'-]', '', text)
+    text = re.sub(r"[^\w\s.,!?;:\'-]", "", text)
 
     return text.strip()
 
@@ -228,14 +234,14 @@ def get_pos_distribution(pos_tags):
 
     # Group into major categories
     pos_categories = {
-        'NOUN': sum(pos_counts.get(tag, 0) for tag in ['NN', 'NNS', 'NNP', 'NNPS']),
-        'VERB': sum(pos_counts.get(tag, 0) for tag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']),
-        'ADJ': sum(pos_counts.get(tag, 0) for tag in ['JJ', 'JJR', 'JJS']),
-        'ADV': sum(pos_counts.get(tag, 0) for tag in ['RB', 'RBR', 'RBS']),
-        'PRON': sum(pos_counts.get(tag, 0) for tag in ['PRP', 'PRP$', 'WP', 'WP$']),
-        'DET': sum(pos_counts.get(tag, 0) for tag in ['DT', 'PDT', 'WDT']),
-        'PREP': sum(pos_counts.get(tag, 0) for tag in ['IN']),
-        'CONJ': sum(pos_counts.get(tag, 0) for tag in ['CC']),
+        "NOUN": sum(pos_counts.get(tag, 0) for tag in ["NN", "NNS", "NNP", "NNPS"]),
+        "VERB": sum(pos_counts.get(tag, 0) for tag in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]),
+        "ADJ": sum(pos_counts.get(tag, 0) for tag in ["JJ", "JJR", "JJS"]),
+        "ADV": sum(pos_counts.get(tag, 0) for tag in ["RB", "RBR", "RBS"]),
+        "PRON": sum(pos_counts.get(tag, 0) for tag in ["PRP", "PRP$", "WP", "WP$"]),
+        "DET": sum(pos_counts.get(tag, 0) for tag in ["DT", "PDT", "WDT"]),
+        "PREP": sum(pos_counts.get(tag, 0) for tag in ["IN"]),
+        "CONJ": sum(pos_counts.get(tag, 0) for tag in ["CC"]),
     }
 
     return pos_categories
@@ -264,7 +270,7 @@ def calculate_lexical_diversity(words, sentences):
     if len(words) >= window_size:
         ttrs = []
         for i in range(len(words) - window_size + 1):
-            window = words[i:i + window_size]
+            window = words[i : i + window_size]
             window_ttr = len(set(window)) / len(window)
             ttrs.append(window_ttr)
         mattr = sum(ttrs) / len(ttrs) if ttrs else ttr
@@ -275,11 +281,11 @@ def calculate_lexical_diversity(words, sentences):
     rttr = len(set(words)) / (len(words) ** 0.5) if len(words) > 0 else 0
 
     return {
-        'ttr': round(ttr, 4),
-        'mattr': round(mattr, 4),
-        'rttr': round(rttr, 4),
-        'types': len(set(words)),
-        'tokens': len(words)
+        "ttr": round(ttr, 4),
+        "mattr": round(mattr, 4),
+        "rttr": round(rttr, 4),
+        "types": len(set(words)),
+        "tokens": len(words),
     }
 
 
@@ -294,11 +300,11 @@ def extract_collocations(words):
         dict: Top collocations
     """
     if len(words) < 2:
-        return {'bigrams': [], 'trigrams': []}
+        return {"bigrams": [], "trigrams": []}
 
     # Remove stopwords for collocation detection
     try:
-        stop_words = set(stopwords.words('english'))
+        stop_words = set(stopwords.words("english"))
     except:
         stop_words = set()
 
@@ -314,11 +320,7 @@ def extract_collocations(words):
         scored_bigrams = bigram_finder.score_ngrams(bigram_measures.pmi)
         for (word1, word2), score in scored_bigrams[:10]:
             freq = bigram_finder.ngram_fd[(word1, word2)]
-            top_bigrams.append({
-                'bigram': f"{word1} {word2}",
-                'pmi': round(score, 2),
-                'freq': freq
-            })
+            top_bigrams.append({"bigram": f"{word1} {word2}", "pmi": round(score, 2), "freq": freq})
     except:
         pass
 
@@ -332,18 +334,13 @@ def extract_collocations(words):
         scored_trigrams = trigram_finder.score_ngrams(trigram_measures.pmi)
         for (word1, word2, word3), score in scored_trigrams[:10]:
             freq = trigram_finder.ngram_fd[(word1, word2, word3)]
-            top_trigrams.append({
-                'trigram': f"{word1} {word2} {word3}",
-                'pmi': round(score, 2),
-                'freq': freq
-            })
+            top_trigrams.append(
+                {"trigram": f"{word1} {word2} {word3}", "pmi": round(score, 2), "freq": freq}
+            )
     except:
         pass
 
-    return {
-        'bigrams': top_bigrams,
-        'trigrams': top_trigrams
-    }
+    return {"bigrams": top_bigrams, "trigrams": top_trigrams}
 
 
 def calculate_syntactic_complexity(sentences, words):
@@ -367,13 +364,13 @@ def calculate_syntactic_complexity(sentences, words):
     sentence_lengths = [len(word_tokenize(sent)) for sent in sentences]
     avg_length = sum(sentence_lengths) / len(sentence_lengths)
     variance = sum((l - avg_length) ** 2 for l in sentence_lengths) / len(sentence_lengths)
-    std_dev = variance ** 0.5
+    std_dev = variance**0.5
 
     return {
-        'avg_sentence_length': round(avg_sentence_length, 2),
-        'sentence_length_std': round(std_dev, 2),
-        'min_sentence_length': min(sentence_lengths) if sentence_lengths else 0,
-        'max_sentence_length': max(sentence_lengths) if sentence_lengths else 0
+        "avg_sentence_length": round(avg_sentence_length, 2),
+        "sentence_length_std": round(std_dev, 2),
+        "min_sentence_length": min(sentence_lengths) if sentence_lengths else 0,
+        "max_sentence_length": max(sentence_lengths) if sentence_lengths else 0,
     }
 
 
@@ -389,22 +386,22 @@ def store_results(text_id, results):
 
     # Convert results to DynamoDB-compatible format
     item = {
-        'text_id': text_id,
-        'language': results.get('language', 'unknown'),
-        'genre': results.get('genre', 'unknown'),
-        'filename': results.get('filename', 'unknown'),
-        's3_key': results.get('s3_key', ''),
-        'word_count': results.get('word_count', 0),
-        'sentence_count': results.get('sentence_count', 0),
-        'unique_words': results.get('unique_words', 0),
-        'unique_lemmas': results.get('unique_lemmas', 0),
-        'avg_word_length': results.get('avg_word_length', 0),
-        'pos_distribution': results.get('pos_distribution', {}),
-        'lexical_diversity': results.get('lexical_diversity', {}),
-        'syntactic_complexity': results.get('syntactic_complexity', {}),
-        'top_words': [{'word': w, 'freq': f} for w, f in results.get('top_words', [])[:10]],
-        'top_lemmas': [{'lemma': l, 'freq': f} for l, f in results.get('top_lemmas', [])[:10]],
-        'collocations': results.get('collocations', {}),
+        "text_id": text_id,
+        "language": results.get("language", "unknown"),
+        "genre": results.get("genre", "unknown"),
+        "filename": results.get("filename", "unknown"),
+        "s3_key": results.get("s3_key", ""),
+        "word_count": results.get("word_count", 0),
+        "sentence_count": results.get("sentence_count", 0),
+        "unique_words": results.get("unique_words", 0),
+        "unique_lemmas": results.get("unique_lemmas", 0),
+        "avg_word_length": results.get("avg_word_length", 0),
+        "pos_distribution": results.get("pos_distribution", {}),
+        "lexical_diversity": results.get("lexical_diversity", {}),
+        "syntactic_complexity": results.get("syntactic_complexity", {}),
+        "top_words": [{"word": w, "freq": f} for w, f in results.get("top_words", [])[:10]],
+        "top_lemmas": [{"lemma": l, "freq": f} for l, f in results.get("top_lemmas", [])[:10]],
+        "collocations": results.get("collocations", {}),
     }
 
     # Store in DynamoDB

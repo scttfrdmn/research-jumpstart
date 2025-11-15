@@ -5,19 +5,19 @@ Functions for downloading and processing materials databases
 (Materials Project, AFLOW, OQMD).
 """
 
-import pandas as pd
-import numpy as np
 from pathlib import Path
-import json
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
+
+import numpy as np
+import pandas as pd
 from tqdm.auto import tqdm
 
 
 def download_materials_project(
     api_key: Optional[str] = None,
     n_materials: int = 50000,
-    properties: List[str] = None,
-    cache_dir: str = "data/materials_project"
+    properties: Optional[list[str]] = None,
+    cache_dir: str = "data/materials_project",
 ) -> pd.DataFrame:
     """
     Download Materials Project database.
@@ -52,13 +52,13 @@ def download_materials_project(
     for i in tqdm(range(n_materials), desc="Materials Project"):
         material = {
             "material_id": f"mp-{i}",
-            "formula": f"A{np.random.randint(1,5)}B{np.random.randint(1,5)}",
+            "formula": f"A{np.random.randint(1, 5)}B{np.random.randint(1, 5)}",
             "band_gap": max(0, np.random.gamma(2, 1)),
             "formation_energy": np.random.normal(-2, 1),
             "space_group": np.random.randint(1, 230),
             "density": np.random.uniform(2, 10),
             "n_atoms": np.random.randint(2, 20),
-            "source": "materials_project"
+            "source": "materials_project",
         }
         materials_data.append(material)
 
@@ -71,10 +71,7 @@ def download_materials_project(
     return df
 
 
-def download_aflow(
-    n_materials: int = 100000,
-    cache_dir: str = "data/aflow"
-) -> pd.DataFrame:
+def download_aflow(n_materials: int = 100000, cache_dir: str = "data/aflow") -> pd.DataFrame:
     """
     Download AFLOW database subset.
 
@@ -100,13 +97,13 @@ def download_aflow(
     for i in tqdm(range(n_materials), desc="AFLOW"):
         material = {
             "material_id": f"aflow-{i}",
-            "formula": f"C{np.random.randint(1,5)}D{np.random.randint(1,5)}",
+            "formula": f"C{np.random.randint(1, 5)}D{np.random.randint(1, 5)}",
             "band_gap": max(0, np.random.gamma(2.5, 0.8)),
             "formation_energy": np.random.normal(-1.8, 1.2),
             "space_group": np.random.randint(1, 230),
             "density": np.random.uniform(2, 10),
             "n_atoms": np.random.randint(2, 25),
-            "source": "aflow"
+            "source": "aflow",
         }
         materials_data.append(material)
 
@@ -117,10 +114,7 @@ def download_aflow(
     return df
 
 
-def download_oqmd(
-    n_materials: int = 80000,
-    cache_dir: str = "data/oqmd"
-) -> pd.DataFrame:
+def download_oqmd(n_materials: int = 80000, cache_dir: str = "data/oqmd") -> pd.DataFrame:
     """
     Download OQMD database subset.
 
@@ -146,13 +140,13 @@ def download_oqmd(
     for i in tqdm(range(n_materials), desc="OQMD"):
         material = {
             "material_id": f"oqmd-{i}",
-            "formula": f"E{np.random.randint(1,5)}F{np.random.randint(1,5)}",
+            "formula": f"E{np.random.randint(1, 5)}F{np.random.randint(1, 5)}",
             "band_gap": max(0, np.random.gamma(1.8, 1.2)),
             "formation_energy": np.random.normal(-2.2, 0.9),
             "space_group": np.random.randint(1, 230),
             "density": np.random.uniform(2, 10),
             "n_atoms": np.random.randint(2, 18),
-            "source": "oqmd"
+            "source": "oqmd",
         }
         materials_data.append(material)
 
@@ -163,10 +157,7 @@ def download_oqmd(
     return df
 
 
-def merge_databases(
-    dfs: List[pd.DataFrame],
-    deduplicate: bool = True
-) -> pd.DataFrame:
+def merge_databases(dfs: list[pd.DataFrame], deduplicate: bool = True) -> pd.DataFrame:
     """
     Merge multiple materials databases.
 
@@ -193,8 +184,8 @@ def split_dataset(
     train_frac: float = 0.8,
     val_frac: float = 0.1,
     test_frac: float = 0.1,
-    random_state: int = 42
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    random_state: int = 42,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Split dataset into train/val/test sets.
 
@@ -216,10 +207,10 @@ def split_dataset(
     n_val = int(len(df_shuffled) * val_frac)
 
     train_df = df_shuffled[:n_train]
-    val_df = df_shuffled[n_train:n_train+n_val]
-    test_df = df_shuffled[n_train+n_val:]
+    val_df = df_shuffled[n_train : n_train + n_val]
+    test_df = df_shuffled[n_train + n_val :]
 
-    print(f"Split dataset:")
+    print("Split dataset:")
     print(f"  Training: {len(train_df)} materials")
     print(f"  Validation: {len(val_df)} materials")
     print(f"  Test: {len(test_df)} materials")
@@ -227,7 +218,7 @@ def split_dataset(
     return train_df, val_df, test_df
 
 
-def get_statistics(df: pd.DataFrame) -> Dict:
+def get_statistics(df: pd.DataFrame) -> dict:
     """
     Calculate dataset statistics.
 
@@ -243,14 +234,14 @@ def get_statistics(df: pd.DataFrame) -> Dict:
             "mean": df["band_gap"].mean(),
             "std": df["band_gap"].std(),
             "min": df["band_gap"].min(),
-            "max": df["band_gap"].max()
+            "max": df["band_gap"].max(),
         },
         "formation_energy": {
             "mean": df["formation_energy"].mean(),
             "std": df["formation_energy"].std(),
             "min": df["formation_energy"].min(),
-            "max": df["formation_energy"].max()
-        }
+            "max": df["formation_energy"].max(),
+        },
     }
 
     if "source" in df.columns:

@@ -5,10 +5,11 @@ This module provides functions to access and load CMIP6 model data from the
 AWS Open Data registry without downloading files locally.
 """
 
-import xarray as xr
-import s3fs
-from typing import Dict, List, Optional, Tuple
 import logging
+from typing import Optional
+
+import s3fs
+import xarray as xr
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,16 +35,16 @@ class CMIP6DataAccess:
             credentials for private data.
         """
         self.s3 = s3fs.S3FileSystem(anon=use_anon)
-        self.bucket = 'cmip6-pds'
+        self.bucket = "cmip6-pds"
 
     def build_s3_path(
         self,
         model: str,
         experiment: str,
         variable: str,
-        table: str = 'Amon',
-        variant: str = 'r1i1p1f1',
-        grid: str = 'gn'
+        table: str = "Amon",
+        variant: str = "r1i1p1f1",
+        grid: str = "gn",
     ) -> str:
         """
         Build S3 path for CMIP6 data.
@@ -76,27 +77,27 @@ class CMIP6DataAccess:
         s3://cmip6-pds/CMIP6/ScenarioMIP/NCAR/CESM2/ssp245/r1i1p1f1/Amon/tas/gn
         """
         # Determine activity (ScenarioMIP or CMIP for historical)
-        activity = 'CMIP' if experiment == 'historical' else 'ScenarioMIP'
+        activity = "CMIP" if experiment == "historical" else "ScenarioMIP"
 
         # Model institution mapping (simplified - add more as needed)
         institutions = {
-            'CESM2': 'NCAR',
-            'GFDL-CM4': 'NOAA-GFDL',
-            'UKESM1-0-LL': 'MOHC',
-            'CNRM-CM6-1': 'CNRM-CERFACS',
-            'MPI-ESM1-2-HR': 'MPI-M',
-            'MIROC6': 'MIROC',
-            'CanESM5': 'CCCma',
-            'ACCESS-ESM1-5': 'CSIRO',
-            'IPSL-CM6A-LR': 'IPSL',
-            'NorESM2-LM': 'NCC'
+            "CESM2": "NCAR",
+            "GFDL-CM4": "NOAA-GFDL",
+            "UKESM1-0-LL": "MOHC",
+            "CNRM-CM6-1": "CNRM-CERFACS",
+            "MPI-ESM1-2-HR": "MPI-M",
+            "MIROC6": "MIROC",
+            "CanESM5": "CCCma",
+            "ACCESS-ESM1-5": "CSIRO",
+            "IPSL-CM6A-LR": "IPSL",
+            "NorESM2-LM": "NCC",
         }
 
         institution = institutions.get(model, model)
 
         path = (
-            f's3://{self.bucket}/CMIP6/{activity}/{institution}/{model}/'
-            f'{experiment}/{variant}/{table}/{variable}/{grid}'
+            f"s3://{self.bucket}/CMIP6/{activity}/{institution}/{model}/"
+            f"{experiment}/{variant}/{table}/{variable}/{grid}"
         )
 
         return path
@@ -106,9 +107,9 @@ class CMIP6DataAccess:
         model: str,
         experiment: str,
         variable: str,
-        table: str = 'Amon',
-        time_slice: Optional[Tuple[str, str]] = None,
-        chunks: Optional[Dict] = None
+        table: str = "Amon",
+        time_slice: Optional[tuple[str, str]] = None,
+        chunks: Optional[dict] = None,
     ) -> xr.Dataset:
         """
         Load CMIP6 model data from S3.
@@ -146,7 +147,7 @@ class CMIP6DataAccess:
         >>> print(data)
         """
         if chunks is None:
-            chunks = {'time': 12}  # Monthly chunks
+            chunks = {"time": 12}  # Monthly chunks
 
         try:
             path = self.build_s3_path(model, experiment, variable, table)
@@ -171,12 +172,12 @@ class CMIP6DataAccess:
 
     def load_ensemble(
         self,
-        models: List[str],
+        models: list[str],
         experiment: str,
         variable: str,
-        table: str = 'Amon',
-        time_slice: Optional[Tuple[str, str]] = None
-    ) -> Dict[str, xr.Dataset]:
+        table: str = "Amon",
+        time_slice: Optional[tuple[str, str]] = None,
+    ) -> dict[str, xr.Dataset]:
         """
         Load multiple models to create an ensemble.
 
@@ -219,7 +220,7 @@ class CMIP6DataAccess:
                     experiment=experiment,
                     variable=variable,
                     table=table,
-                    time_slice=time_slice
+                    time_slice=time_slice,
                 )
                 ensemble[model] = ds
                 logger.info(f"✓ {model}")
@@ -228,14 +229,12 @@ class CMIP6DataAccess:
                 failed_models.append(model)
 
         if failed_models:
-            logger.warning(
-                f"Failed to load {len(failed_models)} models: {failed_models}"
-            )
+            logger.warning(f"Failed to load {len(failed_models)} models: {failed_models}")
 
         logger.info(f"Successfully loaded {len(ensemble)}/{len(models)} models")
         return ensemble
 
-    def get_available_models(self, experiment: str = 'ssp245') -> List[str]:
+    def get_available_models(self, experiment: str = "ssp245") -> list[str]:
         """
         Get list of available models for a given experiment.
 
@@ -254,43 +253,43 @@ class CMIP6DataAccess:
         """
         # Common CMIP6 models with good data availability
         common_models = [
-            'ACCESS-CM2',
-            'ACCESS-ESM1-5',
-            'AWI-CM-1-1-MR',
-            'BCC-CSM2-MR',
-            'CAMS-CSM1-0',
-            'CanESM5',
-            'CESM2',
-            'CESM2-WACCM',
-            'CNRM-CM6-1',
-            'CNRM-ESM2-1',
-            'EC-Earth3',
-            'EC-Earth3-Veg',
-            'FGOALS-g3',
-            'GFDL-CM4',
-            'GFDL-ESM4',
-            'GISS-E2-1-G',
-            'HadGEM3-GC31-LL',
-            'INM-CM4-8',
-            'INM-CM5-0',
-            'IPSL-CM6A-LR',
-            'KACE-1-0-G',
-            'MIROC6',
-            'MIROC-ES2L',
-            'MPI-ESM1-2-HR',
-            'MPI-ESM1-2-LR',
-            'MRI-ESM2-0',
-            'NESM3',
-            'NorESM2-LM',
-            'NorESM2-MM',
-            'TaiESM1',
-            'UKESM1-0-LL',
+            "ACCESS-CM2",
+            "ACCESS-ESM1-5",
+            "AWI-CM-1-1-MR",
+            "BCC-CSM2-MR",
+            "CAMS-CSM1-0",
+            "CanESM5",
+            "CESM2",
+            "CESM2-WACCM",
+            "CNRM-CM6-1",
+            "CNRM-ESM2-1",
+            "EC-Earth3",
+            "EC-Earth3-Veg",
+            "FGOALS-g3",
+            "GFDL-CM4",
+            "GFDL-ESM4",
+            "GISS-E2-1-G",
+            "HadGEM3-GC31-LL",
+            "INM-CM4-8",
+            "INM-CM5-0",
+            "IPSL-CM6A-LR",
+            "KACE-1-0-G",
+            "MIROC6",
+            "MIROC-ES2L",
+            "MPI-ESM1-2-HR",
+            "MPI-ESM1-2-LR",
+            "MRI-ESM2-0",
+            "NESM3",
+            "NorESM2-LM",
+            "NorESM2-MM",
+            "TaiESM1",
+            "UKESM1-0-LL",
         ]
 
         return common_models
 
 
-def validate_region(region: Dict[str, float]) -> bool:
+def validate_region(region: dict[str, float]) -> bool:
     """
     Validate regional bounding box specification.
 
@@ -310,21 +309,21 @@ def validate_region(region: Dict[str, float]) -> bool:
     >>> validate_region(region)
     True
     """
-    required_keys = ['lat_min', 'lat_max', 'lon_min', 'lon_max']
+    required_keys = ["lat_min", "lat_max", "lon_min", "lon_max"]
 
     if not all(k in region for k in required_keys):
         raise ValueError(f"Region must contain keys: {required_keys}")
 
-    if region['lat_min'] >= region['lat_max']:
+    if region["lat_min"] >= region["lat_max"]:
         raise ValueError("lat_min must be less than lat_max")
 
-    if region['lon_min'] >= region['lon_max']:
+    if region["lon_min"] >= region["lon_max"]:
         raise ValueError("lon_min must be less than lon_max")
 
-    if not (-90 <= region['lat_min'] <= 90):
+    if not (-90 <= region["lat_min"] <= 90):
         raise ValueError("lat_min must be in range [-90, 90]")
 
-    if not (-90 <= region['lat_max'] <= 90):
+    if not (-90 <= region["lat_max"] <= 90):
         raise ValueError("lat_max must be in range [-90, 90]")
 
     return True
@@ -342,7 +341,7 @@ def check_s3_access() -> bool:
     try:
         s3 = s3fs.S3FileSystem(anon=True)
         # Try to list top-level CMIP6 directory
-        s3.ls('cmip6-pds/CMIP6/', refresh=True)
+        s3.ls("cmip6-pds/CMIP6/", refresh=True)
         logger.info("✓ S3 access verified")
         return True
     except Exception as e:

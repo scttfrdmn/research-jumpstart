@@ -5,15 +5,14 @@ Functions for downloading and loading satellite imagery, mobility data,
 and demographic datasets.
 """
 
-import pandas as pd
-import numpy as np
-import geopandas as gpd
-import rasterio
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 import requests
 from tqdm import tqdm
-
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 RAW_DIR = DATA_DIR / "raw"
@@ -25,10 +24,7 @@ PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_satellite_imagery(
-    city: str,
-    year: int,
-    bands: Optional[List[str]] = None,
-    force_download: bool = False
+    city: str, year: int, bands: Optional[list[str]] = None, force_download: bool = False
 ) -> np.ndarray:
     """
     Load Landsat satellite imagery for a specific city and year.
@@ -50,7 +46,7 @@ def load_satellite_imagery(
         Image array of shape (height, width, bands)
     """
     if bands is None:
-        bands = ['red', 'green', 'blue', 'nir']
+        bands = ["red", "green", "blue", "nir"]
 
     cache_file = PROCESSED_DIR / f"{city}_{year}_imagery.npy"
 
@@ -71,9 +67,7 @@ def load_satellite_imagery(
 
 
 def load_mobility_data(
-    city: str,
-    data_type: str = 'roads',
-    force_download: bool = False
+    city: str, data_type: str = "roads", force_download: bool = False
 ) -> gpd.GeoDataFrame:
     """
     Load mobility data (roads, transit, traffic) for a specific city.
@@ -104,16 +98,14 @@ def load_mobility_data(
     gdf = gpd.GeoDataFrame()
 
     # Cache for future use
-    gdf.to_file(cache_file, driver='GeoJSON')
+    gdf.to_file(cache_file, driver="GeoJSON")
     print(f"Cached {data_type} data to {cache_file}")
 
     return gdf
 
 
 def load_demographic_data(
-    city: str,
-    variables: Optional[List[str]] = None,
-    force_download: bool = False
+    city: str, variables: Optional[list[str]] = None, force_download: bool = False
 ) -> pd.DataFrame:
     """
     Load demographic data from US Census for a specific city.
@@ -133,7 +125,7 @@ def load_demographic_data(
         Demographic data by census tract
     """
     if variables is None:
-        variables = ['population', 'median_income', 'employment_rate']
+        variables = ["population", "median_income", "employment_rate"]
 
     cache_file = PROCESSED_DIR / f"{city}_demographics.csv"
 
@@ -144,12 +136,14 @@ def load_demographic_data(
     print(f"Downloading demographic data for {city}...")
     # TODO: Implement actual download from Census Bureau API
     # Placeholder: return synthetic data
-    df = pd.DataFrame({
-        'tract_id': range(100),
-        'population': np.random.randint(1000, 10000, 100),
-        'median_income': np.random.randint(30000, 120000, 100),
-        'employment_rate': np.random.uniform(0.6, 0.95, 100)
-    })
+    df = pd.DataFrame(
+        {
+            "tract_id": range(100),
+            "population": np.random.randint(1000, 10000, 100),
+            "median_income": np.random.randint(30000, 120000, 100),
+            "employment_rate": np.random.uniform(0.6, 0.95, 100),
+        }
+    )
 
     # Cache for future use
     df.to_csv(cache_file, index=False)
@@ -176,17 +170,17 @@ def calculate_urban_indices(imagery: np.ndarray, bands: dict) -> dict:
     """
     indices = {}
 
-    if 'nir' in bands and 'red' in bands:
+    if "nir" in bands and "red" in bands:
         # NDVI (Normalized Difference Vegetation Index)
-        nir = imagery[:, :, bands['nir']]
-        red = imagery[:, :, bands['red']]
-        indices['ndvi'] = (nir - red) / (nir + red + 1e-8)
+        nir = imagery[:, :, bands["nir"]]
+        red = imagery[:, :, bands["red"]]
+        indices["ndvi"] = (nir - red) / (nir + red + 1e-8)
 
-    if 'swir' in bands and 'nir' in bands:
+    if "swir" in bands and "nir" in bands:
         # NDBI (Normalized Difference Built-up Index)
-        swir = imagery[:, :, bands['swir']]
-        nir = imagery[:, :, bands['nir']]
-        indices['ndbi'] = (swir - nir) / (swir + nir + 1e-8)
+        swir = imagery[:, :, bands["swir"]]
+        nir = imagery[:, :, bands["nir"]]
+        indices["ndbi"] = (swir - nir) / (swir + nir + 1e-8)
 
     return indices
 
@@ -205,10 +199,10 @@ def download_file(url: str, output_path: Path, desc: str = "Downloading") -> Non
         Description for progress bar
     """
     response = requests.get(url, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
+    total_size = int(response.headers.get("content-length", 0))
 
-    with open(output_path, 'wb') as f:
-        with tqdm(total=total_size, unit='B', unit_scale=True, desc=desc) as pbar:
+    with open(output_path, "wb") as f:
+        with tqdm(total=total_size, unit="B", unit_scale=True, desc=desc) as pbar:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
                 pbar.update(len(chunk))

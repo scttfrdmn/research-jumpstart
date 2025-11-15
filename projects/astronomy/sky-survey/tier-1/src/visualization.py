@@ -2,16 +2,19 @@
 Visualization utilities for sky surveys and classification results.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.patches import Circle
-import warnings
+import numpy as np
 
 
-def plot_sky_distribution(ra, dec, values=None, title='Sky Distribution',
-                          projection='mollweide', cmap='viridis',
-                          figsize=(12, 6)):
+def plot_sky_distribution(
+    ra,
+    dec,
+    values=None,
+    title="Sky Distribution",
+    projection="mollweide",
+    cmap="viridis",
+    figsize=(12, 6),
+):
     """
     Plot distribution of sources on the sky.
 
@@ -47,25 +50,24 @@ def plot_sky_distribution(ra, dec, values=None, title='Sky Distribution',
 
     # Plot points
     if values is not None:
-        scatter = ax.scatter(ra_plot_rad, dec_rad, c=values, cmap=cmap,
-                           s=1, alpha=0.5)
-        plt.colorbar(scatter, ax=ax, label='Value')
+        scatter = ax.scatter(ra_plot_rad, dec_rad, c=values, cmap=cmap, s=1, alpha=0.5)
+        plt.colorbar(scatter, ax=ax, label="Value")
     else:
-        ax.scatter(ra_plot_rad, dec_rad, s=1, alpha=0.5, color='blue')
+        ax.scatter(ra_plot_rad, dec_rad, s=1, alpha=0.5, color="blue")
 
     # Grid and labels
     ax.grid(True, alpha=0.3)
-    ax.set_xlabel('RA (deg)')
-    ax.set_ylabel('Dec (deg)')
+    ax.set_xlabel("RA (deg)")
+    ax.set_ylabel("Dec (deg)")
     ax.set_title(title)
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_color_color(catalog, x_color='g_r', y_color='r_i',
-                    hue=None, title='Color-Color Diagram',
-                    figsize=(10, 8)):
+def plot_color_color(
+    catalog, x_color="g_r", y_color="r_i", hue=None, title="Color-Color Diagram", figsize=(10, 8)
+):
     """
     Plot color-color diagram for object classification.
 
@@ -100,15 +102,15 @@ def plot_color_color(catalog, x_color='g_r', y_color='r_i',
                 catalog.loc[mask, y_color],
                 label=class_name,
                 alpha=0.5,
-                s=10
+                s=10,
             )
         ax.legend()
     else:
         # Simple scatter plot
         ax.scatter(catalog[x_color], catalog[y_color], alpha=0.5, s=10)
 
-    ax.set_xlabel(x_color.replace('_', '-'))
-    ax.set_ylabel(y_color.replace('_', '-'))
+    ax.set_xlabel(x_color.replace("_", "-"))
+    ax.set_ylabel(y_color.replace("_", "-"))
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
 
@@ -116,8 +118,9 @@ def plot_color_color(catalog, x_color='g_r', y_color='r_i',
     return fig, ax
 
 
-def plot_confusion_matrix(y_true, y_pred, class_names=None,
-                         title='Confusion Matrix', figsize=(10, 8)):
+def plot_confusion_matrix(
+    y_true, y_pred, class_names=None, title="Confusion Matrix", figsize=(10, 8)
+):
     """
     Plot confusion matrix for classification results.
 
@@ -145,12 +148,12 @@ def plot_confusion_matrix(y_true, y_pred, class_names=None,
     cm = confusion_matrix(y_true, y_pred)
 
     # Normalize
-    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
     # Plot
     fig, ax = plt.subplots(figsize=figsize)
 
-    im = ax.imshow(cm_norm, interpolation='nearest', cmap='Blues')
+    im = ax.imshow(cm_norm, interpolation="nearest", cmap="Blues")
     ax.figure.colorbar(im, ax=ax)
 
     # Set ticks
@@ -164,28 +167,33 @@ def plot_confusion_matrix(y_true, y_pred, class_names=None,
         ax.set_yticks(np.arange(cm.shape[0]))
 
     # Rotate x labels
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
     # Add text annotations
-    thresh = cm_norm.max() / 2.
+    thresh = cm_norm.max() / 2.0
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            ax.text(j, i, f'{cm[i, j]}\n({cm_norm[i, j]:.2f})',
-                   ha="center", va="center",
-                   color="white" if cm_norm[i, j] > thresh else "black",
-                   fontsize=9)
+            ax.text(
+                j,
+                i,
+                f"{cm[i, j]}\n({cm_norm[i, j]:.2f})",
+                ha="center",
+                va="center",
+                color="white" if cm_norm[i, j] > thresh else "black",
+                fontsize=9,
+            )
 
-    ax.set_xlabel('Predicted Label')
-    ax.set_ylabel('True Label')
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("True Label")
     ax.set_title(title)
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_feature_importance(feature_names, importances, top_n=20,
-                           title='Feature Importance', figsize=(10, 8)):
+def plot_feature_importance(
+    feature_names, importances, top_n=20, title="Feature Importance", figsize=(10, 8)
+):
     """
     Plot feature importance from tree-based model.
 
@@ -215,7 +223,7 @@ def plot_feature_importance(feature_names, importances, top_n=20,
     ax.barh(range(top_n), importances[indices])
     ax.set_yticks(range(top_n))
     ax.set_yticklabels([feature_names[i] for i in indices])
-    ax.set_xlabel('Importance')
+    ax.set_xlabel("Importance")
     ax.set_title(title)
     ax.invert_yaxis()
 
@@ -223,8 +231,9 @@ def plot_feature_importance(feature_names, importances, top_n=20,
     return fig, ax
 
 
-def plot_classification_report(y_true, y_pred, class_names=None,
-                               title='Classification Report', figsize=(10, 6)):
+def plot_classification_report(
+    y_true, y_pred, class_names=None, title="Classification Report", figsize=(10, 6)
+):
     """
     Visualize classification metrics per class.
 
@@ -249,18 +258,15 @@ def plot_classification_report(y_true, y_pred, class_names=None,
     from sklearn.metrics import precision_recall_fscore_support
 
     # Calculate metrics per class
-    precision, recall, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, average=None
-    )
+    precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, average=None)
 
     # Create dataframe
     import pandas as pd
-    metrics_df = pd.DataFrame({
-        'Precision': precision,
-        'Recall': recall,
-        'F1-Score': f1,
-        'Support': support
-    }, index=class_names if class_names else range(len(precision)))
+
+    metrics_df = pd.DataFrame(
+        {"Precision": precision, "Recall": recall, "F1-Score": f1, "Support": support},
+        index=class_names if class_names else range(len(precision)),
+    )
 
     # Plot
     fig, ax = plt.subplots(figsize=figsize)
@@ -268,24 +274,23 @@ def plot_classification_report(y_true, y_pred, class_names=None,
     x = np.arange(len(metrics_df))
     width = 0.25
 
-    ax.bar(x - width, metrics_df['Precision'], width, label='Precision', alpha=0.8)
-    ax.bar(x, metrics_df['Recall'], width, label='Recall', alpha=0.8)
-    ax.bar(x + width, metrics_df['F1-Score'], width, label='F1-Score', alpha=0.8)
+    ax.bar(x - width, metrics_df["Precision"], width, label="Precision", alpha=0.8)
+    ax.bar(x, metrics_df["Recall"], width, label="Recall", alpha=0.8)
+    ax.bar(x + width, metrics_df["F1-Score"], width, label="F1-Score", alpha=0.8)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(metrics_df.index, rotation=45, ha='right')
-    ax.set_ylabel('Score')
+    ax.set_xticklabels(metrics_df.index, rotation=45, ha="right")
+    ax.set_ylabel("Score")
     ax.set_ylim([0, 1.0])
     ax.set_title(title)
     ax.legend()
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.grid(True, alpha=0.3, axis="y")
 
     plt.tight_layout()
     return fig, ax
 
 
-def plot_match_statistics(matched_catalog, title='Survey Match Statistics',
-                          figsize=(10, 6)):
+def plot_match_statistics(matched_catalog, title="Survey Match Statistics", figsize=(10, 6)):
     """
     Visualize cross-match statistics across surveys.
 
@@ -309,13 +314,19 @@ def plot_match_statistics(matched_catalog, title='Survey Match Statistics',
     fig, ax = plt.subplots(figsize=figsize)
 
     # Placeholder for actual implementation
-    ax.text(0.5, 0.5, 'Match statistics visualization\n(to be implemented)',
-            ha='center', va='center', fontsize=14)
+    ax.text(
+        0.5,
+        0.5,
+        "Match statistics visualization\n(to be implemented)",
+        ha="center",
+        va="center",
+        fontsize=14,
+    )
 
     ax.set_title(title)
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1])
-    ax.axis('off')
+    ax.axis("off")
 
     plt.tight_layout()
     return fig, ax

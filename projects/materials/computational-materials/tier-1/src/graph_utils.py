@@ -4,16 +4,14 @@ Graph construction utilities for crystal structures.
 Functions for converting crystal structures to graph representations.
 """
 
+
 import numpy as np
 import torch
 from torch_geometric.data import Data
-from typing import Dict, List, Tuple
 
 
 def create_crystal_graph(
-    material_data: Dict,
-    radius_cutoff: float = 5.0,
-    max_neighbors: int = 12
+    material_data: dict, radius_cutoff: float = 5.0, max_neighbors: int = 12
 ) -> Data:
     """
     Create a graph representation of a crystal structure.
@@ -34,9 +32,7 @@ def create_crystal_graph(
 
     # Edge list (connectivity)
     edge_index, edge_features = generate_edges(
-        n_atoms,
-        radius_cutoff=radius_cutoff,
-        max_neighbors=max_neighbors
+        n_atoms, radius_cutoff=radius_cutoff, max_neighbors=max_neighbors
     )
 
     # Convert to PyTorch tensors
@@ -54,7 +50,7 @@ def create_crystal_graph(
         edge_attr=edge_attr,
         y_band_gap=y_band_gap,
         y_formation=y_formation,
-        material_id=material_data.get("material_id", "unknown")
+        material_id=material_data.get("material_id", "unknown"),
     )
 
 
@@ -87,10 +83,8 @@ def generate_node_features(n_atoms: int, feature_dim: int = 16) -> np.ndarray:
 
 
 def generate_edges(
-    n_atoms: int,
-    radius_cutoff: float = 5.0,
-    max_neighbors: int = 12
-) -> Tuple[np.ndarray, np.ndarray]:
+    n_atoms: int, radius_cutoff: float = 5.0, max_neighbors: int = 12
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Generate edge list and edge features for crystal graph.
 
@@ -114,9 +108,13 @@ def generate_edges(
 
     for i in range(n_atoms):
         # Randomly select neighbors
-        n_neighbors = np.random.randint(max(2, avg_neighbors-2), min(n_atoms-1, avg_neighbors+2))
+        n_neighbors = np.random.randint(
+            max(2, avg_neighbors - 2), min(n_atoms - 1, avg_neighbors + 2)
+        )
         possible_neighbors = [j for j in range(n_atoms) if j != i]
-        neighbors = np.random.choice(possible_neighbors, size=min(n_neighbors, len(possible_neighbors)), replace=False)
+        neighbors = np.random.choice(
+            possible_neighbors, size=min(n_neighbors, len(possible_neighbors)), replace=False
+        )
 
         for j in neighbors:
             # Add edge (undirected, so add both directions)
@@ -124,16 +122,18 @@ def generate_edges(
 
             # Edge features (in production: distance, bond type, etc.)
             distance = np.random.uniform(1.5, radius_cutoff)  # Simulate bond length
-            edge_feat = np.array([
-                distance / radius_cutoff,  # Normalized distance
-                np.exp(-distance),  # Gaussian basis function
-                np.cos(distance),  # Angular feature
-                1.0 / distance,  # Coulomb-like
-                distance**2,  # Quadratic
-                np.sin(distance),  # Periodic
-                np.random.randn(),  # Random feature 1
-                np.random.randn()   # Random feature 2
-            ])
+            edge_feat = np.array(
+                [
+                    distance / radius_cutoff,  # Normalized distance
+                    np.exp(-distance),  # Gaussian basis function
+                    np.cos(distance),  # Angular feature
+                    1.0 / distance,  # Coulomb-like
+                    distance**2,  # Quadratic
+                    np.sin(distance),  # Periodic
+                    np.random.randn(),  # Random feature 1
+                    np.random.randn(),  # Random feature 2
+                ]
+            )
             edge_features_list.append(edge_feat)
 
     if len(edges) == 0:  # Ensure at least one edge
@@ -147,10 +147,8 @@ def generate_edges(
 
 
 def batch_create_graphs(
-    materials_df,
-    cache_dir: str = "data/processed/graphs",
-    batch_size: int = 1000
-) -> List[Data]:
+    materials_df, cache_dir: str = "data/processed/graphs", batch_size: int = 1000
+) -> list[Data]:
     """
     Create graphs for a batch of materials and cache them.
 
@@ -163,6 +161,7 @@ def batch_create_graphs(
         List of PyTorch Geometric Data objects
     """
     from pathlib import Path
+
     from tqdm.auto import tqdm
 
     cache_path = Path(cache_dir)
@@ -171,7 +170,7 @@ def batch_create_graphs(
     graphs = []
     print(f"Creating graphs for {len(materials_df)} materials...")
 
-    for idx, row in tqdm(materials_df.iterrows(), total=len(materials_df)):
+    for _idx, row in tqdm(materials_df.iterrows(), total=len(materials_df)):
         material_dict = row.to_dict()
         graph = create_crystal_graph(material_dict)
         graphs.append(graph)
@@ -189,7 +188,7 @@ def batch_create_graphs(
     return graphs
 
 
-def load_cached_graphs(cache_file: str = "data/processed/graphs/all_graphs.pt") -> List[Data]:
+def load_cached_graphs(cache_file: str = "data/processed/graphs/all_graphs.pt") -> list[Data]:
     """
     Load cached graphs from disk.
 

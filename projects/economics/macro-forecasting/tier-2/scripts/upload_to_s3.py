@@ -16,11 +16,10 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional
+
 import boto3
-from botocore.exceptions import ClientError, NoCredentialsError
 import pandas as pd
-from datetime import datetime
+from botocore.exceptions import ClientError, NoCredentialsError
 
 
 class EconomicDataUploader:
@@ -29,7 +28,7 @@ class EconomicDataUploader:
     def __init__(self, bucket_name: str):
         """Initialize uploader with S3 bucket name."""
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3")
         self.uploaded_files = []
         self.failed_files = []
 
@@ -40,10 +39,10 @@ class EconomicDataUploader:
             print(f"✓ S3 bucket '{self.bucket_name}' is accessible")
             return True
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == '404':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
                 print(f"✗ Bucket '{self.bucket_name}' does not exist")
-            elif error_code == '403':
+            elif error_code == "403":
                 print(f"✗ Access denied to bucket '{self.bucket_name}'")
             else:
                 print(f"✗ Error accessing bucket: {e}")
@@ -58,21 +57,21 @@ class EconomicDataUploader:
             df = pd.read_csv(file_path, nrows=5)
 
             # Check for required columns
-            required_cols = ['date', 'value']
+            required_cols = ["date", "value"]
             if not all(col in df.columns for col in required_cols):
                 print(f"  ✗ Missing required columns: {required_cols}")
                 return False
 
             # Check date format
             try:
-                pd.to_datetime(df['date'])
+                pd.to_datetime(df["date"])
             except Exception as e:
                 print(f"  ✗ Invalid date format: {e}")
                 return False
 
             # Check value is numeric
-            if not pd.api.types.is_numeric_dtype(df['value']):
-                print(f"  ✗ 'value' column must be numeric")
+            if not pd.api.types.is_numeric_dtype(df["value"]):
+                print("  ✗ 'value' column must be numeric")
                 return False
 
             return True
@@ -92,10 +91,7 @@ class EconomicDataUploader:
 
             # Upload file
             self.s3_client.upload_file(
-                file_path,
-                self.bucket_name,
-                s3_key,
-                ExtraArgs={'ContentType': 'text/csv'}
+                file_path, self.bucket_name, s3_key, ExtraArgs={"ContentType": "text/csv"}
             )
 
             print(f"  ✓ Uploaded to s3://{self.bucket_name}/{s3_key}")
@@ -136,13 +132,13 @@ class EconomicDataUploader:
 
             # Validate CSV format
             if not self.validate_csv(str(csv_file)):
-                print(f"  ⚠ Skipping invalid file")
+                print("  ⚠ Skipping invalid file")
                 continue
 
             # Determine S3 key based on file structure
             # Example: sample_data/gdp/usa_gdp_quarterly.csv → raw/gdp/usa_gdp_quarterly.csv
             relative_path = csv_file.relative_to(data_path)
-            s3_key = prefix + str(relative_path).replace('\\', '/')
+            s3_key = prefix + str(relative_path).replace("\\", "/")
 
             # Upload file
             if self.upload_file(str(csv_file), s3_key):
@@ -171,7 +167,7 @@ class EconomicDataUploader:
         print("=" * 60)
 
 
-def download_fred_data(indicators: List[str], output_dir: str = "sample_data/fred/"):
+def download_fred_data(indicators: list[str], output_dir: str = "sample_data/fred/"):
     """
     Download economic data from FRED API.
 
@@ -185,7 +181,7 @@ def download_fred_data(indicators: List[str], output_dir: str = "sample_data/fre
         return
 
     # Get API key from environment
-    api_key = os.environ.get('FRED_API_KEY')
+    api_key = os.environ.get("FRED_API_KEY")
     if not api_key:
         print("✗ FRED_API_KEY environment variable not set")
         print("  Get API key from: https://fred.stlouisfed.org/docs/api/api_key.html")
@@ -202,10 +198,7 @@ def download_fred_data(indicators: List[str], output_dir: str = "sample_data/fre
             series = fred.get_series(indicator)
 
             # Convert to DataFrame
-            df = pd.DataFrame({
-                'date': series.index,
-                'value': series.values
-            })
+            df = pd.DataFrame({"date": series.index, "value": series.values})
 
             # Save to CSV
             output_file = os.path.join(output_dir, f"{indicator.lower()}.csv")
@@ -228,10 +221,10 @@ def create_sample_data(output_dir: str = "sample_data/"):
     gdp_dir = os.path.join(output_dir, "gdp")
     os.makedirs(gdp_dir, exist_ok=True)
 
-    dates_quarterly = pd.date_range(start='2018-01-01', end='2023-10-01', freq='Q')
+    dates_quarterly = pd.date_range(start="2018-01-01", end="2023-10-01", freq="Q")
     gdp_values = [20000 + i * 100 + (i % 4) * 50 for i in range(len(dates_quarterly))]
 
-    gdp_df = pd.DataFrame({'date': dates_quarterly, 'value': gdp_values})
+    gdp_df = pd.DataFrame({"date": dates_quarterly, "value": gdp_values})
     gdp_file = os.path.join(gdp_dir, "usa_gdp_quarterly.csv")
     gdp_df.to_csv(gdp_file, index=False)
     print(f"  ✓ Created {gdp_file}")
@@ -240,10 +233,10 @@ def create_sample_data(output_dir: str = "sample_data/"):
     unemp_dir = os.path.join(output_dir, "unemployment")
     os.makedirs(unemp_dir, exist_ok=True)
 
-    dates_monthly = pd.date_range(start='2018-01-01', end='2023-12-01', freq='M')
+    dates_monthly = pd.date_range(start="2018-01-01", end="2023-12-01", freq="M")
     unemp_values = [4.0 + (i % 12) * 0.1 + (i / 12) * 0.05 for i in range(len(dates_monthly))]
 
-    unemp_df = pd.DataFrame({'date': dates_monthly, 'value': unemp_values})
+    unemp_df = pd.DataFrame({"date": dates_monthly, "value": unemp_values})
     unemp_file = os.path.join(unemp_dir, "usa_unemployment_monthly.csv")
     unemp_df.to_csv(unemp_file, index=False)
     print(f"  ✓ Created {unemp_file}")
@@ -254,7 +247,7 @@ def create_sample_data(output_dir: str = "sample_data/"):
 
     infl_values = [250 + i * 0.5 + (i % 12) * 0.2 for i in range(len(dates_monthly))]
 
-    infl_df = pd.DataFrame({'date': dates_monthly, 'value': infl_values})
+    infl_df = pd.DataFrame({"date": dates_monthly, "value": infl_values})
     infl_file = os.path.join(infl_dir, "usa_cpi_monthly.csv")
     infl_df.to_csv(infl_file, index=False)
     print(f"  ✓ Created {infl_file}")
@@ -266,7 +259,7 @@ def create_sample_data(output_dir: str = "sample_data/"):
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
-        description='Upload economic time series data to S3',
+        description="Upload economic time series data to S3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -279,39 +272,25 @@ Examples:
   # Download from FRED and upload
   export FRED_API_KEY=your_api_key
   python upload_to_s3.py --bucket economic-data-12345 --download-fred GDP,UNRATE,CPIAUCSL
-        """
+        """,
     )
 
     parser.add_argument(
-        '--bucket',
+        "--bucket", type=str, required=True, help="S3 bucket name (e.g., economic-data-12345)"
+    )
+
+    parser.add_argument("--data-dir", type=str, help="Directory containing CSV files to upload")
+
+    parser.add_argument("--prefix", type=str, default="raw/", help="S3 key prefix (default: raw/)")
+
+    parser.add_argument(
+        "--create-sample", action="store_true", help="Create sample data and upload"
+    )
+
+    parser.add_argument(
+        "--download-fred",
         type=str,
-        required=True,
-        help='S3 bucket name (e.g., economic-data-12345)'
-    )
-
-    parser.add_argument(
-        '--data-dir',
-        type=str,
-        help='Directory containing CSV files to upload'
-    )
-
-    parser.add_argument(
-        '--prefix',
-        type=str,
-        default='raw/',
-        help='S3 key prefix (default: raw/)'
-    )
-
-    parser.add_argument(
-        '--create-sample',
-        action='store_true',
-        help='Create sample data and upload'
-    )
-
-    parser.add_argument(
-        '--download-fred',
-        type=str,
-        help='Download indicators from FRED (comma-separated, e.g., GDP,UNRATE)'
+        help="Download indicators from FRED (comma-separated, e.g., GDP,UNRATE)",
     )
 
     args = parser.parse_args()
@@ -330,7 +309,7 @@ Examples:
 
     # Handle FRED download
     if args.download_fred:
-        indicators = [ind.strip() for ind in args.download_fred.split(',')]
+        indicators = [ind.strip() for ind in args.download_fred.split(",")]
         fred_dir = "sample_data/fred/"
         download_fred_data(indicators, fred_dir)
         if not args.data_dir:
@@ -349,10 +328,10 @@ Examples:
 
     if uploaded_count > 0:
         print(f"\n✓ Successfully uploaded {uploaded_count} files")
-        print(f"\nNext steps:")
-        print(f"  1. Monitor Lambda execution in CloudWatch")
-        print(f"  2. Query results: python scripts/query_results.py --table EconomicForecasts")
-        print(f"  3. Analyze: jupyter notebook notebooks/economic_analysis.ipynb")
+        print("\nNext steps:")
+        print("  1. Monitor Lambda execution in CloudWatch")
+        print("  2. Query results: python scripts/query_results.py --table EconomicForecasts")
+        print("  3. Analyze: jupyter notebook notebooks/economic_analysis.ipynb")
     else:
         print("\n✗ No files uploaded")
         sys.exit(1)

@@ -6,25 +6,26 @@ This script queries the DynamoDB table for materials matching
 specific criteria and displays results in a formatted table.
 """
 
-import boto3
 import argparse
 import json
-from decimal import Decimal
-from boto3.dynamodb.conditions import Key, Attr
-import pandas as pd
-from datetime import datetime
 import sys
+from decimal import Decimal
+
+import boto3
+import pandas as pd
+from boto3.dynamodb.conditions import Attr
 
 # Configure boto3
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource("dynamodb")
 
 
 class DecimalEncoder(json.JSONEncoder):
     """Helper class to convert Decimal to float for JSON serialization."""
+
     def default(self, obj):
         if isinstance(obj, Decimal):
             return float(obj)
-        return super(DecimalEncoder, self).default(obj)
+        return super().default(obj)
 
 
 def query_all_materials(table_name):
@@ -42,12 +43,12 @@ def query_all_materials(table_name):
     print(f"Scanning table: {table_name}")
 
     response = table.scan()
-    items = response['Items']
+    items = response["Items"]
 
     # Handle pagination
-    while 'LastEvaluatedKey' in response:
-        response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-        items.extend(response['Items'])
+    while "LastEvaluatedKey" in response:
+        response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+        items.extend(response["Items"])
 
     print(f"Found {len(items)} materials")
     return items
@@ -76,10 +77,7 @@ def query_by_property(table_name, property_name, min_value=None, max_value=None,
         else:
             filter_expr = Attr(property_name).eq(Decimal(str(exact_value)))
     elif min_value is not None and max_value is not None:
-        filter_expr = Attr(property_name).between(
-            Decimal(str(min_value)),
-            Decimal(str(max_value))
-        )
+        filter_expr = Attr(property_name).between(Decimal(str(min_value)), Decimal(str(max_value)))
     elif min_value is not None:
         filter_expr = Attr(property_name).gte(Decimal(str(min_value)))
     elif max_value is not None:
@@ -99,21 +97,20 @@ def query_by_property(table_name, property_name, min_value=None, max_value=None,
         print(f"<= {max_value}")
 
     response = table.scan(FilterExpression=filter_expr)
-    items = response['Items']
+    items = response["Items"]
 
     # Handle pagination
-    while 'LastEvaluatedKey' in response:
+    while "LastEvaluatedKey" in response:
         response = table.scan(
-            FilterExpression=filter_expr,
-            ExclusiveStartKey=response['LastEvaluatedKey']
+            FilterExpression=filter_expr, ExclusiveStartKey=response["LastEvaluatedKey"]
         )
-        items.extend(response['Items'])
+        items.extend(response["Items"])
 
     print(f"Found {len(items)} matching materials")
     return items
 
 
-def display_materials(materials, format='table'):
+def display_materials(materials, format="table"):
     """
     Display materials in formatted output.
 
@@ -139,25 +136,35 @@ def display_materials(materials, format='table'):
     df = pd.DataFrame(materials_converted)
 
     # Reorder columns for better display
-    preferred_cols = ['material_id', 'formula', 'density', 'volume',
-                     'num_atoms', 'space_group', 'crystal_system',
-                     'lattice_a', 'lattice_b', 'lattice_c']
-    cols = [c for c in preferred_cols if c in df.columns] + \
-           [c for c in df.columns if c not in preferred_cols]
+    preferred_cols = [
+        "material_id",
+        "formula",
+        "density",
+        "volume",
+        "num_atoms",
+        "space_group",
+        "crystal_system",
+        "lattice_a",
+        "lattice_b",
+        "lattice_c",
+    ]
+    cols = [c for c in preferred_cols if c in df.columns] + [
+        c for c in df.columns if c not in preferred_cols
+    ]
     df = df[cols]
 
-    if format == 'json':
+    if format == "json":
         print(json.dumps(materials_converted, indent=2, cls=DecimalEncoder))
-    elif format == 'csv':
+    elif format == "csv":
         print(df.to_csv(index=False))
     else:
         # Table format
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        pd.set_option('display.max_colwidth', 30)
-        print("\n" + "="*100)
+        pd.set_option("display.max_columns", None)
+        pd.set_option("display.width", None)
+        pd.set_option("display.max_colwidth", 30)
+        print("\n" + "=" * 100)
         print(df.to_string(index=False))
-        print("="*100)
+        print("=" * 100)
 
 
 def export_to_csv(materials, filename):
@@ -217,94 +224,56 @@ def get_statistics(materials):
     df = pd.DataFrame(materials_converted)
 
     # Calculate statistics for numeric columns
-    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
+    numeric_cols = df.select_dtypes(include=["float64", "int64"]).columns
 
     stats = {}
     for col in numeric_cols:
         stats[col] = {
-            'mean': df[col].mean(),
-            'std': df[col].std(),
-            'min': df[col].min(),
-            'max': df[col].max(),
-            'median': df[col].median()
+            "mean": df[col].mean(),
+            "std": df[col].std(),
+            "min": df[col].min(),
+            "max": df[col].max(),
+            "median": df[col].median(),
         }
 
     # Crystal system distribution
-    if 'crystal_system' in df.columns:
-        stats['crystal_system_counts'] = df['crystal_system'].value_counts().to_dict()
+    if "crystal_system" in df.columns:
+        stats["crystal_system_counts"] = df["crystal_system"].value_counts().to_dict()
 
     # Space group distribution
-    if 'space_group' in df.columns:
-        stats['space_group_counts'] = df['space_group'].value_counts().to_dict()
+    if "space_group" in df.columns:
+        stats["space_group_counts"] = df["space_group"].value_counts().to_dict()
 
     return stats
 
 
 def main():
     """Main function for command-line usage."""
-    parser = argparse.ArgumentParser(
-        description='Query materials properties from DynamoDB'
-    )
+    parser = argparse.ArgumentParser(description="Query materials properties from DynamoDB")
+    parser.add_argument("--table", default="MaterialsProperties", help="DynamoDB table name")
     parser.add_argument(
-        '--table',
-        default='MaterialsProperties',
-        help='DynamoDB table name'
+        "--property", help="Property to filter by (e.g., density, volume, space_group)"
     )
+    parser.add_argument("--min", type=float, help="Minimum value for numeric property")
+    parser.add_argument("--max", type=float, help="Maximum value for numeric property")
+    parser.add_argument("--value", help="Exact value to match")
     parser.add_argument(
-        '--property',
-        help='Property to filter by (e.g., density, volume, space_group)'
+        "--format", choices=["table", "json", "csv"], default="table", help="Output format"
     )
-    parser.add_argument(
-        '--min',
-        type=float,
-        help='Minimum value for numeric property'
-    )
-    parser.add_argument(
-        '--max',
-        type=float,
-        help='Maximum value for numeric property'
-    )
-    parser.add_argument(
-        '--value',
-        help='Exact value to match'
-    )
-    parser.add_argument(
-        '--format',
-        choices=['table', 'json', 'csv'],
-        default='table',
-        help='Output format'
-    )
-    parser.add_argument(
-        '--export',
-        help='Export to CSV file'
-    )
-    parser.add_argument(
-        '--stats',
-        action='store_true',
-        help='Show statistics'
-    )
-    parser.add_argument(
-        '--region',
-        default='us-east-1',
-        help='AWS region'
-    )
+    parser.add_argument("--export", help="Export to CSV file")
+    parser.add_argument("--stats", action="store_true", help="Show statistics")
+    parser.add_argument("--region", default="us-east-1", help="AWS region")
 
     args = parser.parse_args()
 
     try:
         # Override region if specified
         global dynamodb
-        dynamodb = boto3.resource('dynamodb', region_name=args.region)
+        dynamodb = boto3.resource("dynamodb", region_name=args.region)
 
         # Query materials
         if args.property:
-            materials = query_by_property(
-                args.table,
-                args.property,
-                args.min,
-                args.max,
-                args.value
-            )
+            materials = query_by_property(args.table, args.property, args.min, args.max, args.value)
         else:
             materials = query_all_materials(args.table)
 
@@ -318,9 +287,9 @@ def main():
 
             # Show statistics if requested
             if args.stats:
-                print("\n" + "="*100)
+                print("\n" + "=" * 100)
                 print("STATISTICS")
-                print("="*100)
+                print("=" * 100)
                 stats = get_statistics(materials)
                 print(json.dumps(stats, indent=2, cls=DecimalEncoder))
         else:
@@ -331,9 +300,10 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

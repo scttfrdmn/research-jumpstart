@@ -2,28 +2,25 @@
 Data loading and preprocessing utilities for neuroimaging analysis.
 """
 
-import os
+from pathlib import Path
+
+import nibabel as nib
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import nibabel as nib
 from nilearn import datasets
 from nilearn.maskers import NiftiLabelsMasker
-import requests
-from tqdm import tqdm
-
 
 # Define base data directory
 BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / 'data'
-RAW_DIR = DATA_DIR / 'raw'
-PROCESSED_DIR = DATA_DIR / 'processed'
+DATA_DIR = BASE_DIR / "data"
+RAW_DIR = DATA_DIR / "raw"
+PROCESSED_DIR = DATA_DIR / "processed"
 
 # Create directories if they don't exist
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-(PROCESSED_DIR / 'connectivity').mkdir(exist_ok=True)
-(PROCESSED_DIR / 'timeseries').mkdir(exist_ok=True)
+(PROCESSED_DIR / "connectivity").mkdir(exist_ok=True)
+(PROCESSED_DIR / "timeseries").mkdir(exist_ok=True)
 
 
 def load_haxby_data(force_download=False):
@@ -43,10 +40,10 @@ def load_haxby_data(force_download=False):
     haxby_dataset = datasets.fetch_haxby()
 
     data = {
-        'fmri': haxby_dataset.func[0],
-        'labels': pd.read_csv(haxby_dataset.session_target[0], sep=' '),
-        'mask': haxby_dataset.mask_vt[0],
-        'dataset': haxby_dataset
+        "fmri": haxby_dataset.func[0],
+        "labels": pd.read_csv(haxby_dataset.session_target[0], sep=" "),
+        "mask": haxby_dataset.mask_vt[0],
+        "dataset": haxby_dataset,
     }
 
     print(f"✓ Loaded {len(data['labels'])} volumes")
@@ -80,7 +77,7 @@ def load_development_fmri(n_subjects=30, force_download=False):
     return data
 
 
-def load_atlas(atlas_name='schaefer', n_rois=200):
+def load_atlas(atlas_name="schaefer", n_rois=200):
     """
     Load brain parcellation atlas.
 
@@ -100,15 +97,15 @@ def load_atlas(atlas_name='schaefer', n_rois=200):
     """
     print(f"Loading {atlas_name} atlas with {n_rois} ROIs...")
 
-    if atlas_name.lower() == 'schaefer':
+    if atlas_name.lower() == "schaefer":
         atlas = datasets.fetch_atlas_schaefer_2018(n_rois=n_rois)
         atlas_img = nib.load(atlas.maps)
         labels = atlas.labels
-    elif atlas_name.lower() == 'aal':
+    elif atlas_name.lower() == "aal":
         atlas = datasets.fetch_atlas_aal()
         atlas_img = nib.load(atlas.maps)
         labels = atlas.labels
-    elif atlas_name.lower() == 'power':
+    elif atlas_name.lower() == "power":
         atlas = datasets.fetch_coords_power_2011()
         labels = atlas.labels
         # Power atlas is coordinate-based, not volumetric
@@ -142,12 +139,7 @@ def extract_timeseries(fmri_file, atlas_img, labels, cache=True):
     """
     # Create masker
     masker = NiftiLabelsMasker(
-        labels_img=atlas_img,
-        standardize=True,
-        detrend=True,
-        low_pass=0.1,
-        high_pass=0.01,
-        t_r=2.0
+        labels_img=atlas_img, standardize=True, detrend=True, low_pass=0.1, high_pass=0.01, t_r=2.0
     )
 
     # Extract time series
@@ -171,7 +163,7 @@ def save_timeseries(timeseries, subject_id):
     subject_id : str
         Subject identifier
     """
-    output_path = PROCESSED_DIR / 'timeseries' / f'{subject_id}_ts.npy'
+    output_path = PROCESSED_DIR / "timeseries" / f"{subject_id}_ts.npy"
     np.save(output_path, timeseries)
     print(f"✓ Saved time series to {output_path}")
 
@@ -190,7 +182,7 @@ def load_timeseries(subject_id):
     timeseries : ndarray
         Time series data
     """
-    input_path = PROCESSED_DIR / 'timeseries' / f'{subject_id}_ts.npy'
+    input_path = PROCESSED_DIR / "timeseries" / f"{subject_id}_ts.npy"
 
     if not input_path.exists():
         raise FileNotFoundError(f"Time series not found: {input_path}")
@@ -233,7 +225,7 @@ def preprocess_fmri(fmri_file, confounds=None):
     return img_smooth
 
 
-def get_sample_subjects(dataset='haxby', n=5):
+def get_sample_subjects(dataset="haxby", n=5):
     """
     Get sample subjects for quick testing.
 
@@ -249,13 +241,13 @@ def get_sample_subjects(dataset='haxby', n=5):
     subjects : list
         List of subject IDs
     """
-    if dataset == 'haxby':
+    if dataset == "haxby":
         # Haxby only has 1 subject
-        return ['subject1']
-    elif dataset == 'development':
+        return ["subject1"]
+    elif dataset == "development":
         # Development dataset has multiple subjects
-        data = load_development_fmri(n_subjects=n)
-        return [f'sub-{i:02d}' for i in range(n)]
+        load_development_fmri(n_subjects=n)
+        return [f"sub-{i:02d}" for i in range(n)]
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -270,17 +262,13 @@ def check_storage_usage():
 
     for directory in [DATA_DIR, RAW_DIR, PROCESSED_DIR]:
         if directory.exists():
-            result = subprocess.run(
-                ['du', '-sh', str(directory)],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["du", "-sh", str(directory)], capture_output=True, text=True)
             print(f"{directory.name}: {result.stdout.split()[0]}")
 
-    print(f"\nTotal Studio Lab limit: 15GB")
+    print("\nTotal Studio Lab limit: 15GB")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test data loading
     print("Testing data utilities...")
 
@@ -289,7 +277,7 @@ if __name__ == '__main__':
     print(f"\nHaxby dataset loaded: {len(data['labels'])} samples")
 
     # Test atlas loading
-    atlas_img, labels = load_atlas('schaefer', n_rois=200)
+    atlas_img, labels = load_atlas("schaefer", n_rois=200)
     print(f"\nAtlas loaded: {len(labels)} ROIs")
 
     # Check storage
