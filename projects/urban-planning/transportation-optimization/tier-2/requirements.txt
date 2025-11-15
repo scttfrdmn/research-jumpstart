@@ -1,0 +1,35 @@
+# AWS SDK
+boto3>=1.34.0
+botocore>=1.34.0
+
+# Data manipulation and analysis
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Network analysis
+networkx>=3.1
+
+# Progress tracking
+tqdm>=4.65.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Jupyter notebooks
+jupyter>=1.0.0
+ipykernel>=6.25.0
+ipywidgets>=8.1.0
+
+# Data formatting
+tabulate>=0.9.0
+
+# Geospatial libraries (optional, for map visualization)
+folium>=0.14.0
+geopandas>=0.14.0
+
+# Date/time handling
+python-dateutil>=2.8.0

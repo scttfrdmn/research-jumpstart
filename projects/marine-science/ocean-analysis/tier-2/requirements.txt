@@ -1,0 +1,27 @@
+# AWS SDK and Core Dependencies
+boto3>=1.34.0
+botocore>=1.34.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Ocean Data Handling
+xarray>=2023.1.0
+netCDF4>=1.6.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+cartopy>=0.22.0
+
+# Jupyter Notebook
+jupyter>=1.0.0
+ipykernel>=6.20.0
+notebook>=7.0.0
+
+# Additional Scientific Libraries
+scipy>=1.10.0
+
+# AWS CLI (optional, for command-line operations)
+awscli>=1.32.0
