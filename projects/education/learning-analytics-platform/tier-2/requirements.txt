@@ -1,0 +1,29 @@
+# Learning Analytics Platform - Tier 2 Dependencies
+#
+# AWS SDK and utilities
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Jupyter
+jupyter>=1.0.0
+ipython>=8.12.0
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.65.0
+tabulate>=0.9.0
+
+# Optional: For Athena queries
+PyAthena>=3.0.0
+
+# Optional: For enhanced data processing
+pyarrow>=12.0.0

@@ -1,0 +1,34 @@
+# AWS SDK
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Data manipulation
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Scientific computing
+scipy>=1.10.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Jupyter notebooks
+jupyter>=1.0.0
+notebook>=6.5.0
+ipykernel>=6.25.0
+
+# Data validation
+jsonschema>=4.17.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Date/time handling
+python-dateutil>=2.8.2
+
+# Command-line interfaces
+argparse>=1.4.0
+
+# Optional: AWS CLI (system install recommended)
+# awscli>=1.29.0
