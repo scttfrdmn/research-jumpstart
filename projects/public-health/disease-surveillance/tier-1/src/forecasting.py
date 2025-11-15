@@ -11,7 +11,6 @@ from typing import Optional
 import numpy as np
 
 try:
-    import tensorflow as tf
     from tensorflow import keras
     from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
     from tensorflow.keras.layers import LSTM, Dense, Dropout

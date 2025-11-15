@@ -305,7 +305,7 @@ def extract_collocations(words):
     # Remove stopwords for collocation detection
     try:
         stop_words = set(stopwords.words("english"))
-    except:
+    except Exception:
         stop_words = set()
 
     filtered_words = [w for w in words if w not in stop_words and len(w) > 2]
@@ -321,7 +321,7 @@ def extract_collocations(words):
         for (word1, word2), score in scored_bigrams[:10]:
             freq = bigram_finder.ngram_fd[(word1, word2)]
             top_bigrams.append({"bigram": f"{word1} {word2}", "pmi": round(score, 2), "freq": freq})
-    except:
+    except Exception:
         pass
 
     # Trigrams
@@ -337,7 +337,7 @@ def extract_collocations(words):
             top_trigrams.append(
                 {"trigram": f"{word1} {word2} {word3}", "pmi": round(score, 2), "freq": freq}
             )
-    except:
+    except Exception:
         pass
 
     return {"bigrams": top_bigrams, "trigrams": top_trigrams}
@@ -363,7 +363,7 @@ def calculate_syntactic_complexity(sentences, words):
     # Sentence length variation (standard deviation)
     sentence_lengths = [len(word_tokenize(sent)) for sent in sentences]
     avg_length = sum(sentence_lengths) / len(sentence_lengths)
-    variance = sum((l - avg_length) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+    variance = sum((length - avg_length) ** 2 for length in sentence_lengths) / len(sentence_lengths)
     std_dev = variance**0.5
 
     return {
@@ -400,7 +400,7 @@ def store_results(text_id, results):
         "lexical_diversity": results.get("lexical_diversity", {}),
         "syntactic_complexity": results.get("syntactic_complexity", {}),
         "top_words": [{"word": w, "freq": f} for w, f in results.get("top_words", [])[:10]],
-        "top_lemmas": [{"lemma": l, "freq": f} for l, f in results.get("top_lemmas", [])[:10]],
+        "top_lemmas": [{"lemma": lemma, "freq": f} for lemma, f in results.get("top_lemmas", [])[:10]],
         "collocations": results.get("collocations", {}),
     }
 

@@ -254,12 +254,11 @@ def convert_to_pytorch_geometric(G: nx.Graph):
     """
     try:
         import torch
-        from torch_geometric.data import Data
         from torch_geometric.utils import from_networkx
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "PyTorch Geometric not installed. Install with: pip install torch-geometric"
-        )
+        ) from e
 
     # Use PyG's built-in converter
     data = from_networkx(G)

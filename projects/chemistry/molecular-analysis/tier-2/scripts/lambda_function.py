@@ -34,7 +34,7 @@ logger.setLevel(logging.INFO)
 # Try to import RDKit (may not be available in Lambda without layer)
 try:
     from rdkit import Chem
-    from rdkit.Chem import Descriptors, Lipinski
+    from rdkit.Chem import Descriptors
 
     RDKIT_AVAILABLE = True
     logger.info("RDKit is available")

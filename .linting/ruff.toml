@@ -20,15 +20,11 @@ select = [
 
 ignore = [
     "E501",   # line too long (handled by formatter)
-    "E402",   # module import not at top (common in notebooks with explanatory text)
     "B008",   # function calls in argument defaults
     "B905",   # zip without explicit strict parameter
     "N802",   # function name should be lowercase (allows scientific naming)
     "N803",   # argument name should be lowercase (allows scientific naming)
     "N806",   # variable name should be lowercase (allows scientific naming)
-    "RUF001", # ambiguous unicode (scientific notation like × and σ)
-    "RUF002", # ambiguous unicode in docstrings
-    "RUF003", # ambiguous unicode in comments
 ]
 
 # Exclude common directories

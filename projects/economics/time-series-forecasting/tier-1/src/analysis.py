@@ -221,7 +221,7 @@ def business_cycle_synchronization(
             cycles = data.apply(
                 lambda x: hpfilter(x.dropna(), lamb=1600)[0] if x.notna().sum() > 20 else x
             )
-        except:
+        except Exception:
             cycles = data  # Fall back to original data
     else:
         cycles = data

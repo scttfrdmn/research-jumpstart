@@ -75,7 +75,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             try:
                 print("Downloading BAM index...")
                 download_from_s3(bucket, bai_key, bai_path)
-            except:
+            except Exception:
                 print("BAM index not found, attempting to index BAM file...")
                 # This will fail for large files due to Lambda memory constraints
                 pass
@@ -121,7 +121,7 @@ def download_from_s3(bucket: str, key: str, local_path: str) -> None:
         file_size = os.path.getsize(local_path)
         print(f"Downloaded {key}: {file_size / 1024 / 1024:.2f} MB")
     except Exception as e:
-        raise RuntimeError(f"Failed to download {key} from {bucket}: {e!s}")
+        raise RuntimeError(f"Failed to download {key} from {bucket}: {e!s}") from e
 
 
 def upload_to_s3(local_path: str, bucket: str, key: str) -> None:
@@ -130,7 +130,7 @@ def upload_to_s3(local_path: str, bucket: str, key: str) -> None:
         s3_client.upload_file(local_path, bucket, key)
         print(f"Uploaded to s3://{bucket}/{key}")
     except Exception as e:
-        raise RuntimeError(f"Failed to upload {key} to {bucket}: {e!s}")
+        raise RuntimeError(f"Failed to upload {key} to {bucket}: {e!s}") from e
 
 
 def call_variants_in_region(bam_path: str, region: str, sample_id: str) -> list[dict]:

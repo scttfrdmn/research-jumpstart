@@ -149,10 +149,7 @@ def analyze_text(text: str, metadata: dict) -> dict[str, Any]:
     """
     # Import NLP libraries
     try:
-        import nltk
-        from nltk.chunk import ne_chunk
         from nltk.corpus import stopwords
-        from nltk.tag import pos_tag
         from nltk.tokenize import sent_tokenize, word_tokenize
     except ImportError:
         print("Warning: NLTK not available, using basic analysis")
@@ -382,7 +379,7 @@ def calculate_literary_features(words: list[str], sentences: list[str]) -> dict[
     sentence_lengths = [len(s.split()) for s in sentences]
     if sentence_lengths:
         avg_len = sum(sentence_lengths) / len(sentence_lengths)
-        variance = sum((l - avg_len) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+        variance = sum((length - avg_len) ** 2 for length in sentence_lengths) / len(sentence_lengths)
         features["sentence_length_std"] = variance**0.5
     else:
         features["sentence_length_std"] = 0

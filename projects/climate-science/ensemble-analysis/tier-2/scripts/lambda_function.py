@@ -31,7 +31,6 @@ logger.setLevel(logging.INFO)
 
 # Optional: Only imported if netCDF4 is available
 try:
-    import numpy as np
     import xarray as xr
 
     NETCDF_AVAILABLE = True

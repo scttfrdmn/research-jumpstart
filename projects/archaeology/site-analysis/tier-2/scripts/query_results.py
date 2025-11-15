@@ -83,7 +83,7 @@ def query_by_type(table_name: str, artifact_type: str) -> list[dict]:
                 KeyConditionExpression=Key("artifact_type").eq(artifact_type),
             )
             items = response["Items"]
-        except:
+        except Exception:
             # Fall back to scan with filter
             print("  (using scan with filter - consider creating type-index GSI)")
             response = table.scan(FilterExpression=Attr("artifact_type").eq(artifact_type))
@@ -118,7 +118,7 @@ def query_by_site_and_period(
                     KeyConditionExpression=Key("site_id").eq(site_id) & Key("period").eq(period),
                 )
                 items = response["Items"]
-            except:
+            except Exception:
                 # Fall back to scan with filter
                 print("  (using scan with filter - consider creating site-period-index GSI)")
                 response = table.scan(

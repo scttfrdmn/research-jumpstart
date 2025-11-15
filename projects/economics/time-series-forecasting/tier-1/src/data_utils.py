@@ -16,7 +16,6 @@ import pandas as pd
 try:
     import pandas_datareader as pdr
     import wbdata
-    from fredapi import Fred
 except ImportError:
     print("⚠️  Some data APIs not installed. Run: pip install -r requirements.txt")
 

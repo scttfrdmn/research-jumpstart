@@ -127,7 +127,7 @@ def calculate_influence_scores(G: nx.Graph, methods: Optional[list[str]] = None)
         print("  Computing eigenvector centrality...")
         try:
             scores["eigenvector"] = nx.eigenvector_centrality(G, max_iter=100)
-        except:
+        except Exception:
             print("    Warning: Eigenvector centrality failed to converge")
 
     # Convert to DataFrame

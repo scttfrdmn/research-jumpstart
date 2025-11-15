@@ -12,6 +12,7 @@ from typing import Optional
 import allel
 import awswrangler as wr
 import boto3
+import numpy as np
 import pandas as pd
 
 

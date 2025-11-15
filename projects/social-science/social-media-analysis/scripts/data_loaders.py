@@ -44,7 +44,7 @@ def load_twitter_json(filepath, extract_fields=None):
     try:
         json.loads(first_line)
         is_jsonl = True
-    except:
+    except Exception:
         is_jsonl = False
 
     # Load data
@@ -54,7 +54,7 @@ def load_twitter_json(filepath, extract_fields=None):
             for line in f:
                 try:
                     tweets.append(json.loads(line))
-                except:
+                except Exception:
                     continue
     else:
         with open(filepath, encoding="utf-8") as f:

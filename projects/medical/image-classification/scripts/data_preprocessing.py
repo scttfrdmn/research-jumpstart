@@ -344,8 +344,8 @@ def preprocess_dicom(dicom_path, output_path, window_center=40, window_width=400
     """
     try:
         import pydicom
-    except ImportError:
-        raise ImportError("pydicom required for DICOM processing: pip install pydicom")
+    except ImportError as e:
+        raise ImportError("pydicom required for DICOM processing: pip install pydicom") from e
 
     # Read DICOM
     dcm = pydicom.dcmread(dicom_path)

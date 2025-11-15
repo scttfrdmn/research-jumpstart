@@ -30,7 +30,7 @@ def get_environment_variables():
     return bucket_catalog, workgroup
 
 
-def execute_athena_query(athena, database, query, workgroup):
+def execute_athena_query(athena, database, query, workgroup, bucket_catalog):
     """Execute an Athena query and return results."""
     print(f"\nQuery:\n{query}\n")
 
@@ -191,7 +191,7 @@ def main():
         print(f"Query: {query_info['name']}")
         print("=" * 70)
 
-        results = execute_athena_query(athena, "astronomy", query_info["query"], workgroup)
+        results = execute_athena_query(athena, "astronomy", query_info["query"], workgroup, bucket_catalog)
 
         if results:
             print_query_results(results)
@@ -214,7 +214,7 @@ def main():
             if not custom_query.endswith(";"):
                 custom_query += ";"
 
-            results = execute_athena_query(athena, "astronomy", custom_query, workgroup)
+            results = execute_athena_query(athena, "astronomy", custom_query, workgroup, bucket_catalog)
 
             if results:
                 print_query_results(results)

@@ -27,7 +27,6 @@ import pandas as pd
 try:
     from statsmodels.tsa.arima.model import ARIMA
     from statsmodels.tsa.holtwinters import ExponentialSmoothing
-    from statsmodels.tsa.seasonal import seasonal_decompose
 except ImportError as e:
     print(f"Warning: statsmodels not available: {e}")
     print("Ensure Lambda Layer with statsmodels is attached")
@@ -305,7 +304,7 @@ def forecast_exponential_smoothing(ts: pd.Series, periods: int = 8) -> list[dict
     try:
         model = ExponentialSmoothing(ts, trend="add", seasonal=None, seasonal_periods=None)
         fitted_model = model.fit()
-    except:
+    except Exception:
         # Fallback: simple exponential smoothing
         model = ExponentialSmoothing(ts, trend=None, seasonal=None)
         fitted_model = model.fit()

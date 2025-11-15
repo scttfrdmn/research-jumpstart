@@ -132,8 +132,8 @@ results = ctx.search()
 for result in results:
     print(result.dataset_id)
     files = result.file_context().search()
-    for f in files:
-        print(f"  {f.download_url}")
+    for data_file in files:
+        print(f"  {{data_file.download_url}}")
 """)
 
     print()
@@ -181,6 +181,7 @@ def download_sample_data(output_dir="../data/cordex_sample"):
     from datetime import datetime
 
     import numpy as np
+    import pandas as pd
     import xarray as xr
 
     output_path = Path(output_dir)

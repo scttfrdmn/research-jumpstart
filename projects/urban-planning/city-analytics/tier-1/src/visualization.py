@@ -2,6 +2,7 @@
 Visualization functions for urban planning analysis.
 """
 
+from typing import TYPE_CHECKING
 
 import folium
 import matplotlib.pyplot as plt
@@ -10,6 +11,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
+
+if TYPE_CHECKING:
+    import geopandas
 
 
 def plot_urban_growth(

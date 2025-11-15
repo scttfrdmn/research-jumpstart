@@ -31,8 +31,8 @@ def build_connectivity_classifier(n_rois, n_classes):
     try:
         from tensorflow import keras
         from tensorflow.keras import layers
-    except ImportError:
-        raise ImportError("TensorFlow not installed. Run: pip install tensorflow")
+    except ImportError as e:
+        raise ImportError("TensorFlow not installed. Run: pip install tensorflow") from e
 
     print("Building connectivity classifier...")
     print(f"  Input: {n_rois}x{n_rois} connectivity matrix")
@@ -78,8 +78,8 @@ def build_3d_cnn(input_shape, n_classes):
     try:
         from tensorflow import keras
         from tensorflow.keras import layers
-    except ImportError:
-        raise ImportError("TensorFlow not installed. Run: pip install tensorflow")
+    except ImportError as e:
+        raise ImportError("TensorFlow not installed. Run: pip install tensorflow") from e
 
     print("Building 3D CNN...")
     print(f"  Input shape: {input_shape}")
@@ -188,8 +188,8 @@ def train_ensemble(models, X_train, y_train, X_val=None, y_val=None, epochs=50):
     """
     try:
         from tensorflow import keras
-    except ImportError:
-        raise ImportError("TensorFlow not installed")
+    except ImportError as e:
+        raise ImportError("TensorFlow not installed") from e
 
     print(f"Training ensemble of {len(models)} models...")
 
@@ -293,8 +293,8 @@ def load_model(name):
     """
     try:
         from tensorflow import keras
-    except ImportError:
-        raise ImportError("TensorFlow not installed")
+    except ImportError as e:
+        raise ImportError("TensorFlow not installed") from e
 
     input_path = MODELS_DIR / f"{name}.h5"
 

@@ -180,7 +180,7 @@ def download_csv_from_s3(bucket: str, key: str) -> pd.DataFrame:
         df = pd.read_csv(StringIO(csv_content))
         return df
     except Exception as e:
-        raise RuntimeError(f"Failed to download {key} from {bucket}: {e!s}")
+        raise RuntimeError(f"Failed to download {key} from {bucket}: {e!s}") from e
 
 
 def extract_site_id(key: str, df: pd.DataFrame) -> str:
@@ -489,7 +489,7 @@ def upload_json_to_s3(data: dict, bucket: str, key: str) -> None:
             Bucket=bucket, Key=key, Body=json_str.encode("utf-8"), ContentType="application/json"
         )
     except Exception as e:
-        raise RuntimeError(f"Failed to upload JSON to s3://{bucket}/{key}: {e!s}")
+        raise RuntimeError(f"Failed to upload JSON to s3://{bucket}/{key}: {e!s}") from e
 
 
 def upload_dataframe_to_s3(df: pd.DataFrame, bucket: str, key: str) -> None:
@@ -504,7 +504,7 @@ def upload_dataframe_to_s3(df: pd.DataFrame, bucket: str, key: str) -> None:
             ContentType="text/csv",
         )
     except Exception as e:
-        raise RuntimeError(f"Failed to upload CSV to s3://{bucket}/{key}: {e!s}")
+        raise RuntimeError(f"Failed to upload CSV to s3://{bucket}/{key}: {e!s}") from e
 
 
 # For local testing

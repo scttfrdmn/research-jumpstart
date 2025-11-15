@@ -208,8 +208,8 @@ def open_cmip6_from_s3(s3_key, anonymous=True):
     """
     try:
         import s3fs
-    except ImportError:
-        raise ImportError("s3fs required: pip install s3fs")
+    except ImportError as e:
+        raise ImportError("s3fs required: pip install s3fs") from e
 
     bucket = BUCKETS["cmip6"]
     s3_path = f"s3://{bucket}/{s3_key}"
