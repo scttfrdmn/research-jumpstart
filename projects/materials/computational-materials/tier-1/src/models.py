@@ -5,7 +5,7 @@ Implementations of CGCNN, ALIGNN-style, and MEGNet-style architectures.
 """
 
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as nn_functional
 from torch_geometric.nn import CGConv, GATConv, NNConv, global_mean_pool
 
 
@@ -50,22 +50,22 @@ class CGCNN(nn.Module):
 
         # Initial embedding
         x = self.node_embedding(x)
-        x = F.relu(x)
+        x = nn_functional.relu(x)
 
         # Graph convolutions with skip connections
         for conv, bn in zip(self.conv_layers, self.batch_norms):
             x_new = conv(x, edge_index, edge_attr)
             x_new = bn(x_new)
-            x_new = F.relu(x_new)
+            x_new = nn_functional.relu(x_new)
             x = x + x_new  # Skip connection
 
         # Global pooling
         x = global_mean_pool(x, batch)
 
         # Shared layers
-        x = F.relu(self.fc1(x))
+        x = nn_functional.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = nn_functional.relu(self.fc2(x))
         x = self.dropout(x)
 
         # Property-specific head
@@ -125,22 +125,22 @@ class ALIGNNStyle(nn.Module):
 
         # Initial embedding
         x = self.node_embedding(x)
-        x = F.relu(x)
+        x = nn_functional.relu(x)
 
         # Graph attention layers
         for gat, bn in zip(self.gat_layers, self.batch_norms):
             x_new = gat(x, edge_index)
             x_new = bn(x_new)
-            x_new = F.relu(x_new)
+            x_new = nn_functional.relu(x_new)
             x = x + x_new  # Skip connection
 
         # Global pooling
         x = global_mean_pool(x, batch)
 
         # Shared layers
-        x = F.relu(self.fc1(x))
+        x = nn_functional.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = nn_functional.relu(self.fc2(x))
         x = self.dropout(x)
 
         # Property-specific head
@@ -206,25 +206,25 @@ class MEGNetStyle(nn.Module):
 
         # Initial embedding
         x = self.node_embedding(x)
-        x = F.relu(x)
+        x = nn_functional.relu(x)
 
         edge_attr = self.edge_embedding(edge_attr)
-        edge_attr = F.relu(edge_attr)
+        edge_attr = nn_functional.relu(edge_attr)
 
         # Message passing layers
         for conv, bn in zip(self.conv_layers, self.batch_norms):
             x_new = conv(x, edge_index, edge_attr)
             x_new = bn(x_new)
-            x_new = F.relu(x_new)
+            x_new = nn_functional.relu(x_new)
             x = x + x_new  # Skip connection
 
         # Global pooling
         x = global_mean_pool(x, batch)
 
         # Shared layers
-        x = F.relu(self.fc1(x))
+        x = nn_functional.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = nn_functional.relu(self.fc2(x))
         x = self.dropout(x)
 
         # Property-specific head

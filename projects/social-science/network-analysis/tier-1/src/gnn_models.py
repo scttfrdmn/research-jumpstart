@@ -7,7 +7,7 @@ Implements GraphSAGE, GAT, and Temporal GNN architectures.
 try:
     import torch
     import torch.nn as nn
-    import torch.nn.functional as F
+    import torch.nn.functional as nn_functional
     from torch_geometric.nn import GATConv, GCNConv, SAGEConv
 
     TORCH_AVAILABLE = True
@@ -56,8 +56,8 @@ if TORCH_AVAILABLE:
             for i, conv in enumerate(self.convs):
                 x = conv(x, edge_index)
                 if i < len(self.convs) - 1:
-                    x = F.relu(x)
-                    x = F.dropout(x, p=self.dropout, training=self.training)
+                    x = nn_functional.relu(x)
+                    x = nn_functional.dropout(x, p=self.dropout, training=self.training)
             return x
 
     class GAT(nn.Module):
@@ -101,10 +101,10 @@ if TORCH_AVAILABLE:
 
         def forward(self, x, edge_index):
             for i, conv in enumerate(self.convs):
-                x = F.dropout(x, p=self.dropout, training=self.training)
+                x = nn_functional.dropout(x, p=self.dropout, training=self.training)
                 x = conv(x, edge_index)
                 if i < len(self.convs) - 1:
-                    x = F.elu(x)
+                    x = nn_functional.elu(x)
             return x
 
     class TemporalGNN(nn.Module):
@@ -158,8 +158,8 @@ if TORCH_AVAILABLE:
             for i, conv in enumerate(self.spatial_convs):
                 x = conv(x, edge_index)
                 if i < len(self.spatial_convs) - 1:
-                    x = F.relu(x)
-                    x = F.dropout(x, p=self.dropout, training=self.training)
+                    x = nn_functional.relu(x)
+                    x = nn_functional.dropout(x, p=self.dropout, training=self.training)
 
             # Temporal attention (if snapshots provided)
             if temporal_snapshots is not None:
@@ -205,11 +205,11 @@ if TORCH_AVAILABLE:
             --------
             Tensor : Influence scores [num_nodes, 1]
             """
-            x = F.relu(self.fc1(embeddings))
-            x = F.dropout(x, p=self.dropout, training=self.training)
+            x = nn_functional.relu(self.fc1(embeddings))
+            x = nn_functional.dropout(x, p=self.dropout, training=self.training)
 
-            x = F.relu(self.fc2(x))
-            x = F.dropout(x, p=self.dropout, training=self.training)
+            x = nn_functional.relu(self.fc2(x))
+            x = nn_functional.dropout(x, p=self.dropout, training=self.training)
 
             x = self.fc3(x)
             return x.squeeze(-1)
@@ -246,7 +246,7 @@ if TORCH_AVAILABLE:
             loss = criterion(out[data.train_mask], data.y[data.train_mask])
         else:
             # If no labels, use reconstruction loss
-            loss = F.mse_loss(out, data.x.to(device))
+            loss = nn_functional.mse_loss(out, data.x.to(device))
 
         # Backward pass
         loss.backward()
@@ -270,7 +270,7 @@ if TORCH_AVAILABLE:
         if hasattr(data, "y") and hasattr(data, "val_mask"):
             loss = criterion(out[data.val_mask], data.y[data.val_mask])
         else:
-            loss = F.mse_loss(out, data.x.to(device))
+            loss = nn_functional.mse_loss(out, data.x.to(device))
 
         return loss.item()
 

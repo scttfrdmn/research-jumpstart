@@ -59,10 +59,10 @@ def create_rolling_features(
     for window in windows:
         if group_col:
             df[f"{target_col}_rolling_mean_{window}"] = df.groupby(group_col)[target_col].transform(
-                lambda x: x.rolling(window=window, min_periods=1).mean()
+                lambda x, window=window: x.rolling(window=window, min_periods=1).mean()
             )
             df[f"{target_col}_rolling_std_{window}"] = df.groupby(group_col)[target_col].transform(
-                lambda x: x.rolling(window=window, min_periods=1).std()
+                lambda x, window=window: x.rolling(window=window, min_periods=1).std()
             )
         else:
             df[f"{target_col}_rolling_mean_{window}"] = (

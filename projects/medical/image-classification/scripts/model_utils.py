@@ -14,7 +14,7 @@ Usage:
 import timm
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as nn_functional
 from torchvision import models
 from tqdm.auto import tqdm
 
@@ -210,7 +210,7 @@ def evaluate(model, dataloader, criterion, device):
         loss = criterion(outputs, labels)
 
         # Get predictions
-        probs = F.softmax(outputs, dim=1)
+        probs = nn_functional.softmax(outputs, dim=1)
         _, predicted = outputs.max(1)
 
         # Track metrics
@@ -322,7 +322,7 @@ class FocalLoss(nn.Module):
         targets : torch.Tensor
             Ground truth labels, shape [batch_size]
         """
-        ce_loss = F.cross_entropy(inputs, targets, reduction="none")
+        ce_loss = nn_functional.cross_entropy(inputs, targets, reduction="none")
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 

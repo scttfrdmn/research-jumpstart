@@ -140,10 +140,7 @@ def preprocess_text(
         text = re.sub(r"@\w+", "", text)
 
     # Remove or clean hashtags
-    if remove_hashtags:
-        text = re.sub(r"#\w+", "", text)
-    else:
-        text = re.sub(r"#(\w+)", r"\1", text)  # Keep hashtag text
+    text = re.sub(r"#\w+", "", text) if remove_hashtags else re.sub(r"#(\w+)", r"\1", text)
 
     # Lowercase
     if lowercase:
@@ -340,11 +337,7 @@ def detect_trending_hashtags(texts, time_window="1D", top_n=10):
     trending : DataFrame
         Hashtag trends over time
     """
-    if isinstance(texts, pd.DataFrame):
-        df = texts.copy()
-    else:
-        # Assume texts is list
-        df = pd.DataFrame({"text": texts})
+    df = texts.copy() if isinstance(texts, pd.DataFrame) else pd.DataFrame({"text": texts})
 
     # Extract hashtags
     df["hashtags"] = df["text"].apply(extract_hashtags)

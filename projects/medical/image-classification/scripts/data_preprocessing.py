@@ -16,7 +16,7 @@ Usage:
 
 import os
 
-import albumentations as A
+import albumentations
 import numpy as np
 import pandas as pd
 import torch
@@ -106,26 +106,26 @@ def get_transforms(mode="train", image_size=224):
     """
     if mode == "train":
         # Training augmentations: preserve medical image characteristics
-        transform = A.Compose(
+        transform = albumentations.Compose(
             [
-                A.Resize(image_size, image_size),
+                albumentations.Resize(image_size, image_size),
                 # Geometric transformations (mild)
-                A.HorizontalFlip(p=0.5),
-                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=10, p=0.5),
+                albumentations.HorizontalFlip(p=0.5),
+                albumentations.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=10, p=0.5),
                 # Intensity transformations (common in medical imaging)
-                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
+                albumentations.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+                albumentations.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
                 # Normalize and convert to tensor
-                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                albumentations.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensorV2(),
             ]
         )
     else:
         # Validation/test: only resize and normalize
-        transform = A.Compose(
+        transform = albumentations.Compose(
             [
-                A.Resize(image_size, image_size),
-                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                albumentations.Resize(image_size, image_size),
+                albumentations.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensorV2(),
             ]
         )

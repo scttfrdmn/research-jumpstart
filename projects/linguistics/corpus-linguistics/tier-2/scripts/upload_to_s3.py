@@ -188,9 +188,6 @@ def upload_file(file_path: Path, bucket: str, s3_key: str, metadata: dict[str, s
         bool: True if successful
     """
     try:
-        # Read file size for progress tracking
-        file_path.stat().st_size
-
         # Upload with metadata tags
         s3_client.upload_file(
             str(file_path),
