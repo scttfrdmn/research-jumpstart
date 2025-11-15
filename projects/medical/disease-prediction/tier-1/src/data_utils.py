@@ -28,9 +28,9 @@ except ImportError:
     nib = None
 
 try:
-    import SimpleITK as sitk
+    import SimpleITK
 except ImportError:
-    sitk = None
+    SimpleITK = None
 
 
 class ChestXrayDataset(Dataset):

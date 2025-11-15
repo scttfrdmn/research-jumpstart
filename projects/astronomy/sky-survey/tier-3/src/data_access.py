@@ -460,7 +460,7 @@ def crossmatch_catalogs(
     """
     from astropy.coordinates import match_coordinates_sky
 
-    logger.info(f"Cross-matching {len(catalog1)} × {len(catalog2)} objects")
+    logger.info(f"Cross-matching {len(catalog1)} x {len(catalog2)} objects")
 
     # Create SkyCoord objects
     coord1 = SkyCoord(

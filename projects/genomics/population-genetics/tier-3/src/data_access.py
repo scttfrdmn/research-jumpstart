@@ -117,7 +117,7 @@ class GenomicsDataLoader:
         Returns
         -------
         genotypes : allel.GenotypeArray
-            Genotype array (n_variants × n_samples × ploidy)
+            Genotype array (n_variants x n_samples x ploidy)
         positions : array
             Variant positions
         sample_ids : array
