@@ -1,0 +1,69 @@
+name: Fast Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  import-and-syntax-tests:
+    name: Import & Syntax Validation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+      - name: Run import validation tests
+        run: |
+          pytest tests/test_imports.py -v --tb=short
+        continue-on-error: true
+
+      - name: Run notebook validation tests
+        run: |
+          pytest tests/test_notebooks.py -v --tb=short
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          pytest tests/ -v --tb=line --junit-xml=test-results.xml || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: test-results.xml
+
+  test-summary:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: import-and-syntax-tests
+    if: always()
+
+    steps:
+      - name: Check test status
+        run: |
+          echo "Fast tests completed"
+          echo "Review detailed results in the import-and-syntax-tests job"
