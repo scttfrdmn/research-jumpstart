@@ -524,7 +524,7 @@ Legend:
 
 #### ✅ Tier 3: Ecology Modeling (COMPLETE)
 **Status:** Complete with notebook and data
-**Path:** `projects/environmental-science/ecology-modeling/studio-lab/`
+**Path:** `projects/environmental/ecology-modeling/studio-lab/`
 **Features:** Lotka-Volterra, predator-prey dynamics, ODEs
 
 ---
@@ -557,7 +557,7 @@ Legend:
 
 #### ✅ Tier 3: Crystal Structure (COMPLETE)
 **Status:** Complete with notebook and data
-**Path:** `projects/materials-science/crystal-structure/studio-lab/`
+**Path:** `projects/materials/crystal-structure/studio-lab/`
 **Features:** Crystallography, clustering, property prediction
 
 ---
