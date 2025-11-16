@@ -5,6 +5,7 @@
 ruff>=0.1.0              # Fast Python linter (replaces flake8, pylint, isort)
 black>=23.0.0            # Code formatter
 mypy>=1.7.0              # Static type checker
+nbqa>=1.7.0              # Run linters on Jupyter notebooks
 
 # CloudFormation linting
 cfn-lint>=0.83.0         # AWS CloudFormation linter
@@ -19,3 +20,7 @@ yamllint>=1.33.0         # YAML linter
 # Code quality
 bandit>=1.7.5            # Security linter for Python
 safety>=2.3.5            # Check for known security vulnerabilities
+
+# Notebook validation
+nbformat>=5.9.0          # Jupyter notebook format validation
+jupyter>=1.0.0           # Jupyter tools for notebook operations

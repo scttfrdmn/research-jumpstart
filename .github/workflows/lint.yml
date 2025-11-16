@@ -20,7 +20,7 @@ jobs:
 
       - name: Install linting tools
         run: |
-          pip install ruff black mypy bandit safety
+          pip install -r .linting/requirements-lint.txt
 
       - name: Run Ruff
         run: ruff check --config .linting/ruff.toml .
@@ -28,8 +28,40 @@ jobs:
       - name: Check formatting with Ruff
         run: ruff format --check --config .linting/ruff.toml .
 
+      - name: Run mypy type checking
+        run: mypy --config-file .linting/mypy.ini projects/ || true
+        continue-on-error: true
+
       - name: Run Bandit security checks
         run: bandit -r projects/ -ll -i || true
+        continue-on-error: true
+
+      - name: Check for vulnerable dependencies
+        run: safety check --json || true
+        continue-on-error: true
+
+  notebook-lint:
+    name: Notebook Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install nbqa and linters
+        run: |
+          pip install nbqa ruff nbformat jupyter
+
+      - name: Run nbqa with ruff on notebooks
+        run: nbqa ruff projects/ --config .linting/ruff.toml || true
+        continue-on-error: true
+
+      - name: Validate notebook structure
+        run: |
+          find projects -name "*.ipynb" -not -path "*/.ipynb_checkpoints/*" | xargs -I {} python -m nbformat.validator {}
         continue-on-error: true
 
   cloudformation-lint:
