@@ -1,0 +1,108 @@
+name: Notebook Smoke Tests
+
+on:
+  # Run nightly at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+  # Run on PR to main
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'tests/test_notebook_execution.py'
+
+jobs:
+  notebook-smoke-tests:
+    name: Notebook Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+      - name: Install common notebook dependencies
+        run: |
+          # Install commonly used packages to reduce skips
+          pip install numpy pandas matplotlib seaborn scikit-learn scipy || true
+          pip install jupyter ipykernel nbformat || true
+        continue-on-error: true
+
+      - name: Run notebook discovery test
+        run: |
+          pytest tests/test_notebook_execution.py::test_notebooks_discoverable \
+            -v \
+            --tb=short
+
+      - name: Run cell skip logic test
+        run: |
+          pytest tests/test_notebook_execution.py::test_cell_skip_logic \
+            -v \
+            --tb=short
+
+      - name: Run tier-0 notebook smoke tests
+        run: |
+          pytest tests/test_notebook_execution.py::test_tier0_notebooks_smoke \
+            -v \
+            --tb=short \
+            -m "tier0 and notebook and slow" \
+            --junit-xml=test-results/tier0-notebooks-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Run parametrized notebook smoke tests (sample)
+        run: |
+          pytest tests/test_notebook_execution.py::test_notebook_smoke_execution \
+            -v \
+            --tb=short \
+            -m "notebook and slow" \
+            --junit-xml=test-results/notebooks-smoke-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-test-results-${{ matrix.python-version }}
+          path: test-results/
+          retention-days: 30
+
+  test-summary:
+    name: Notebook Test Summary
+    runs-on: ubuntu-latest
+    needs: notebook-smoke-tests
+    if: always()
+
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: notebook-test-results-*
+          merge-multiple: true
+
+      - name: Publish test summary
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            **/*.xml
+          check_name: Notebook Smoke Test Results
+          comment_title: Notebook Smoke Test Results
+          report_individual_runs: true
