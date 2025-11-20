@@ -77,6 +77,7 @@ def aws_credentials():
     os.environ["AWS_SECURITY_TOKEN"] = "testing"
     os.environ["AWS_SESSION_TOKEN"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+    os.environ["AWS_REGION"] = "us-east-1"
     yield
     # Cleanup
     for key in [
@@ -84,8 +85,90 @@ def aws_credentials():
         "AWS_SECRET_ACCESS_KEY",
         "AWS_SECURITY_TOKEN",
         "AWS_SESSION_TOKEN",
+        "AWS_REGION",
     ]:
         os.environ.pop(key, None)
+
+
+@pytest.fixture(scope="function")
+def mock_s3_bucket(aws_credentials):
+    """Create a mock S3 bucket for testing."""
+    from moto import mock_aws
+    import boto3
+
+    with mock_aws():
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        bucket_name = "test-research-bucket"
+        s3_client.create_bucket(Bucket=bucket_name)
+        yield s3_client, bucket_name
+
+
+@pytest.fixture(scope="function")
+def mock_dynamodb_table(aws_credentials):
+    """Create a mock DynamoDB table for testing."""
+    from moto import mock_aws
+    import boto3
+
+    with mock_aws():
+        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+        table = dynamodb.create_table(
+            TableName="test-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            BillingMode="PAY_PER_REQUEST",
+        )
+        yield table
+
+
+@pytest.fixture(scope="function")
+def s3_event():
+    """Sample S3 event for Lambda testing."""
+    return {
+        "Records": [
+            {
+                "eventVersion": "2.1",
+                "eventSource": "aws:s3",
+                "awsRegion": "us-east-1",
+                "eventTime": "2024-01-01T12:00:00.000Z",
+                "eventName": "ObjectCreated:Put",
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "test-config",
+                    "bucket": {
+                        "name": "test-bucket",
+                        "arn": "arn:aws:s3:::test-bucket",
+                    },
+                    "object": {
+                        "key": "raw/test_data.txt",
+                        "size": 1024,
+                        "eTag": "abc123",
+                    },
+                },
+            }
+        ]
+    }
+
+
+@pytest.fixture(scope="function")
+def lambda_context():
+    """Mock Lambda context object."""
+
+    class LambdaContext:
+        def __init__(self):
+            self.function_name = "test-function"
+            self.function_version = "$LATEST"
+            self.invoked_function_arn = (
+                "arn:aws:lambda:us-east-1:123456789012:function:test-function"
+            )
+            self.memory_limit_in_mb = 128
+            self.aws_request_id = "test-request-id-123"
+            self.log_group_name = "/aws/lambda/test-function"
+            self.log_stream_name = "2024/01/01/[$LATEST]test123"
+
+        def get_remaining_time_in_millis(self):
+            return 300000
+
+    return LambdaContext()
 
 
 # ============================================================================
