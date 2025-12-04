@@ -2,7 +2,9 @@
 
 ## Overview
 
-Automated testing infrastructure for 21 research domains × 4 tiers (84+ projects) with 232 Python files, 83 Jupyter notebooks, and 68 CloudFormation templates.
+Local testing infrastructure for solo development of 21 research domains × 4 tiers (84+ projects) with 232 Python files, 83 Jupyter notebooks, and 68 CloudFormation templates.
+
+**Note:** CI/CD workflows are currently disabled (see `.github/workflows-disabled/`). All testing is performed locally as this is a solo development project.
 
 ---
 
@@ -10,8 +12,8 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 
 **Goal:** Catch syntax errors, code quality issues, and security vulnerabilities before execution.
 
-**Runtime:** < 2 minutes
-**Cost:** $0 (GitHub Actions free tier)
+**Runtime:** < 2 minutes (local execution)
+**Cost:** $0
 
 ### Tools Configured:
 
@@ -19,46 +21,46 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 - Fast Python linter replacing flake8, pylint, and isort
 - Configuration: `.linting/ruff.toml`
 - Checks: Code style, imports, complexity, best practices
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 2. Code Formatting (`ruff format`)
 - Ensures consistent code style across all Python files
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 3. Type Checking (`mypy`)
 - Static type analysis for Python code
 - Configuration: `.linting/mypy.ini`
 - Mode: Gradual typing (permissive for research code)
-- **Status:** ✅ Configured, runs with `continue-on-error`
+- **Status:** ✅ Available locally
 
 #### 4. Notebook Linting (`nbqa`)
 - Runs ruff on Jupyter notebooks
 - Validates notebook JSON structure with `nbformat`
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 5. Security Scanning (`bandit`)
 - Detects common security issues in Python code
 - Level: Medium to high severity only
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 6. Dependency Vulnerability Scanning (`safety`)
 - Checks for known security vulnerabilities in dependencies
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 7. CloudFormation Linting (`cfn-lint`)
 - Validates AWS CloudFormation templates
 - Configuration: `.linting/.cfnlintrc.yaml`
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 8. YAML Linting (`yamllint`)
 - Validates YAML syntax and style
 - Configuration: `.linting/.yamllint`
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 #### 9. Markdown Linting (`markdownlint-cli`)
 - Ensures consistent documentation quality
 - Configuration: `.linting/.markdownlint.json`
-- **Status:** ✅ Active in CI/CD
+- **Status:** ✅ Available locally
 
 ---
 
@@ -66,8 +68,8 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 
 **Goal:** Ensure all Python modules can be imported without execution.
 
-**Runtime:** < 5 minutes
-**Cost:** $0 (GitHub Actions free tier)
+**Runtime:** < 5 minutes (local execution)
+**Cost:** $0
 
 ### Files Created:
 
@@ -87,12 +89,10 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 #### 3. Test Infrastructure
 - `tests/conftest.py` - Shared pytest fixtures
 - `tests/__init__.py` - Test suite package
-- `.github/workflows/test-fast.yml` - Fast test CI/CD workflow
 
-#### 4. Test Matrix
-- Tests run on Python 3.9, 3.10, 3.11
-- Parallel execution across versions
-- Upload test results as artifacts
+#### 4. Local Testing
+- Compatible with Python 3.9, 3.10, 3.11, 3.14
+- Run with: `pytest tests/test_imports.py tests/test_notebooks.py`
 
 ---
 
@@ -100,8 +100,8 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 
 **Goal:** Test individual functions with mocked AWS services.
 
-**Runtime:** < 10 minutes
-**Cost:** $0 (GitHub Actions free tier)
+**Runtime:** < 10 minutes (local execution)
+**Cost:** $0
 
 ### Files Created:
 
@@ -128,13 +128,10 @@ Automated testing infrastructure for 21 research domains × 4 tiers (84+ project
 - Added `lambda_context` fixture for Lambda context mocking
 - **Status:** ✅ Shared fixtures available for all tests
 
-#### 4. CI/CD Workflow (`.github/workflows/test-unit.yml`)
-- Runs Lambda and data access tests
-- Python 3.9, 3.10, 3.11 test matrix
-- Code coverage reporting (codecov)
-- Test result artifacts
-- Coverage HTML reports
-- **Status:** ✅ Active workflow
+#### 4. Local Testing
+- Run with: `pytest tests/test_lambda_functions.py tests/test_data_access.py`
+- Optional code coverage: `pytest --cov=projects --cov-report=html`
+- Compatible with Python 3.9, 3.10, 3.11, 3.14
 
 ### Mocking Strategy:
 
@@ -174,8 +171,9 @@ def test_s3_operation():
 
 **Goal:** Execute first few cells of notebooks to validate they run without errors.
 
-**Runtime:** 10-20 minutes (on-demand)
-**Cost:** $0 (GitHub Actions free tier)
+**Runtime:** 10-20 minutes (local execution, on-demand)
+**Cost:** $0
+**Current Coverage:** 93% (13 of 14 notebooks passing)
 
 ### Files Created:
 
@@ -207,13 +205,12 @@ CELL_TIMEOUT = 60              # 60 seconds per cell
 TOTAL_NOTEBOOK_TIMEOUT = 300   # 5 minutes total
 ```
 
-#### 4. CI/CD Workflow (`.github/workflows/test-notebooks.yml`)
-- Runs **on-demand only** (manual trigger via workflow_dispatch)
-- Runs on notebook file changes in PRs
-- Python 3.10, 3.11 test matrix
-- Installs common dependencies (numpy, pandas, matplotlib, sklearn)
-- Test result artifacts
-- **Status:** ✅ Manual trigger workflow
+#### 4. Local Testing
+- Run with: `pytest tests/test_notebook_execution.py -v`
+- Run specific tests: `pytest tests/test_notebook_execution.py::test_tier0_notebooks_smoke`
+- Compatible with Python 3.10, 3.11, 3.14
+- Requires dependencies: numpy, pandas, matplotlib, sklearn, testbook, nltk, wordcloud
+- Optional for 100% coverage: torch, tensorflow
 
 ### Test Types:
 
@@ -342,40 +339,41 @@ pytest --cov=projects --cov-report=html
 
 ## CI/CD Workflows
 
-### Current Workflows
+### Status: Disabled for Solo Development
 
-#### `lint.yml` (runs on every push)
-- ✅ Python linting (ruff)
-- ✅ Code formatting check
-- ✅ Type checking (mypy)
-- ✅ Notebook linting (nbqa)
-- ✅ Security scanning (bandit, safety)
-- ✅ CloudFormation validation
-- ✅ YAML validation
-- ✅ Markdown validation
+CI/CD workflows have been disabled and moved to `.github/workflows-disabled/` as this is a solo development project. All testing is performed locally.
 
-#### `test-fast.yml` (runs on every push)
-- ✅ Import validation (all Python modules)
-- ✅ Notebook structure validation
-- ✅ Syntax validation (code cells)
-- ✅ Test matrix: Python 3.9, 3.10, 3.11
-- ✅ Test result artifacts
+### Available Workflows (Disabled)
 
-#### `test-unit.yml` (runs on every push)
-- ✅ Lambda function tests with moto
-- ✅ Data access class tests with moto
-- ✅ AWS service mocking (S3, DynamoDB, Lambda)
-- ✅ Code coverage reporting
-- ✅ Test matrix: Python 3.9, 3.10, 3.11
-- ✅ Test result and coverage artifacts
+Workflows can be re-enabled by moving them back to `.github/workflows/` if needed in the future:
 
-#### `test-notebooks.yml` (runs on-demand + PRs)
-- ✅ Notebook smoke testing (first 5 cells)
-- ✅ Skips long-running cells (training loops)
-- ✅ Handles missing dependencies gracefully
-- ✅ 60s cell timeout, 5min notebook timeout
-- ✅ Test matrix: Python 3.10, 3.11
-- ✅ Manual trigger (workflow_dispatch) + PR on notebook changes
+#### `lint.yml` - Static analysis
+- Python linting (ruff)
+- Code formatting check
+- Type checking (mypy)
+- Notebook linting (nbqa)
+- Security scanning (bandit, safety)
+- CloudFormation validation
+- YAML validation
+- Markdown validation
+
+#### `test-fast.yml` - Import & syntax validation
+- Import validation (all Python modules)
+- Notebook structure validation
+- Syntax validation (code cells)
+- Test matrix: Python 3.9, 3.10, 3.11
+
+#### `test-unit.yml` - Unit tests with mocking
+- Lambda function tests with moto
+- Data access class tests with moto
+- AWS service mocking (S3, DynamoDB, Lambda)
+- Code coverage reporting
+
+#### `test-notebooks.yml` - Notebook smoke testing
+- Notebook smoke testing (first 5 cells)
+- Skips long-running cells (training loops)
+- Handles missing dependencies gracefully
+- 60s cell timeout, 5min notebook timeout
 
 ---
 
@@ -411,32 +409,32 @@ Configure selective test execution using pytest markers:
 ## Current Status
 
 ### Phase 1: ✅ Complete (100%)
-- All static analysis tools configured and running in CI/CD
+- All static analysis tools configured for local execution
 - Catches ~95% of syntax and style errors automatically
-- Zero cost (within GitHub Actions free tier)
+- Available locally via command line tools
 
 ### Phase 2: ✅ Complete (100%)
 - Import validation tests for all 232 Python files
 - Notebook validation tests for all 83 Jupyter notebooks
-- GitHub Actions workflow with Python 3.9/3.10/3.11 matrix
+- Compatible with Python 3.9/3.10/3.11/3.14
 - Test fixtures and infrastructure complete
-- Zero cost (within GitHub Actions free tier)
+- Run locally with pytest
 
 ### Phase 3: ✅ Complete (100%)
 - Unit tests for Lambda functions with moto mocking
 - Unit tests for data access classes (S3, DynamoDB)
 - Enhanced pytest fixtures for AWS mocking
-- GitHub Actions workflow with coverage reporting
+- Optional code coverage reporting
 - Example tests for agriculture and genomics projects
-- Zero cost (within GitHub Actions free tier)
+- Run locally with pytest
 
-### Phase 4: ✅ Complete (100%)
+### Phase 4: ✅ Complete (93% coverage)
 - Notebook smoke testing with testbook
 - Tests first 5 cells of 75 notebooks
 - Skips long-running cells automatically
-- On-demand CI/CD workflow (manual trigger + PRs)
+- 13 of 14 notebooks passing (1 requires TensorFlow)
 - Handles missing dependencies gracefully
-- Zero cost (within GitHub Actions free tier)
+- Run locally with pytest
 
 ### Phase 5: 📋 Optional
 - Integration testing for production deployments
