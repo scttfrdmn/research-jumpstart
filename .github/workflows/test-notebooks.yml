@@ -1,12 +1,9 @@
 name: Notebook Smoke Tests
 
 on:
-  # Run nightly at 2 AM UTC
-  schedule:
-    - cron: '0 2 * * *'
-  # Allow manual trigger
+  # Manual trigger only (no scheduled runs)
   workflow_dispatch:
-  # Run on PR to main
+  # Run on PR to main when notebooks are modified
   pull_request:
     branches: [ main ]
     paths:

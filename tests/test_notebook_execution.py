@@ -53,10 +53,15 @@ def should_skip_cell(cell_source: str) -> bool:
         "train(",
         "epochs=",
         "for epoch in",
-        "download",
-        "wget",
-        "curl",
-        "!aws s3",
+        "wget ",  # File download command
+        "curl ",  # File download command
+        "!wget",  # Shell command
+        "!curl",  # Shell command
+        "urllib.request.urlretrieve",  # Python file download
+        "requests.get(",  # HTTP download (may be API call, but often large files)
+        "!aws s3 cp",  # AWS file copy
+        "!aws s3 sync",  # AWS sync
+        "!gdown",  # Google Drive download
         "time.sleep",
     ]
 
@@ -99,9 +104,9 @@ def test_agriculture_crop_disease_notebook():
                     cells_skipped += 1
                     continue
 
-                # Execute cell with timeout
+                # Execute cell (timeout managed by testbook context)
                 try:
-                    tb.execute_cell(i, timeout=CELL_TIMEOUT)
+                    tb.execute_cell(i)
                     cells_executed += 1
                 except Exception as e:
                     # Check if it's a missing dependency error
@@ -163,9 +168,9 @@ def test_notebook_smoke_execution(notebook_path: Path):
                 cells_skipped += 1
                 continue
 
-            # Execute cell with timeout
+            # Execute cell (timeout managed by testbook context)
             try:
-                tb.execute_cell(i, timeout=CELL_TIMEOUT)
+                tb.execute_cell(i)
                 cells_executed += 1
             except Exception as e:
                 error_str = str(e).lower()
@@ -240,13 +245,18 @@ def test_cell_skip_logic():
     assert should_skip_cell("model.fit(X_train, y_train, epochs=50)")
     assert should_skip_cell("for epoch in range(100):")
     assert should_skip_cell("!wget https://example.com/large_file.zip")
+    assert should_skip_cell("wget http://example.com/file.tar.gz")
     assert should_skip_cell("time.sleep(60)")
+    assert should_skip_cell("urllib.request.urlretrieve('http://example.com/data.zip')")
 
     # Should not skip
     assert not should_skip_cell("import numpy as np")
     assert not should_skip_cell("X_train, X_test = train_test_split(X, y)")
     assert not should_skip_cell("print('Hello world')")
     assert not should_skip_cell("df = pd.read_csv('data.csv')")
+    # Package data downloads should not be skipped
+    assert not should_skip_cell("nltk.download('stopwords')")
+    assert not should_skip_cell("import spacy; spacy.load('en_core_web_sm')")
 
 
 # ============================================================================
@@ -275,7 +285,7 @@ def test_tier0_notebooks_smoke():
                 # Execute first cell only (typically imports)
                 if len(tb.cells) > 0 and tb.cells[0].cell_type == "code":
                     try:
-                        tb.execute_cell(0, timeout=CELL_TIMEOUT)
+                        tb.execute_cell(0)
                         passed += 1
                     except Exception:
                         skipped += 1

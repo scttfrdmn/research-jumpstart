@@ -174,7 +174,7 @@ def test_s3_operation():
 
 **Goal:** Execute first few cells of notebooks to validate they run without errors.
 
-**Runtime:** 10-20 minutes (nightly)
+**Runtime:** 10-20 minutes (on-demand)
 **Cost:** $0 (GitHub Actions free tier)
 
 ### Files Created:
@@ -208,13 +208,12 @@ TOTAL_NOTEBOOK_TIMEOUT = 300   # 5 minutes total
 ```
 
 #### 4. CI/CD Workflow (`.github/workflows/test-notebooks.yml`)
-- Runs **nightly at 2 AM UTC** (not every push)
-- Manual trigger available (workflow_dispatch)
+- Runs **on-demand only** (manual trigger via workflow_dispatch)
 - Runs on notebook file changes in PRs
 - Python 3.10, 3.11 test matrix
 - Installs common dependencies (numpy, pandas, matplotlib, sklearn)
 - Test result artifacts
-- **Status:** ✅ Scheduled nightly workflow
+- **Status:** ✅ Manual trigger workflow
 
 ### Test Types:
 
@@ -244,7 +243,7 @@ TOTAL_NOTEBOOK_TIMEOUT = 300   # 5 minutes total
 - ✅ **Practical** - Most issues are in setup/imports
 - ✅ **Cost-effective** - Free GitHub Actions tier
 - ✅ **Reliable** - No AWS credentials or large data needed
-- ✅ **Scalable** - Can test 75 notebooks nightly
+- ✅ **Scalable** - Can test 75 notebooks on-demand
 
 **Missing Dependency Handling:**
 ```python
@@ -370,13 +369,13 @@ pytest --cov=projects --cov-report=html
 - ✅ Test matrix: Python 3.9, 3.10, 3.11
 - ✅ Test result and coverage artifacts
 
-#### `test-notebooks.yml` (runs nightly + manual)
+#### `test-notebooks.yml` (runs on-demand + PRs)
 - ✅ Notebook smoke testing (first 5 cells)
 - ✅ Skips long-running cells (training loops)
 - ✅ Handles missing dependencies gracefully
 - ✅ 60s cell timeout, 5min notebook timeout
 - ✅ Test matrix: Python 3.10, 3.11
-- ✅ Nightly schedule (2 AM UTC)
+- ✅ Manual trigger (workflow_dispatch) + PR on notebook changes
 
 ---
 
@@ -435,7 +434,7 @@ Configure selective test execution using pytest markers:
 - Notebook smoke testing with testbook
 - Tests first 5 cells of 75 notebooks
 - Skips long-running cells automatically
-- Nightly CI/CD workflow (2 AM UTC)
+- On-demand CI/CD workflow (manual trigger + PRs)
 - Handles missing dependencies gracefully
 - Zero cost (within GitHub Actions free tier)
 
