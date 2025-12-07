@@ -245,3 +245,4 @@ tmp/
 
 # Virtual environment (added after setup)
 venv/
+.venv-py312/
