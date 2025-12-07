@@ -1,32 +1,43 @@
 # Browse Research Projects
 
-Research Jumpstart provides 120+ pre-built research workflows across 20+ academic domains. Each project includes both a free Studio Lab version and a production Unified Studio version.
+Research Jumpstart provides pre-built research workflows across 18 academic domains, organized into 4 tiers (0-3) from learning to production.
+
+## 🚀 Start Here: Tier-0 Quick Start Projects
+
+**New to Research Jumpstart?** Start with our 25 tier-0 projects:
+- ✅ **Free** - Google Colab or Studio Lab (no AWS account)
+- ✅ **Fast** - Complete in 60-90 minutes
+- ✅ **Educational** - Learn domain fundamentals
+- ✅ **18 domains** - Agriculture to Urban Planning
+
+[**View all 25 tier-0 projects →**](tier0-catalog.md){ .md-button .md-button--primary }
+
+---
 
 ## How to Use This Catalog
+
+### Browse by Tier
+
+Projects are organized into 4 tiers based on complexity and infrastructure:
+
+- **[Tier 0](tier0-catalog.md)** - Quick Start (60-90 min, FREE, no AWS)
+- **[Tier 1](tier1/)** - Extended Analysis (4-8 hours, FREE on Studio Lab)
+- **[Tier 2](tier2/)** - Production Ready (2-3 days, AWS, $200-500)
+- **[Tier 3](tier3/)** - Enterprise Scale (ongoing, AWS, $2K-5K/month)
+
+[Understanding tiers →](tiers.md){ .md-button }
 
 ### Choose by Domain
 
 Pick a project in your research area:
 
-- [Climate Science & Environmental Research](#climate-science) (6 projects)
-- [Genomics & Computational Biology](#genomics) (6 projects)
-- [Medical & Healthcare Research](#medical-research) (6 projects)
-- [Social Sciences](#social-sciences) (6 projects)
-- [Physics & Astronomy](#physics-astronomy) (6 projects)
-- [Digital Humanities](#digital-humanities) (6 projects)
-- _[View all 20+ domains →](all-domains.md)_
-
-### Filter by Difficulty
-
-- **🟢 Beginner**: No prior cloud experience needed
-- **🟡 Intermediate**: Basic cloud concepts helpful
-- **🔴 Advanced**: Requires understanding of distributed systems
-
-### Filter by Time
-
-- **⏱️ Quick** (2-4 hours in Studio Lab)
-- **⏱️⏱️ Medium** (4-8 hours)
-- **⏱️⏱️⏱️ Extended** (1-2 days)
+- [Climate Science & Environmental Research](#climate-science)
+- [Genomics & Computational Biology](#genomics)
+- [Medical & Healthcare Research](#medical-research)
+- [Social Sciences](#social-sciences)
+- [Physics & Astronomy](#physics-astronomy)
+- [Digital Humanities](#digital-humanities)
+- _...and 12 more domains in [tier-0 catalog](tier0-catalog.md)_
 
 ---
 
