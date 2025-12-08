@@ -1,0 +1,27 @@
+# Climate Temperature Forecasting with LSTM - Python Dependencies
+# Tier-0 ML: Free, 60-90 minutes, Google Colab or SageMaker Studio Lab
+
+# Deep Learning
+tensorflow>=2.10.0
+
+# Core Data Science
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+
+# Visualization
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# Time Series
+scipy>=1.7.0
+
+# Jupyter (if running locally)
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Optional: For faster CPU inference
+# tensorflow-intel>=2.10.0  # Intel optimizations (x86_64 only)
+
+# Note: Google Colab and SageMaker Studio Lab have these pre-installed
+# Only needed for local development
