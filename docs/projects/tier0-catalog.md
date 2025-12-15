@@ -1,6 +1,6 @@
 # Tier-0 Project Catalog
 
-**All 25 quick-start projects across 18 research domains**
+**All 25 quick-start projects across 20 research domains (2 placeholders)**
 
 Start learning in 60-90 minutes. No AWS account or downloads needed. All projects use synthetic data and run on free platforms (Google Colab or SageMaker Studio Lab).
 
@@ -10,14 +10,14 @@ Start learning in 60-90 minutes. No AWS account or downloads needed. All project
 
 | Total Projects | Domains | Average Duration | Average Size | Platform | Cost |
 |----------------|---------|------------------|--------------|----------|------|
-| 25 | 18 | 60-90 min | 750 LOC, 23 cells | Colab / Studio Lab | $0 |
+| 25 | 20 (2 placeholders) | 60-90 min | 750 LOC, 23 cells | Colab / Studio Lab | $0 |
 
 ---
 
 ## Quick Navigation
 
 Jump to domain:
-[Agriculture](#agriculture) · [Archaeology](#archaeology) · [Astronomy](#astronomy) · [Climate Science](#climate-science) · [Digital Humanities](#digital-humanities) · [Economics](#economics) · [Education](#education) · [Genomics](#genomics) · [Linguistics](#linguistics) · [Marine Science](#marine-science) · [Materials Science](#materials-science) · [Medical](#medical) · [Neuroscience](#neuroscience) · [Physics](#physics) · [Psychology](#psychology) · [Public Health](#public-health) · [Social Science](#social-science) · [Urban Planning](#urban-planning)
+[Agriculture](#agriculture) · [Archaeology](#archaeology) · [Astronomy](#astronomy) · [Climate Science](#climate-science) · [Digital Humanities](#digital-humanities) · [Economics](#economics) · [Education](#education) · [Genomics](#genomics) · [Hydrology](#hydrology) 🚧 · [Linguistics](#linguistics) · [Marine Science](#marine-science) · [Materials Science](#materials-science) · [Medical](#medical) · [Neuroscience](#neuroscience) · [Physics](#physics) · [Psychology](#psychology) · [Public Health](#public-health) · [Social Science](#social-science) · [Structural Engineering](#structural-engineering) 🚧 · [Urban Planning](#urban-planning)
 
 ---
 
@@ -195,6 +195,24 @@ Identify genetic variants using convolutional neural networks.
 
 [Launch Project →](../../projects/genomics/variant-analysis/tier-0/)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/scttfrdmn/research-jumpstart/blob/main/projects/genomics/variant-analysis/tier-0/genomics-variant-calling.ipynb)
+
+---
+
+### Hydrology
+
+#### 💧 Watershed Analysis and Flood Prediction 🚧
+**Status:** Placeholder - Coming Soon
+
+Comprehensive rainfall-runoff modeling and flood forecasting workflows.
+
+- **Duration**: 60-90 minutes (planned)
+- **Techniques**: Hydrologic modeling, flood frequency analysis, LSTM forecasting
+- **Data**: Synthetic rainfall/streamflow data (planned)
+- **ML Models**: Random Forest, LSTM for discharge prediction
+- **Output**: Runoff estimates, flood forecasts, return period analysis
+- **Status**: 🚧 **Placeholder** - [See roadmap](../../projects/hydrology/watershed-analysis/)
+
+*This project is in planning. Interested in hydrology? Contribute via [GitHub](https://github.com/scttfrdmn/research-jumpstart/issues)!*
 
 ---
 
@@ -390,6 +408,24 @@ Analyze social network structures and dynamics.
 
 ---
 
+### Structural Engineering
+
+#### 🏗️ Structural Health Monitoring 🚧
+**Status:** Placeholder - Coming Soon
+
+Monitor infrastructure health using vibration analysis and machine learning.
+
+- **Duration**: 60-90 minutes (planned)
+- **Techniques**: Modal analysis, damage detection, anomaly detection
+- **Data**: Synthetic accelerometer data from bridges (planned)
+- **ML Models**: Random Forest, Isolation Forest for damage detection
+- **Output**: Damage classification, modal parameters, health indices
+- **Status**: 🚧 **Placeholder** - [See roadmap](../../projects/structural-engineering/structural-health-monitoring/)
+
+*This project is in planning. Interested in structural engineering? Contribute via [GitHub](https://github.com/scttfrdmn/research-jumpstart/issues)!*
+
+---
+
 ### Urban Planning
 
 #### 🏙️ Urban Growth Prediction
@@ -434,6 +470,7 @@ Optimize urban transportation networks using graph algorithms.
 | Economics | 2 | 1,477 | 24 |
 | Education | 1 | 357 | 25 |
 | Genomics | 2 | 394 | 24 |
+| Hydrology | 0 | - | - | 🚧
 | Linguistics | 2 | 421 | 24 |
 | Marine Science | 1 | 474 | 29 |
 | Materials Science | 1 | 4,019 | 24 |
@@ -443,12 +480,13 @@ Optimize urban transportation networks using graph algorithms.
 | Psychology | 1 | 3,465 | 25 |
 | Public Health | 2 | 391 | 17 |
 | Social Science | 2 | 417 | 24 |
+| Structural Engineering | 0 | - | - | 🚧
 | Urban Planning | 2 | 434 | 23 |
 
 ### Overall Statistics
 
-- **Total Projects**: 25
-- **Total Domains**: 18
+- **Total Projects**: 25 (23 complete, 2 placeholders)
+- **Total Domains**: 20 (18 complete, 2 placeholders: Hydrology 🚧, Structural Engineering 🚧)
 - **Average LOC**: 750
 - **Average Cells**: 23
 - **Range**: 275-4,019 LOC, 16-29 cells
