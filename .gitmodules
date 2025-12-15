@@ -1,0 +1,9 @@
+[submodule "projects/astronomy/sky-survey/tier-0-submodule"]
+	path = projects/astronomy/sky-survey/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-astronomy-exoplanet-detection-tier0.git
+[submodule "projects/climate-science/ensemble-analysis/tier-0-ml-submodule"]
+	path = projects/climate-science/ensemble-analysis/tier-0-ml-submodule
+	url = git@github.com:scttfrdmn/rj-climate-temperature-forecasting-tier0.git
+[submodule "projects/genomics/variant-analysis/tier-0-submodule"]
+	path = projects/genomics/variant-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-genomics-variant-calling-tier0.git
