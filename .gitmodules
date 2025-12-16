@@ -37,3 +37,18 @@
 [submodule "projects/linguistics/language-analysis/tier-0-submodule"]
 	path = projects/linguistics/language-analysis/tier-0-submodule
 	url = git@github.com:scttfrdmn/rj-linguistics-dialect-classification-tier0.git
+[submodule "projects/linguistics/corpus-linguistics/tier-0-submodule"]
+	path = projects/linguistics/corpus-linguistics/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-linguistics-corpus-analysis-tier0.git
+[submodule "projects/marine-science/ocean-analysis/tier-0-submodule"]
+	path = projects/marine-science/ocean-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-marine-ocean-species-tier0.git
+[submodule "projects/materials/computational-materials/tier-0-submodule"]
+	path = projects/materials/computational-materials/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-materials-crystal-prediction-tier0.git
+[submodule "projects/medical/disease-prediction/tier-0-submodule"]
+	path = projects/medical/disease-prediction/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-medical-chest-xray-tier0.git
+[submodule "projects/neuroscience/brain-imaging/tier-0-submodule"]
+	path = projects/neuroscience/brain-imaging/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-neuroscience-fmri-states-tier0.git
