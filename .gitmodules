@@ -7,3 +7,18 @@
 [submodule "projects/genomics/variant-analysis/tier-0-submodule"]
 	path = projects/genomics/variant-analysis/tier-0-submodule
 	url = git@github.com:scttfrdmn/rj-genomics-variant-calling-tier0.git
+[submodule "projects/agriculture/precision-agriculture/tier-0-submodule"]
+	path = projects/agriculture/precision-agriculture/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-agriculture-crop-disease-detection-tier0.git
+[submodule "projects/archaeology/site-analysis/tier-0-submodule"]
+	path = projects/archaeology/site-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-archaeology-artifact-classification-tier0.git
+[submodule "projects/climate-science/ensemble-analysis/tier-0-submodule"]
+	path = projects/climate-science/ensemble-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-climate-temperature-analysis-tier0.git
+[submodule "projects/digital-humanities/text-analysis/tier-0-submodule"]
+	path = projects/digital-humanities/text-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-digital-humanities-text-analysis-tier0.git
+[submodule "projects/digital-humanities/text-corpus-analysis/tier-0-submodule"]
+	path = projects/digital-humanities/text-corpus-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-digital-humanities-authorship-tier0.git
