@@ -52,3 +52,18 @@
 [submodule "projects/neuroscience/brain-imaging/tier-0-submodule"]
 	path = projects/neuroscience/brain-imaging/tier-0-submodule
 	url = git@github.com:scttfrdmn/rj-neuroscience-fmri-states-tier0.git
+[submodule "projects/physics/quantum-computing/tier-0-submodule"]
+	path = projects/physics/quantum-computing/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-physics-quantum-algorithms-tier0.git
+[submodule "projects/psychology/behavioral-analysis/tier-0-submodule"]
+	path = projects/psychology/behavioral-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-psychology-eeg-emotion-tier0.git
+[submodule "projects/public-health/epidemiology/tier-0-submodule"]
+	path = projects/public-health/epidemiology/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-public-health-epidemic-modeling-tier0.git
+[submodule "projects/public-health/disease-surveillance/tier-0-submodule"]
+	path = projects/public-health/disease-surveillance/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-public-health-disease-surveillance-tier0.git
+[submodule "projects/social-science/social-media-analysis/tier-0-submodule"]
+	path = projects/social-science/social-media-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-social-science-social-media-tier0.git
