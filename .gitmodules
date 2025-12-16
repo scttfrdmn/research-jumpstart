@@ -67,3 +67,12 @@
 [submodule "projects/social-science/social-media-analysis/tier-0-submodule"]
 	path = projects/social-science/social-media-analysis/tier-0-submodule
 	url = git@github.com:scttfrdmn/rj-social-science-social-media-tier0.git
+[submodule "projects/social-science/network-analysis/tier-0-submodule"]
+	path = projects/social-science/network-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-social-science-network-analysis-tier0.git
+[submodule "projects/urban-planning/city-analytics/tier-0-submodule"]
+	path = projects/urban-planning/city-analytics/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-urban-urban-growth-tier0.git
+[submodule "projects/urban-planning/transportation-optimization/tier-0-submodule"]
+	path = projects/urban-planning/transportation-optimization/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-urban-transportation-tier0.git
