@@ -22,3 +22,18 @@
 [submodule "projects/digital-humanities/text-corpus-analysis/tier-0-submodule"]
 	path = projects/digital-humanities/text-corpus-analysis/tier-0-submodule
 	url = git@github.com:scttfrdmn/rj-digital-humanities-authorship-tier0.git
+[submodule "projects/economics/macro-forecasting/tier-0-submodule"]
+	path = projects/economics/macro-forecasting/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-economics-macro-forecasting-tier0.git
+[submodule "projects/economics/time-series-forecasting/tier-0-submodule"]
+	path = projects/economics/time-series-forecasting/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-economics-lstm-forecasting-tier0.git
+[submodule "projects/education/learning-analytics-platform/tier-0-submodule"]
+	path = projects/education/learning-analytics-platform/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-education-student-prediction-tier0.git
+[submodule "projects/genomics/population-genetics/tier-0-submodule"]
+	path = projects/genomics/population-genetics/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-genomics-population-genetics-tier0.git
+[submodule "projects/linguistics/language-analysis/tier-0-submodule"]
+	path = projects/linguistics/language-analysis/tier-0-submodule
+	url = git@github.com:scttfrdmn/rj-linguistics-dialect-classification-tier0.git
